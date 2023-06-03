@@ -8,6 +8,29 @@ Code works by
 4) parsing each line.
 
 
+simple example hooked to a button.
+
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  Scanner : TScanner;
+  I : integer;
+  Token : TToken;
+begin
+  Memo2.lines.clear;
+
+  Scanner.Init(Memo1.Lines.Text);
+  Scanner.Scan;
+  Memo2.Lines.BeginUpdate;
+  for i := 0 to Scanner.TokenCount-1  do
+  begin
+     token := Scanner.Tokens[i];
+     Memo2.Lines.Add(TTokenName[token.kind] + '=' + token.text);
+  end;
+
+  Memo2.Lines.EndUpdate;
+end;
+
+
 
 
 for example
