@@ -10,6 +10,8 @@ Code works by
 
 simple example hooked to a button.
 
+
+
 procedure TForm1.Button2Click(Sender: TObject);
 var
   Scanner : TScanner;
