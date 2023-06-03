@@ -1,6 +1,13 @@
 # Lox_Scanner
 
-basic scanner which parses text and spits out lox tokens
+basic scanner which parses text and spits out lox tokens. 
+Code works by 
+1) breaking line into seperate chars
+2) using char iterator
+3) using line iterator on char iterator
+4) parsing each line.
+
+
 
 
 for example
