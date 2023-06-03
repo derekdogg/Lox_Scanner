@@ -95,8 +95,7 @@ type
 
 implementation
 uses
-  sysutils,
-  Ascii;
+  sysutils;
 
   function TIterator.Seek(Const position : integer) : char;
   begin
