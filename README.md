@@ -22,39 +22,74 @@ breakfast.serve("our favourite patron");
 will produce these tokens
 
 Class=Class
+
 Identifier=Breakfast
+
 CurlyOpenBrace=
+
 Identifier=cook
+
 open_bracket=
+
 Close_Bracket=
+
 CurlyOpenBrace=
+
 Print=Print
+
 Quotes="Eggs a-fryin'!"
+
 CurlyCloseBrace=
+
 Identifier=serve
+
 open_bracket=
+
 Identifier=who
+
 Close_Bracket=
+
 CurlyOpenBrace=
+
 Print=Print
+
 Quotes="Enjoy your breakfast, "
+
 Plus=
+
 Identifier=who
+
 Plus=
+
 Quotes="."
+
 CurlyCloseBrace=
+
 CurlyCloseBrace=
+
 Var=Var
+
 Identifier=breakfast
+
 Equal=
+
 Identifier=Breakfast
+
 open_bracket=
+
 Close_Bracket=
+
 Identifier=breakfast
+
 dot=
+
 Identifier=serve
+
 open_bracket=
+
 Quotes="our favourite patron"
+
 Close_Bracket=
+
 
 
