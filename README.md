@@ -1,4 +1,4 @@
-# Lox_Scanner
+# Lox Scanner written in pascal
 
 basic scanner which parses text and spits out lox tokens. 
 Code works by 
