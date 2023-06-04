@@ -34,7 +34,7 @@ implementation
 function TIterator.Seek(Const position : integer) : char;
 begin
   result := cNull;
-  if (TextLength = 0) or (position < 0) or (position > TextLength) then exit;
+  if (TextLength = 0) or (position < 1) or (position > TextLength) then exit;
   Index := Position;
   result := text[index];
 end;
@@ -43,7 +43,7 @@ end;
 function TIterator.PeekTo(Const position : integer) : char;
 begin
   result := cNull;
-  if (TextLength = 0) or (position < 0) or (position > TextLength) then exit;
+  if (TextLength = 0) or (position < 1) or (position > TextLength) then exit;
   result := text[position];
 end;
 
