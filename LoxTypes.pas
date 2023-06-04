@@ -54,11 +54,11 @@ type
     At_sign	=	64,
     Uppercase_A	=	65,
     Uppercase_B	=	66,
-Uppercase_C	=	67,
-Uppercase_D	=	68,
-Uppercase_E	=	69,
-Uppercase_F	=	70,
-Uppercase_G	=	71,
+    Uppercase_C	=	67,
+    Uppercase_D	=	68,
+    Uppercase_E	=	69,
+    Uppercase_F	=	70,
+    Uppercase_G	=	71,
 Uppercase_H	=	72,
 Uppercase_I	=	73,
 Uppercase_J	=	74,
@@ -212,30 +212,6 @@ type
   end;
 
   TTokens = Array[0..cMaxTokens] of TToken;
-
-
-
-(*const
-
-  cAnd = 'and';
-  cClass = 'class';
-  cElse = 'else';
-  cFalse = 'false';
-  cFor = 'for';
-  cFun = 'fun';
-  cIF = 'if';
-  cNil = 'nil';
-  cOr = 'or';
-  cPrint = 'print';
-  cReturn ='return';
-  cSuper = 'super';
-  cThis = 'this';
-  cTrue = 'true';
-  cVar = 'var';
-  cWhile ='while';
-  cIdent = 'Ident';
-  cNumber = '%d';   *)
-
 
 
 implementation
