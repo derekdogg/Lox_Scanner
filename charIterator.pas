@@ -50,7 +50,7 @@ end;
 function Titerator.First : char;
 begin
   result := cNull;
-  if (TextLength = 0) or (index < 0) or (index > TextLength) then exit;
+  if (TextLength = 0) then exit;
   index := 1;
   result := text[index];
   current := result;
