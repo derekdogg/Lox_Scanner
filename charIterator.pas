@@ -131,8 +131,8 @@ var
   i : integer;
 begin
   result := '';
-  if (Start+finish > TextLength) then exit;
-  for i := start to finish do
+  if (Start+finish-1 > TextLength) then exit;
+  for i := start to start+finish-1 do
   begin
     result := result + text[i];
   end;
