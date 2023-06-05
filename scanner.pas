@@ -11,6 +11,10 @@ type
     Tokens : TTokens;
     TokenCount : integer;
     ln : TLineIterator;
+    function MakeBangEqualToken : TToken;
+    function MakeGreaterThanOrEqualToToken : TToken;
+    function MakeLessThanOrEqualToken : TToken;
+    function MakeEqualEqualToken : TToken;
     function MakeSingleToken(const Kind : TTokenKind) : TToken;
     function CurrentCharIsNumber : boolean;
     function charIsNumber(const c : char) : boolean;
@@ -357,6 +361,44 @@ begin
    result.text := TTokenName[Kind];
 end;
 
+
+function TScanner.MakeGreaterThanOrEqualToToken : TToken;
+begin
+  result.Kind := tkGreaterThanEqual;
+  result.start:= ln.chars.index;
+  result.length:= 2;
+  result.line:= ln.lineIndex;
+  result.text := TTokenName[tkGreaterThanEqual];
+end;
+
+function TScanner.MakeLessThanOrEqualToken : TToken;
+begin
+  result.Kind := tkLessThanEqual;
+  result.start:= ln.chars.index;
+  result.length:= 2;
+  result.line:= ln.lineIndex;
+  result.text := TTokenName[tkLessThanEqual];
+end;
+
+function TScanner.MakeEqualEqualToken : TToken;
+begin
+  result.Kind := tkEqualEqual;
+  result.start:= ln.chars.index;
+  result.length:= 2;
+  result.line:= ln.lineIndex;
+  result.text := TTokenName[tkEqualEqual];
+end;
+
+function TScanner.MakeBangEqualToken : TToken;
+begin
+  result.Kind := tkBangEqual;
+  result.start:= ln.chars.index;
+  result.length:= 2;
+  result.line:= ln.lineIndex;
+  result.text := TTokenName[tkBangEqual];
+end;
+
+
 function TScanner.MakeToken : TToken;
   var
     Token : TToken;
@@ -404,15 +446,15 @@ function TScanner.MakeToken : TToken;
           Token := MakeSingleToken(tkdot);
         end;
 
-       (* ord(underscore) : begin
-          Token.Kind := underscore;
-        end; *)
+        ord(underscore) : begin
+          //Token.Kind := tkunderscore;
+        end; 
 
         //!,!=
         ord(bang) : begin
            if MatchChar(ln.chars.PeekNext,equal) then
            begin
-             Token.Kind := tkBangEqual;
+             Token:= MakeBangEqualToken;
              ln.chars.Next;
            end
            else
@@ -425,7 +467,7 @@ function TScanner.MakeToken : TToken;
         ord(equal) : begin
            if MatchChar(ln.chars.PeekNext,equal) then
            begin
-             Token.Kind := tkEqualEqual;
+             Token  := MakeEqualEqualToken;
              ln.chars.Next;
            end
            else
@@ -437,7 +479,7 @@ function TScanner.MakeToken : TToken;
         ord(Less_than) : begin
            if MatchChar(ln.chars.PeekNext,equal) then
            begin
-             Token.Kind := tkLessThanEqual;
+             Token := MakeLessThanOrEqualToken;
              ln.chars.Next;
            end
            else
@@ -449,7 +491,7 @@ function TScanner.MakeToken : TToken;
         ord(Greater_than) : begin
            if MatchChar(ln.chars.PeekNext,equal) then
            begin
-             Token.Kind := tkGreaterThanEqual;
+             Token := MakeGreaterThanOrEqualToToken;
              ln.chars.Next;
            end
            else
