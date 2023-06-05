@@ -11,7 +11,7 @@ type
     Tokens : TTokens;
     TokenCount : integer;
     ln : TLineIterator;
-
+    function MakeSingleToken(const Kind : TTokenKind) : TToken;
     function CurrentCharIsNumber : boolean;
     function charIsNumber(const c : char) : boolean;
     function MatchAny(const c : char; const Any : Array of TAscii) : boolean;
@@ -20,7 +20,7 @@ type
     function MakeNumberToken : TToken;
     function NullToken : TToken;
     function GetReserverdWordToken(const TokenKind : TTokenKind) : TToken;
-    function ReservedOrWord(tokenKind : TTokenKind) : TToken;
+    function MakeReservedOrNormalWordToken(tokenKind : TTokenKind) : TToken;
     function AllowableWordChar(Const c : char) : boolean;
     function MatchSpecialChar(const c : char) : boolean;
 
@@ -271,7 +271,7 @@ begin
 end;
 
 
-function TScanner.ReservedOrWord(tokenKind : TTokenKind) : TToken;
+function TScanner.MakeReservedOrNormalWordToken(tokenKind : TTokenKind) : TToken;
 begin
   result := GetReserverdWordToken(tokenKind); //try and make a reserved word, 1st.  Get reserved word doesn't touch the index.
   if result.kind <> tkNull then
@@ -348,6 +348,15 @@ begin
   end;
 end;
 
+function TScanner.MakeSingleToken(const Kind : TTokenKind) : TToken;
+begin
+   result.Kind := Kind;
+   result.start:= ln.chars.index;
+   result.length:= 1;
+   result.line:= ln.lineIndex;
+   result.text := TTokenName[Kind];
+end;
+
 function TScanner.MakeToken : TToken;
   var
     Token : TToken;
@@ -360,39 +369,39 @@ function TScanner.MakeToken : TToken;
         case ord(ln.chars.Current) of
 
         ord(open_Bracket) : begin
-          Token.Kind := tkOpen_Bracket;
+          Token := MakeSingleToken(tkOpen_Bracket)
         end;
 
         ord(close_Bracket) : begin
-          Token.Kind := tkClose_Bracket;
+          Token := MakeSingleToken(tkClose_Bracket);
         end;
 
         ord(Curly_Opening_brace) : begin
-          Token.Kind := tkOpenBrace;
+          Token := MakeSingleToken(tkOpenBrace);
         end;
 
         ord(Curly_Closing_brace) : begin
-          Token.Kind := tkCloseBrace;
+          Token := MakeSingleToken(tkCloseBrace);
         end;
 
         ord(Asterisk) : begin
-          Token.Kind := tkAsterisk;
+          Token := MakeSingleToken(tkAsterisk);
         end;
 
         ord(Plus) : begin
-          Token.Kind := tkPlus;
+          Token := MakeSingleToken(tkPlus);
         end;
 
         ord(Comma) : begin
-          Token.Kind := tkComma;
+          Token := MakeSingleToken(tkComma);
         end;
 
         ord(minus) : begin
-          Token.Kind := tkminus;
+          Token := MakeSingleToken(tkminus);
         end;
 
         ord(dot) : begin
-          Token.Kind := tkdot;
+          Token := MakeSingleToken(tkdot);
         end;
 
        (* ord(underscore) : begin
@@ -408,7 +417,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token.Kind := tkBang;
+             Token := MakeSingleToken(tkBang);
            end;
         end;
 
@@ -421,7 +430,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token.Kind := tkEqual;
+             Token := MakeSingleToken(tkEqual);
            end;
         end;
 
@@ -433,7 +442,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token.Kind := tkLess_than;
+             Token := MakeSingleToken(tkLess_than);
            end;
         end;
 
@@ -445,7 +454,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token.Kind := tkgreater_than;
+             Token := MakeSingleToken(tkgreater_than);
            end;
         end;
 
@@ -468,18 +477,18 @@ function TScanner.MakeToken : TToken;
         // check for AND
         ord(lowercase_a), ord(uppercase_a) :
         begin
-          Token := ReservedOrWord(tkAnd);
+          Token := MakeReservedOrNormalWordToken(tkAnd);
         end;
 
         ord(lowercase_c), ord(uppercase_c) :
         begin
-          Token := ReservedOrWord(tkClass);
+          Token := MakeReservedOrNormalWordToken(tkClass);
 
         end;
 
         ord(lowercase_e), ord(uppercase_e) :
         begin
-           Token := ReservedOrWord(tkElse);
+           Token := MakeReservedOrNormalWordToken(tkElse);
         end;
 
         //check false, fun, for
@@ -489,36 +498,36 @@ function TScanner.MakeToken : TToken;
           case ord(ln.chars.PeekNext) of
             ord(lowercase_a),ord(uppercase_a) :
             begin
-              Token := ReservedOrWord(tkFalse);
+              Token := MakeReservedOrNormalWordToken(tkFalse);
             end;
             ord(lowercase_u), ord(uppercase_u) :
             begin
-              Token := ReservedOrWord(tkFun);
+              Token := MakeReservedOrNormalWordToken(tkFun);
             end
             else
             begin
-               Token := ReservedOrWord(tkFor);
+               Token := MakeReservedOrNormalWordToken(tkFor);
             end;
           end;
         end;
 
         ord(lowercase_i), ord(uppercase_i) :
         begin
-          Token := ReservedOrWord(tkIf);
+          Token := MakeReservedOrNormalWordToken(tkIf);
         end;
         ord(lowercase_n), ord(uppercase_n) :
         begin
-          Token := ReservedOrWord(tkNil);
+          Token := MakeReservedOrNormalWordToken(tkNil);
         end;
 
         ord(lowercase_o), ord(uppercase_o) :
         begin
-           Token := ReservedOrWord(tkOr);
+           Token := MakeReservedOrNormalWordToken(tkOr);
         end;
 
         ord(lowercase_p), ord(uppercase_p) :
         begin
-           Token := ReservedOrWord(tkPrint);
+           Token := MakeReservedOrNormalWordToken(tkPrint);
         end;
 
          //string
@@ -529,23 +538,23 @@ function TScanner.MakeToken : TToken;
         ord(lowercase_r), ord(uppercase_r) :
         begin
 
-           Token := ReservedOrWord(tkReturn);
+           Token := MakeReservedOrNormalWordToken(tkReturn);
 
         end;
 
         ord(lowercase_t), ord(uppercase_t) :
         begin
-          Token := ReservedOrWord(tkTrue);
+          Token := MakeReservedOrNormalWordToken(tkTrue);
         end;
 
         ord(lowercase_v), ord(uppercase_v) :
         begin
-           Token := ReservedOrWord(tkVar);
+           Token := MakeReservedOrNormalWordToken(tkVar);
         end;
 
         ord(lowercase_w), ord(uppercase_w) :
         begin
-           Token := ReservedOrWord(tkWhile);
+           Token := MakeReservedOrNormalWordToken(tkWhile);
         end;
 
         ord(space) : begin
@@ -632,3 +641,8 @@ end;
 
 
 end.
+
+
+
+
+
