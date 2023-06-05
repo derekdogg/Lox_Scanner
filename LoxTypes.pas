@@ -156,14 +156,15 @@ TTokenKind = (
   tkWhiteSpace,
   tkOpenBrace,
   tkCloseBrace,
-  tkInteger);
+  tkInteger,
+  tkunderscore);
 
  const
 
 
 
 
-  TTokenName : Array[tkNull..tkInteger] of string = (
+  TTokenName : Array[tkNull..tkUnderscore] of string = (
   'Null',
   'Number',
   'Quotes',
@@ -201,7 +202,8 @@ TTokenKind = (
   'WhiteSpace',
   'CurlyOpenBrace',
   'CurlyCloseBrace',
-  'Integer');
+  'Integer',
+  'underscore');
 
 
 type
