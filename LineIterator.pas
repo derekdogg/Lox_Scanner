@@ -33,8 +33,8 @@ type
     function  Next : TLine;
   end;
 
-implementation
 
+implementation
 uses sysutils;
 
 function TLineIterator.EOL: boolean;
