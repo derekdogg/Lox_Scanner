@@ -13,7 +13,7 @@ type
 
     function Move(const amount : integer) : boolean;
     function Seek(Const position : integer) : char;
-    function SubStr(const start,count : integer) : String;
+    function SubStr(const start,finish : integer) : String;
     function PeekNext : char;
     function PeekPrior : char;
     function PeekTo(Const position : integer) : char;
@@ -126,13 +126,13 @@ begin
   result := true;
 end;
 
-function Titerator.SubStr(const start,count : integer) : String;
+function TIterator.SubStr(const start,finish : integer) : String;
 var
   i : integer;
 begin
   result := '';
-  if (Start+count-1 > TextLength) then exit;
-  for i := start to count-1 do
+  if (Start+finish > TextLength) then exit;
+  for i := start to finish do
   begin
     result := result + text[i];
   end;
