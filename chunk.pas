@@ -1,6 +1,7 @@
 unit Chunk;
 
 interface
+uses Loxtypes;
 
 
 (* Taken from crafting interpreters pp398 grow array - this hopefully mimics the c code close enough
@@ -16,42 +17,6 @@ interface
   Haha. Yeah, right.
 
 
-  I've tested this code by a button
-  
-procedure TForm1.Button1Click(Sender: TObject);
-var
-  Chunk : TChunk;
-  p     : PByte;
-  i     : integer;
-begin
-  try
-    p := nil;
-    Chunk.Init;
-    i := Chunk.Add(1);
-    i := Chunk.Add(2);
-    i := Chunk.Add(3);
-    i := Chunk.Add(4);
-    i := Chunk.Add(5);
-    i := Chunk.Add(6);
-    i := Chunk.Add(7);
-    i := Chunk.Add(8);
-    i := Chunk.Add(9);  //<== new capacity and copy
-
-    for i := 0 to Chunk.Count-1 do
-    begin
-      p := Chunk.Byte(i);
-      memo1.Lines.add(inttostr(p^));
-    end;
-  finally
-    Chunk.Finalize;
-  end;
-end;
-
-Also, I have reportmemoryleaksonshutdown := true
-
-I wouldn't mind some review here though. As I have never done this kind of thing before.
-
-
 *)
 
 const
@@ -59,14 +24,13 @@ const
 
 type
 
-
- TChunk = record
+ TDynamicByteArray = record
     index       : integer;
     count       : integer;
     oldcapacity : integer;
     capacity    : integer;
     pCode       : pByte;
-    function Add(const b : Byte) : integer;
+    function Add(const value : byte) : integer;
     function  Byte(const index : integer) : pByte;
     procedure AllocateArray;
     procedure init;
@@ -76,16 +40,25 @@ type
     procedure GrowCapacity;
  end;
 
+
+ TChunk = record
+   OPCodes      : TDynamicByteArray;
+   ConstantPool : TDynamicByteArray;
+   procedure init;
+   procedure finalize;
+ end;
+
+
 implementation
 
 
-procedure TChunk.AllocateArray;
+procedure TDynamicByteArray.AllocateArray;
 begin
   GetMem(pCode,Capacity);
   fillchar(pCode^,Capacity,#0);
 end;
 
-function TChunk.AllocateNewArrayWithMoreCapacity : boolean;
+function TDynamicByteArray.AllocateNewArrayWithMoreCapacity : boolean;
 begin
   result := false;
   if pCode = nil then exit;
@@ -95,7 +68,7 @@ begin
 end;
 
 
-function TChunk.Add(const b : Byte) : integer;
+function TDynamicByteArray.Add(const value : byte) : integer;
 var
   p : pByte;
 begin
@@ -106,11 +79,14 @@ begin
     if not AllocateNewArrayWithMoreCapacity then exit;
   end;
   p := Byte(Count-1);
-  p^ := b;
-  result := Count-1;
+  if p <> nil then
+  begin
+    p^ := value;
+    result := Count-1;
+  end;
 end;
 
-function TChunk.Byte(const index: integer): pByte;
+function TDynamicByteArray.Byte(const index: integer): pByte;
 begin
   result := nil;
   if (index <= capacity) and (index >= 0) then
@@ -120,7 +96,7 @@ begin
   end;
 end;
 
-procedure TChunk.CopyExistingElementsFromOldArrayToNewArray;
+procedure TDynamicByteArray.CopyExistingElementsFromOldArrayToNewArray;
 var
   p : pByte;
 begin
@@ -133,7 +109,7 @@ begin
 end;
 
 
-procedure TChunk.finalize;
+procedure TDynamicByteArray.finalize;
 begin
   if assigned(pCode) then
   begin
@@ -143,7 +119,7 @@ begin
 end;
 
 
-procedure TChunk.growCapacity;
+procedure TDynamicByteArray.growCapacity;
 begin
   oldcapacity := capacity;
   if capacity = 0 then
@@ -156,7 +132,7 @@ begin
   end;
 end;
 
-procedure TChunk.init;
+procedure TDynamicByteArray.init;
 begin
   index := 0;
   count := 0;
@@ -170,5 +146,18 @@ end;
 
 
 
+
+{ TChunk }
+procedure TChunk.finalize;
+begin
+  OPCodes.Finalize;
+  ConstantPool.Finalize;
+end;
+
+procedure TChunk.init;
+begin
+   OPCodes.Init;
+   ConstantPool.Init;
+end;
 
 end.
