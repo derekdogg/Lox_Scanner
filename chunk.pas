@@ -16,6 +16,42 @@ interface
   Haha. Yeah, right.
 
 
+  I've tested this code by a button
+  
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  Chunk : TChunk;
+  p     : PByte;
+  i     : integer;
+begin
+  try
+    p := nil;
+    Chunk.Init;
+    i := Chunk.Add(1);
+    i := Chunk.Add(2);
+    i := Chunk.Add(3);
+    i := Chunk.Add(4);
+    i := Chunk.Add(5);
+    i := Chunk.Add(6);
+    i := Chunk.Add(7);
+    i := Chunk.Add(8);
+    i := Chunk.Add(9);  //<== new capacity and copy
+
+    for i := 0 to Chunk.Count-1 do
+    begin
+      p := Chunk.Byte(i);
+      memo1.Lines.add(inttostr(p^));
+    end;
+  finally
+    Chunk.Finalize;
+  end;
+end;
+
+Also, I have reportmemoryleaksonshutdown := true
+
+I wouldn't mind some review here though. As I have never done this kind of thing before.
+
+
 *)
 
 const
