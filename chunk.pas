@@ -32,8 +32,8 @@ type
     function  Count : integer;
     function  Add(const value : TSlotType) : integer;
     function  Item(const index : integer) : pSlotType;
-    procedure init;
-    procedure finalize;
+    constructor init;
+    procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
 
@@ -121,7 +121,7 @@ begin
   assert(FCapacity mod sizeof(TSlotType) = 0);
 end;
 
-procedure TDynamicArray.init;
+Constructor TDynamicArray.init;
 begin
   FfreeSpace := 0;
   FresizeCount := 0;
