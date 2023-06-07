@@ -15,35 +15,37 @@ uses Loxtypes;
 *)
 (*Note : obviously, you don't need to create your own dynamic arrays in delphi, but it's kind of fun to do it yourself.
   Haha. Yeah, right.
-
-
 *)
 
 const
-   MIN_CAPACITY = 8;
+   MIN_CAPACITY = 1;
+   INCREMENT_CAPACITY_BY = 2;
 
 type
 
- TDynamicByteArray = record
-    index       : integer;
-    count       : integer;
-    oldcapacity : integer;
-    capacity    : integer;
-    pCode       : pByte;
-    function Add(const value : byte) : integer;
-    function  Byte(const index : integer) : pByte;
-    procedure AllocateArray;
+ pSlotType = ^TSlotType;
+ TSlotType = integer;
+
+ TDynamicArray = record
+    index         : integer;
+    count         : integer;
+    prevcapacity  : integer;
+    capacity      : integer;
+    pItems        : pointer;
+    function IsFull : boolean;
+    function  Add(const value : TSlotType) : integer;
+    function  Item(const index : integer) : pSlotType;
+    procedure AllocateArray(var p : pointer; const size : integer);
     procedure init;
     procedure finalize;
-    function  AllocateNewArrayWithMoreCapacity : boolean;
-    Procedure CopyExistingElementsFromOldArrayToNewArray;
+    Procedure GrowArray;
     procedure GrowCapacity;
  end;
 
 
  TChunk = record
-   OPCodes      : TDynamicByteArray;
-   ConstantPool : TDynamicByteArray;
+   OPCodes      : TDynamicArray;
+   ConstantPool : TDynamicArray;
    procedure init;
    procedure finalize;
  end;
@@ -52,100 +54,79 @@ type
 implementation
 
 
-procedure TDynamicByteArray.AllocateArray;
+procedure TDynamicArray.AllocateArray(var p : pointer; const size : integer);
 begin
-  GetMem(pCode,Capacity);
-  fillchar(pCode^,Capacity,#0);
+  assert(p = nil);
+  getMem(p,size);
+  fillchar(p^,size,#0);
 end;
 
-function TDynamicByteArray.AllocateNewArrayWithMoreCapacity : boolean;
-begin
-  result := false;
-  if pCode = nil then exit;
-  growCapacity;
-  CopyExistingElementsFromOldArrayToNewArray;
-  result := true;
-end;
-
-
-function TDynamicByteArray.Add(const value : byte) : integer;
+procedure  TDynamicArray.GrowArray;
 var
-  p : pByte;
+  pCopyItems : pointer;
+begin
+  pCopyItems := nil;
+  if not isfull then exit;
+  GrowCapacity;
+  AllocateArray(pCopyItems,Capacity);
+  Move(pItems^, pCopyItems^, prevcapacity);  //copy existing memory into new memory;
+  FreeMem(pItems);                           //free the old memory
+  pItems := nil;                             //make the old memory nil
+  pItems := pCopyItems;                      // set the old memory to the new memory;
+end;
+
+
+function TDynamicArray.Add(const value : TSlotType) : integer;
+var
+  pIndex : pSlotType;
 begin
   result := -1;
-  inc(count);
-  if (count) > Capacity then
-  begin
-    if not AllocateNewArrayWithMoreCapacity then exit;
-  end;
-  p := Byte(Count-1);
-  if p <> nil then
-  begin
-    p^ := value;
-    result := Count-1;
-  end;
+  GrowArray;
+  pIndex  := Item(Count);
+  pIndex^ := value;
+  inc(Count);
+  result := Count-1;
 end;
 
-function TDynamicByteArray.Byte(const index: integer): pByte;
+function TDynamicArray.Item(const index: integer): pSlotType;
 begin
+  assert(capacity > 0);
+  assert(pItems <> nil);
+  assert((index * sizeof(pSlotType)) <= capacity);
   result := nil;
-  if (index <= capacity) and (index >= 0) then
+  result := @pItems^;
+  inc(result,index);
+end;
+
+procedure TDynamicArray.finalize;
+begin
+  if assigned(pItems) then
   begin
-    result := Pcode;
-    inc(result,index);
+    freeMem(pItems);
+    pItems := nil;
   end;
 end;
 
-procedure TDynamicByteArray.CopyExistingElementsFromOldArrayToNewArray;
-var
-  p : pByte;
+function TDynamicArray.IsFull : boolean;
 begin
-  GetMem(p,Capacity);             //get new memory
-  fillchar(p^,Capacity,#0);       //initialise new memory as 0
-  Move(pCode^, p^, oldcapacity);  //copy existing memory into new memory;
-  FreeMem(pCode);                 //free the old memory
-  pCode := nil;                   //make the old memory nil
-  pCode := p;                     // set the old memory to the new memory;
+  result := (count * sizeof(TSlotType)) = capacity
 end;
 
-
-procedure TDynamicByteArray.finalize;
+procedure TDynamicArray.growCapacity;
 begin
-  if assigned(pCode) then
-  begin
-    freeMem(pCode);
-    pCode := nil;
-  end;
+  prevCapacity := capacity;
+  capacity := capacity  * INCREMENT_CAPACITY_BY;
 end;
 
-
-procedure TDynamicByteArray.growCapacity;
+procedure TDynamicArray.init;
 begin
-  oldcapacity := capacity;
-  if capacity = 0 then
-  begin
-    capacity := MIN_CAPACITY;
-  end
-  else
-  begin
-    capacity := capacity  * 2;
-  end;
-end;
-
-procedure TDynamicByteArray.init;
-begin
+  pItems := nil;
   index := 0;
   count := 0;
-  capacity := MIN_CAPACITY;
-  pcode := nil;
-  AllocateArray;
+  capacity := MIN_CAPACITY * sizeof(TSlotType);
+  prevcapacity := capacity;
+  AllocateArray(pItems,capacity);
 end;
-
-
-
-
-
-
 
 { TChunk }
 procedure TChunk.finalize;
