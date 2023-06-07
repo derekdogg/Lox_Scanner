@@ -4,21 +4,10 @@ interface
 uses Loxtypes;
 
 
-(* Taken from crafting interpreters pp398 grow array - this hopefully mimics the c code close enough
-    1.Allocate a new array with more capacity.
-    2.Copy the existing elements from the old array to the new one.
-    3.Store the new capacity.
-    4.Delete the old array.
-    5.Update code to point to the new array.
-    6.Store the element in the new array now that there is room.
-    7.Update the count.
-*)
-(*Note : obviously, you don't need to create your own dynamic arrays in delphi, but it's kind of fun to do it yourself.
-  Haha. Yeah, right.
-*)
+(* Taken from crafting interpreters pp398 grow array - this hopefully mimics the c code close enough *)
 
 const
-   MIN_CAPACITY = 1;
+   MIN_CAPACITY = 8;
    INCREMENT_CAPACITY_BY = 2;
 
 type
@@ -26,20 +15,25 @@ type
  pSlotType = ^TSlotType;
  TSlotType = integer;
 
- TDynamicArray = record
-    index         : integer;
-    count         : integer;
-    prevcapacity  : integer;
-    capacity      : integer;
-    pItems        : pointer;
-    function IsFull : boolean;
-    function  Add(const value : TSlotType) : integer;
-    function  Item(const index : integer) : pSlotType;
+  TDynamicArray = record
+  private
+    FFreeSpace     : integer;
+    FResizeCount   : integer;
+    FIndex         : integer;
+    FCount         : integer;
+    FPrevcapacity  : integer;
+    FCapacity      : integer;
+    FItems         : pointer;
+    function  IsFull : boolean;
     procedure AllocateArray(var p : pointer; const size : integer);
-    procedure init;
-    procedure finalize;
     Procedure GrowArray;
     procedure GrowCapacity;
+  public
+    function  Count : integer;
+    function  Add(const value : TSlotType) : integer;
+    function  Item(const index : integer) : pSlotType;
+    procedure init;
+    procedure finalize;
  end;
 
 
@@ -61,6 +55,11 @@ begin
   fillchar(p^,size,#0);
 end;
 
+function TDynamicArray.Count: integer;
+begin
+  result := FCount;
+end;
+
 procedure  TDynamicArray.GrowArray;
 var
   pCopyItems : pointer;
@@ -68,11 +67,14 @@ begin
   pCopyItems := nil;
   if not isfull then exit;
   GrowCapacity;
-  AllocateArray(pCopyItems,Capacity);
-  Move(pItems^, pCopyItems^, prevcapacity);  //copy existing memory into new memory;
-  FreeMem(pItems);                           //free the old memory
-  pItems := nil;                             //make the old memory nil
-  pItems := pCopyItems;                      // set the old memory to the new memory;
+  AllocateArray(pCopyItems,FCapacity);
+  Move(FItems^, pCopyItems^, FPrevCapacity);  //copy existing memory into new memory;
+  FreeMem(FItems);                           //free the old memory
+  FItems := nil;                             //make the old memory nil
+  FItems := pCopyItems;                      // set the old memory to the new memory;
+
+  inc(FResizeCount); //<-- used for debug checking.
+  FFreeSpace := (FCapacity - FPrevCapacity) div sizeof(TSlotType);
 end;
 
 
@@ -82,50 +84,53 @@ var
 begin
   result := -1;
   GrowArray;
-  pIndex  := Item(Count);
+  pIndex  := Item(FCount);
   pIndex^ := value;
-  inc(Count);
-  result := Count-1;
+  inc(FCount);
+  result := FCount-1;
 end;
 
 function TDynamicArray.Item(const index: integer): pSlotType;
 begin
-  assert(capacity > 0);
-  assert(pItems <> nil);
-  assert((index * sizeof(pSlotType)) <= capacity);
+  assert(FCapacity > 0);
+  assert(FItems <> nil);
+  assert((FIndex * sizeof(pSlotType)) <= FCapacity);
   result := nil;
-  result := @pItems^;
+  result := @FItems^;
   inc(result,index);
 end;
 
 procedure TDynamicArray.finalize;
 begin
-  if assigned(pItems) then
+  if assigned(FItems) then
   begin
-    freeMem(pItems);
-    pItems := nil;
+    freeMem(FItems);
+    FItems := nil;
   end;
 end;
 
 function TDynamicArray.IsFull : boolean;
 begin
-  result := (count * sizeof(TSlotType)) = capacity
+  result := (FCount * sizeof(TSlotType)) = FCapacity
 end;
 
 procedure TDynamicArray.growCapacity;
 begin
-  prevCapacity := capacity;
-  capacity := capacity  * INCREMENT_CAPACITY_BY;
+  FPrevCapacity := FCapacity;
+  FCapacity := FCapacity  * INCREMENT_CAPACITY_BY;
+  assert(FCapacity mod sizeof(TSlotType) = 0);
 end;
 
 procedure TDynamicArray.init;
 begin
-  pItems := nil;
-  index := 0;
-  count := 0;
-  capacity := MIN_CAPACITY * sizeof(TSlotType);
-  prevcapacity := capacity;
-  AllocateArray(pItems,capacity);
+  FfreeSpace := 0;
+  FresizeCount := 0;
+  FItems := nil;
+  Findex := 0;
+  Fcount := 0;
+  Fcapacity := MIN_CAPACITY * sizeof(TSlotType);
+  Fprevcapacity := Fcapacity;
+  AllocateArray(FItems,Fcapacity);
 end;
 
 { TChunk }
