@@ -1,4 +1,4 @@
-# Lox Scanner written in pascal
+# Lox Scanner written in pascal (i.e. Delphi® 2007 )
 
 basic scanner which parses text and spits out lox tokens. 
 Code works by 
