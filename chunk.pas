@@ -7,17 +7,16 @@ uses Loxtypes;
 (* Taken from crafting interpreters pp398 grow array - this hopefully mimics the c code close enough *)
 
 const
-   MIN_CAPACITY = 8;
-   INCREMENT_CAPACITY_BY = 2;
+  MIN_CAPACITY = 4;
+  INCREMENT_CAPACITY_BY = 2;
 
 type
 
- pSlotType = ^TSlotType;
- TSlotType = integer;
+  pSlotType = ^TSlotType;
+  TSlotType = integer;
 
   TDynamicArray = record
   private
-    FFreeSpace     : integer;
     FResizeCount   : integer;
     FIndex         : integer;
     FCount         : integer;
@@ -29,6 +28,8 @@ type
     Procedure GrowArray;
     procedure GrowCapacity;
   public
+    function ResizeCount : integer;
+    function  FreeSpace : integer;
     function  Count : integer;
     function  Add(const value : TSlotType) : integer;
     function  Item(const index : integer) : pSlotType;
@@ -53,6 +54,7 @@ begin
   assert(p = nil);
   getMem(p,size);
   fillchar(p^,size,#0);
+
 end;
 
 function TDynamicArray.Count: integer;
@@ -74,7 +76,6 @@ begin
   FItems := pCopyItems;                      // set the old memory to the new memory;
 
   inc(FResizeCount); //<-- used for debug checking.
-  FFreeSpace := (FCapacity - FPrevCapacity) div sizeof(TSlotType);
 end;
 
 
@@ -100,6 +101,11 @@ begin
   inc(result,index);
 end;
 
+function TDynamicArray.ResizeCount: integer;
+begin
+  result := FResizeCount;
+end;
+
 procedure TDynamicArray.finalize;
 begin
   if assigned(FItems) then
@@ -107,6 +113,13 @@ begin
     freeMem(FItems);
     FItems := nil;
   end;
+end;
+
+function TDynamicArray.FreeSpace: integer;
+begin
+  result := 0;
+  if FCapacity = 0 then exit;
+  result := (FCapacity - (FCount * sizeof(pSlotType))) div Sizeof(pSLotType);
 end;
 
 function TDynamicArray.IsFull : boolean;
@@ -123,7 +136,6 @@ end;
 
 Constructor TDynamicArray.init;
 begin
-  FfreeSpace := 0;
   FresizeCount := 0;
   FItems := nil;
   Findex := 0;
