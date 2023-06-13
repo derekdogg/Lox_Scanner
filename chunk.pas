@@ -6,9 +6,6 @@ uses Loxtypes;
 
 (* Taken from crafting interpreters pp398 grow array - this hopefully mimics the c code close enough *)
 
-const
-  MIN_CAPACITY = 4;
-  INCREMENT_CAPACITY_BY = 2;
 
 type
 
@@ -16,6 +13,9 @@ type
   TSlotType = integer;
 
   TDynamicArray = record
+  const
+    MIN_CAPACITY = 2;
+    INCREMENT_CAPACITY_BY = 2;
   private
     FResizeCount   : integer;
     FIndex         : integer;
@@ -23,15 +23,16 @@ type
     FPrevcapacity  : integer;
     FCapacity      : integer;
     FItems         : pointer;
-    function  IsFull : boolean;
     procedure AllocateArray(var p : pointer; const size : integer);
     Procedure GrowArray;
     procedure GrowCapacity;
   public
+    function Capacity : integer;
+    function IsFull : boolean;
     function ResizeCount : integer;
-    function  FreeSpace : integer;
-    function  Count : integer;
-    function  Add(const value : TSlotType) : integer;
+    function FreeSpace : integer;
+    function Count : integer;
+    function Add(const value : TSlotType) : integer;
     function  Item(const index : integer) : pSlotType;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
@@ -47,6 +48,12 @@ type
 
 
 implementation
+
+
+function TDynamicArray.Capacity : integer;
+begin
+  result := FCapacity;
+end;
 
 
 procedure TDynamicArray.AllocateArray(var p : pointer; const size : integer);
@@ -83,20 +90,18 @@ function TDynamicArray.Add(const value : TSlotType) : integer;
 var
   pIndex : pSlotType;
 begin
-  result := -1;
+  result := FCount;
   GrowArray;
   pIndex  := Item(FCount);
   pIndex^ := value;
   inc(FCount);
-  result := FCount-1;
 end;
 
 function TDynamicArray.Item(const index: integer): pSlotType;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
-  assert((FIndex * sizeof(pSlotType)) <= FCapacity);
-  result := nil;
+  assert((FIndex * sizeof(TSlotType)) <= FCapacity);
   result := @FItems^;
   inc(result,index);
 end;
@@ -119,7 +124,7 @@ function TDynamicArray.FreeSpace: integer;
 begin
   result := 0;
   if FCapacity = 0 then exit;
-  result := (FCapacity - (FCount * sizeof(pSlotType))) div Sizeof(pSLotType);
+  result := (FCapacity - (FCount * sizeof(TSlotType))) div Sizeof(TSLotType);
 end;
 
 function TDynamicArray.IsFull : boolean;
@@ -142,6 +147,7 @@ begin
   Fcount := 0;
   Fcapacity := MIN_CAPACITY * sizeof(TSlotType);
   Fprevcapacity := Fcapacity;
+
   AllocateArray(FItems,Fcapacity);
 end;
 
