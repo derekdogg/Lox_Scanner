@@ -14,10 +14,12 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    Button4: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     { Private declarations }
     prevbuffer,buffer : pointer;
@@ -34,16 +36,20 @@ var
 
 implementation
 
-uses loxtypes,charIterator,LineIterator,scanner, IntegerArray, DoubleArray, Stacks, chunk;
+uses loxtypes,charIterator,LineIterator,scanner, IntegerArray, DoubleArray, Stacks, chunk, TokenArray;
 
 {$R *.dfm}
 
 procedure TForm1.BtnScanClick(Sender: TObject);
 var
   Scanner : TScanner;
-  I : integer;
-  Token : TToken;
+  i,j : integer;
+  Token : pToken;
+  p : pChar;
+  text : string;
+  ln : String;
 begin
+
   Memo2.lines.clear;
 
   Scanner.Init(Memo1.Lines.Text);
@@ -51,10 +57,31 @@ begin
   Memo2.Lines.BeginUpdate;
   for i := 0 to Scanner.TokenCount-1  do
   begin
-     token := Scanner.Tokens[i];
-     Memo2.Lines.Add(TTokenName[token.kind] + '=' + token.text);
-  end;
+     token := Scanner.Tokens.getItem(i);
 
+     text := Scanner.ln.items[Token.Line].text;
+     text := copy(text,token.Start,token.length);
+     Memo2.Lines.Add(format('------- TOKENS INFO %d -------------',[i]));
+     Memo2.Lines.Add(cTab + 'Token item size : ' + inttostr(Scanner.tokens.ItemSize));
+     Memo2.Lines.Add(cTab + 'Tokens Resize Count : ' + inttostr(Scanner.tokens.resizecount));
+     Memo2.Lines.Add(cTab + 'Tokens Capacity : ' + inttostr(Scanner.tokens.Capacity));
+     Memo2.Lines.Add(cTab + 'Tokens Kb : ' + floattostr(Scanner.tokens.Capacity/1000));
+     Memo2.Lines.Add(cTab + 'Tokens Slot Count : ' + inttostr(Scanner.tokens.SlotCount));
+
+
+
+
+     Memo2.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
+
+     Memo2.Lines.Add(cTab + TTokenName[token.kind] + '=' + text);
+     Memo2.Lines.Add(cTab + 'Line : ' + inttostr(Token.Line));
+     Memo2.Lines.Add(cTab + 'Length : ' + inttostr(Token.Length));
+     Memo2.Lines.Add(cTab + 'Starts at : ' + inttostr(Token.Start));
+
+     Memo2.Lines.Add(cTab + 'Ends   at : ' + inttostr(Token.Start + Token.Length-1));
+     Memo2.lines.Add(cCr);
+  end;
+  Scanner.finalize;
   Memo2.Lines.EndUpdate;
 end;
 
@@ -147,7 +174,7 @@ end;
 procedure TForm1.Button3Click(Sender: TObject);
 var
   Chunk : TChunk;
-  Iter :  TChunkIterator;
+  Iter :  TInstructionPointer;
 
 begin
   Chunk.Init;
@@ -165,6 +192,14 @@ begin
 
   Chunk.Finalize;
 
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+var
+  Tokens : TTokens;
+  Token  : TToken;
+begin
+ 
 end;
 
 end.
