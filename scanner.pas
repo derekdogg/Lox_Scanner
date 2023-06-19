@@ -2,7 +2,7 @@ unit scanner;
 
 interface
 uses
-  sysutils,LoxTypes, charIterator,LineIterator;
+  sysutils,LoxTypes, charIterator,LineIterator,TokenArray;
 
 type
 
@@ -42,6 +42,7 @@ type
     function ScanLine(
       const LineRecord : TLine) : TTokens;
     procedure Init(const text : string);
+    procedure finalize;
     procedure Scan;
   end;
 
@@ -57,6 +58,7 @@ implementation
     ln.BuildIndex(Text);
     TokenIndex := -1;
     TokenCount := 0;
+    tokens.Init;
   end;
 
 
@@ -162,13 +164,10 @@ begin
     result := MatchChar(ln.chars.PeekTo(WordEnd+1),open_bracket);
 end;
 
-
 function TScanner.MatchChar(const c : char; const ascii : TAscii) : boolean;
 begin
   result := ord(c) = Ord(ascii);
 end;
-
-
 
 function TScanner.MakeStringToken : TToken;
 var
@@ -181,16 +180,17 @@ begin
 
   start := ln.chars.index; idx := start;
 
-  result.text := ln.chars.current;
+  //result.text := ln.chars.current;
   while (ln.chars.next <> cNull) and (Match(quotes) = false) do
   begin
-    result.text := result.text + ln.chars.current;
+    //result.text := result.text + ln.chars.current;
     inc(idx);
   end;
-
+          
+          
   if Match(Quotes) then
   begin
-     result.text := result.text + ln.chars.current;
+     //result.text := result.text + ln.chars.current;
      result.kind := tkQuotes;
      result.start := start;
      result.length := idx+1;
@@ -199,7 +199,7 @@ begin
   end;
 
   //unterminated string, i.e. the current char we're on is not a "
-  result.text := result.text + ln.chars.current;
+  //result.text := result.text + ln.chars.current;
   result.kind := tkUnterminatedQuotes;
   result.start := start;
   result.length := ln.chars.index-start;
@@ -244,11 +244,11 @@ begin
   result.start := ln.chars.index; //set the result current index to current char index;
   result.length := 1;
   result.line := ln.lineIndex;
-  result.Text := currentChar;
+//  result.Text := currentChar;
   while (ln.chars.Next <> cNull) and allowableWordChar(ln.chars.current) do  //start looping over the next chars until we break at a non allowable char (i.e. @)
   begin
       inc(result.length);
-      result.Text := Result.Text + ln.chars.current;
+      //result.Text := Result.Text + ln.chars.current;
   end;
 
   if (result.length >= 1) and (MatchSpecialChar(ln.chars.current) or CurrentCharIsNumber) then
@@ -270,7 +270,7 @@ begin
     result.length := length(TTokenName[TokenKind]);
     result.line := ln.LineIndex;
     result.Kind := tokenKind;
-    result.text := TTokenName[tokenKind];
+    //result.text := TTokenName[tokenKind];
   end;
 end;
 
@@ -307,6 +307,11 @@ begin
   result := charIsNumber(ln.chars.current);
 end;
 
+procedure TScanner.finalize;
+begin
+  tokens.Finalize;
+end;
+
 function TScanner.charIsNumber(const c : char) : boolean;
 begin
   result := MatchAny(c,[zero,one,two,three,four,five,six,seven,eight,nine]);
@@ -321,7 +326,7 @@ function TScanner.MakeNumberToken : TToken;
     while charIsNumber(ln.chars.next) do
     begin
       inc(result.length);
-      result.text := result.text + ln.chars.current;
+      //result.text := result.text + ln.chars.current;
     end;
   end;
 
@@ -329,7 +334,7 @@ begin
   result := nullToken;
   if not currentCharIsNumber then exit;
 
-  result.text := ln.chars.current;
+  //result.text := ln.chars.current;
   result.Kind := tkNumber;
   result.start:= ln.chars.index;
   result.line:= ln.lineindex;
@@ -340,7 +345,7 @@ begin
 
   if (Match(dot)) and charIsNumber(ln.Chars.PeekNext) then //we sit on a '.' and the next char is 1234567890
   begin
-    result.text := result.text + ln.chars.current;
+    //result.text := result.text + ln.chars.current;
     inc(result.length);
     ScanNumber;
   end;
@@ -358,7 +363,7 @@ begin
    result.start:= ln.chars.index;
    result.length:= 1;
    result.line:= ln.lineIndex;
-   result.text := TTokenName[Kind];
+   //result.text := TTokenName[Kind];
 end;
 
 
@@ -368,7 +373,7 @@ begin
   result.start:= ln.chars.index;
   result.length:= 2;
   result.line:= ln.lineIndex;
-  result.text := TTokenName[tkGreaterThanEqual];
+  //result.text := TTokenName[tkGreaterThanEqual];
 end;
 
 function TScanner.MakeLessThanOrEqualToken : TToken;
@@ -377,7 +382,7 @@ begin
   result.start:= ln.chars.index;
   result.length:= 2;
   result.line:= ln.lineIndex;
-  result.text := TTokenName[tkLessThanEqual];
+  //result.text := TTokenName[tkLessThanEqual];
 end;
 
 function TScanner.MakeEqualEqualToken : TToken;
@@ -386,7 +391,7 @@ begin
   result.start:= ln.chars.index;
   result.length:= 2;
   result.line:= ln.lineIndex;
-  result.text := TTokenName[tkEqualEqual];
+  //result.text := TTokenName[tkEqualEqual];
 end;
 
 function TScanner.MakeBangEqualToken : TToken;
@@ -395,7 +400,7 @@ begin
   result.start:= ln.chars.index;
   result.length:= 2;
   result.line:= ln.lineIndex;
-  result.text := TTokenName[tkBangEqual];
+  //result.text := TTokenName[tkBangEqual];
 end;
 
 
@@ -586,7 +591,10 @@ function TScanner.MakeToken : TToken;
 
         ord(lowercase_t), ord(uppercase_t) :
         begin
-          Token := MakeReservedOrNormalWordToken(tkTrue);
+           case ord(ln.chars.PeekNext) of
+            ord(lowercase_h),ord(uppercase_h) : Token := MakeReservedOrNormalWordToken(tkThis);
+            ord(lowercase_r),ord(uppercase_r) : Token := MakeReservedOrNormalWordToken(tkTrue);
+           end;
         end;
 
         ord(lowercase_v), ord(uppercase_v) :
@@ -644,7 +652,8 @@ end;
         if (Token.kind <> tkNull) then
         begin
           inc(TokenIndex);
-          Tokens[TokenIndex] := Token;
+//          Tokens[TokenIndex] := Token;
+          Tokens.add(Token);
           inc(TokenCount);
         end;
       end;
