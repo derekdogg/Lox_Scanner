@@ -4,7 +4,7 @@ interface
 
 
 const
-  cMaxTokens = 10000;
+//  cMaxTokens = 10000;
   cMaxLines = 1000;
   cCR = #13;     //- Carriage return (ASCII)
   cLF = #10;     //- Line feed (ASCII)
@@ -17,6 +17,23 @@ const
 
 
 type
+
+  TPrecedence =(
+    PREC_NONE,
+    PREC_ASSIGNMENT,  // =
+    PREC_OR,          // or
+    PREC_AND,         // and
+    PREC_EQUALITY,    // == !=
+    PREC_COMPARISON,  // < > <= >=
+    PREC_TERM,        // + -
+    PREC_FACTOR,      // * /
+    PREC_UNARY,       // ! -
+    PREC_CALL,        // . ()
+    PREC_PRIMARY
+);
+
+
+
   TAscii = (
     Null = 0,
     Space	=	32,
@@ -116,7 +133,28 @@ Curly_Closing_brace	=	125,
 tilde	=	126,
 Delete	=	127);
 
+(*
+typedef enum {
+  // Single-character tokens.
+  TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
+  TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
+  TOKEN_COMMA, TOKEN_DOT, TOKEN_MINUS, TOKEN_PLUS,
+  TOKEN_SEMICOLON, TOKEN_SLASH, TOKEN_STAR,
+  // One or two character tokens.
+  TOKEN_BANG, TOKEN_BANG_EQUAL,
+  TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
+  TOKEN_GREATER, TOKEN_GREATER_EQUAL,
+  TOKEN_LESS, TOKEN_LESS_EQUAL,
+  // Literals.
+  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
+  // Keywords.
+  TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE,
+  TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_NIL, TOKEN_OR,
+  TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
+  TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE,
 
+  TOKEN_ERROR, TOKEN_EOF
+} TokenType; *)
 
 TTokenKind = (
   tkNull,
@@ -124,7 +162,7 @@ TTokenKind = (
   tkQuotes,
   tkUnterminatedQuotes,
   tkopen_bracket,
-  tkClose_Bracket,
+  tkclose_Bracket,
   tkAsterisk,
   tkPlus,
   tkComma,
@@ -157,14 +195,15 @@ TTokenKind = (
   tkOpenBrace,
   tkCloseBrace,
   tkInteger,
-  tkunderscore);
+  tkunderscore,
+  tkThis);
 
  const
 
 
 
 
-  TTokenName : Array[tkNull..tkUnderscore] of string = (
+  TTokenName : Array[tkNull..tkThis] of string = (
   'Null',
   'Number',
   'Quotes',
@@ -203,21 +242,23 @@ TTokenKind = (
   'CurlyOpenBrace',
   'CurlyCloseBrace',
   'Integer',
-  'underscore');
+  'underscore',
+  'this');
 
 
 type
 
-
+  pToken = ^TToken;
   TToken = record
     kind: TTokenKind;
-    start: integer;
-    length: integer;
-    line: integer;
-    text : string;
+    start: word;
+    length: word;
+    line: word;
   end;
 
-  TTokens = Array[0..cMaxTokens] of TToken;
+//  TTokens = Array[0..cMaxTokens] of TToken;
+
+
 
   TOpCodes = (
     OP_NULL,
@@ -361,7 +402,48 @@ const
 
 
 
+
 implementation
 
+(*
+
+procedure parsePrecedence(precedence: TPrecedence);
+begin
+
+  advance();
+  var prefixRule: ParseFn := getRule(parser.previous.typ).prefix;
+  if not Assigned(prefixRule) then
+  begin
+    error('Expect expression.');
+    Exit;
+  end;
+  //< precedence-body
+end;
+procedure expression();
+begin
+  parsePrecedence(PREC_ASSIGNMENT);
+end;
+
+procedure grouping(canAssign : boolean);
+begin
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+end;
+
+
+type
+  ParseRule = record
+    prefix: Pointer;
+    infix: Pointer;
+    precedence: Integer;
+  end;
+
+const
+  rules: array[tkopen_bracket..tkclose_Bracket] of ParseRule = (
+    (prefix: @grouping; infix: @call; precedence: PREC_CALL),
+    (prefix: nil; infix: nil; precedence: PREC_NONE)
+  );
+
+*)
 
 end.
