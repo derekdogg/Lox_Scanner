@@ -7,7 +7,7 @@ uses LOXTypes;
 
 type
 
- TParseFn = procedure(const canAssign : boolean) of object;
+ TParseFn = procedure(const canAssign : boolean);
 
  TPrecedence = (
   PREC_NONE,
@@ -31,18 +31,17 @@ type
     precedence: TPrecedence;
   end;
 
-  TCompiler = record
-    procedure grouping(const canAssign : boolean);
-    function getRule(TokenKind : TTokenKind) : TParseRule;
-    procedure consume(const Token : TTokenKind; const Message : String);
-    procedure expression;
-    procedure call(const canAssign : boolean);
-  end;
+
+  procedure grouping(const canAssign : boolean);
+  function getRule(TokenKind : TTokenKind) : TParseRule;
+  procedure consume(const Token : TTokenKind; const Message : String);
+  procedure expression;
+  procedure call(const canAssign : boolean);
 
 
 implementation
 
-function TCompiler.getRule(TokenKind : TTokenKind) : TParseRule;
+function getRule(TokenKind : TTokenKind) : TParseRule;
 const
 
   TParseRules: array[tknull..tkthis] of TParseRule = (
