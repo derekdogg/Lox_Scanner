@@ -40,6 +40,23 @@ type
  end;
 
 
+ TTokenIterator = record
+ private
+   FIndex : integer;
+   FTokens : TTokens;
+   FCurrent : pToken;
+ public
+   function Current : pToken;
+   function Count : integer;
+   function First : pToken;
+   function Next  : pToken;
+   function Prev  : pToken;
+   function Last  : pToken;
+   procedure init(const Tokens : TTokens);
+ end;
+
+
+
 implementation
 
 function  TTokens.ItemSize : integer;
@@ -167,5 +184,71 @@ begin
   AllocateArray(FItems,Fcapacity);
 end;
 
+
+  function TTokenIterator.Count : integer;
+  begin
+    result := FTokens.Count;
+  end;
+
+  function TTokenIterator.First : pToken;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+    FIndex := 0;
+    FCurrent := FTokens.GetItem(FIndex);
+    result := FCurrent;
+  end;
+
+  function TTokenIterator.Last  : pToken;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+    FIndex := FTokens.Count-1;
+    FCurrent := FTokens.GetItem(FIndex);
+    result := FCurrent;
+  end;
+
+  function TTokenIterator.Next  : pToken;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+
+    if FIndex = -1 then
+    begin
+      result := First;
+      exit;
+    end;
+
+    inc(FIndex);
+    if FIndex < FTokens.Count-1 then
+    begin
+      FCurrent := FTokens.GetItem(FIndex);
+      result := FCurrent;
+    end;
+  end;
+
+  function TTokenIterator.Prev  : pToken;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+    if FIndex > 0 then
+    begin
+      dec(FIndex);
+      FCurrent := FTokens.GetItem(FIndex);
+      result := FCurrent;
+    end;
+  end;
+
+   function TTokenIterator.Current : pToken;
+   begin
+     result := FCurrent;
+   end;
+
+  procedure TTokenIterator.init(const Tokens : TTokens);
+  begin
+    FTokens := Tokens;
+    FIndex := -1;
+    FCurrent := nil;
+  end;
 
 end.
