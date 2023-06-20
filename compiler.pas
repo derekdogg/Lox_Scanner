@@ -124,6 +124,7 @@ end;
 constructor TCompiler.Create(Const Tokens : TTokenIterator);
 begin
   FTokens := Tokens;
+  init; //this started off as a record, which is why I have init here. It's only a class because of the addition of rules (which are method pointers).
 end;
 
 procedure TCompiler.CreateRuleForOpen_bracket;
