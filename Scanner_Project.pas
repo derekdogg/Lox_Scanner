@@ -14,12 +14,14 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
-    Button4: TButton;
+    Button5: TButton;
+    Memo3: TMemo;
     procedure BtnScanClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   private
     { Private declarations }
     prevbuffer,buffer : pointer;
@@ -36,7 +38,7 @@ var
 
 implementation
 
-uses loxtypes,charIterator,LineIterator,scanner, IntegerArray, DoubleArray, Stacks, chunk, TokenArray;
+uses loxtypes,charIterator,LineIterator,scanner, IntegerArray, DoubleArray, Stacks, chunk, TokenArray, compiler;
 
 {$R *.dfm}
 
@@ -48,8 +50,14 @@ var
   p : pChar;
   text : string;
   ln : String;
+  Compiler : TCompiler;
+  Tokens : TTokenIterator;
+  Iter :  TInstructionPointer;
+  constantIndex : byte;
+  value : pDouble; //represents a constant
+  ByteCode : string;
 begin
-
+  try
   Memo2.lines.clear;
 
   Scanner.Init(Memo1.Lines.Text);
@@ -81,14 +89,50 @@ begin
      Memo2.Lines.Add(cTab + 'Ends   at : ' + inttostr(Token.Start + Token.Length-1));
      Memo2.lines.Add(cCr);
   end;
-  Scanner.finalize;
   Memo2.Lines.EndUpdate;
+
+
+  //try compiler to see what happens;
+   Memo3.Lines.Clear;
+   Compiler := TCompiler.Create(Scanner);
+   try
+     Compiler.expression; //???
+
+     Iter.Init(Compiler.Chunks);
+     Memo3.Lines.add('Bytes : ' + inttostr(Iter.ByteCount));
+     Memo3.Lines.add('Constants : ' + inttostr(Iter.ConstantCount));
+
+     While Iter.Next <> nil do
+     begin
+        ByteCode := TOP_Code_name[TOpCodes(Iter.Current^)];
+        if (Iter.Current^ = byte(OP_CONSTANT)) then
+        begin
+          if Iter.Next <> nil then
+          begin
+            constantIndex := Iter.Current^;
+            value := Iter.Constant(constantIndex);
+            ByteCode := ByteCode + '=' + floattostr(value^);
+          end;
+        end;
+
+        Memo3.Lines.Add(ByteCode);
+     end;
+   finally
+     Compiler.Free;
+   end;
+ 
+
+
+  finally
+    Scanner.finalize;
+  end;
+
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
   Integers : TDoubles;
-  p     : pSlotType;
+  p     : pDouble;
   i     : integer;
   idx   : integer;
 
@@ -173,24 +217,51 @@ end;
 
 procedure TForm1.Button3Click(Sender: TObject);
 var
-  Chunk : TChunk;
+  Chunk : TChunks;
   Iter :  TInstructionPointer;
-
+  constantIndex : byte;
+  value : pDouble; //represents a constant
+  DIter : TDoubleIterator;
 begin
-  Chunk.Init;
-  Chunk.AddReturn;
-  Chunk.AddConstant(12.12);
-  Chunk.AddReturn;
-  Chunk.AddCLOSE_UPVALUE;
-  Iter.Init(Chunk);
+  try
+    Chunk.Init;
+  //Chunk.AddReturn;
+    Chunk.AddConstant(12.12);  //2 byte
+    Chunk.AddADD;
+    Chunk.AddConstant(45);     //2 byte
+    Chunk.AddReturn;           //1 byte
+    Chunk.AddCLOSE_UPVALUE;    //1 byte
+    Chunk.AddConstant(55);     //2 byte
 
-  While Iter.Next <> OP_NULL do
+
+ (* DIter.Init(Chunk.Constants);
+  While DIter.MoveNext <> nil do
   begin
-    Memo1.Lines.Add('Current : ' + TOP_Code_name[Iter.Current]);
-    Memo1.Lines.Add('Peek next : ' + TOP_Code_name[Iter.PeekNext]);
+     Memo1.Lines.Add('Current : ' + floatToStr(DIter.Current^));
   end;
+  exit;*)
 
-  Chunk.Finalize;
+  Iter.Init(Chunk);
+  Memo1.Lines.add('Bytes : ' + inttostr(Iter.ByteCount));
+  Memo1.Lines.add('Constants : ' + inttostr(Iter.ConstantCount));
+
+  While Iter.Next <> nil do
+  begin
+    Memo1.Lines.Add('Current : ' + TOP_Code_name[TOpCodes(Iter.Current^)]);
+    if (Iter.Current^ = byte(OP_CONSTANT)) then
+    begin
+       Memo1.Lines.Add('Constant added');
+       if Iter.Next <> nil then
+       begin
+         constantIndex := Iter.Current^;
+         value := Iter.Constant(constantIndex);
+         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + floattostr(value^));
+       end;
+    end;
+  end;
+  finally
+    Chunk.Finalize;
+  end;
 
 end;
 
@@ -199,9 +270,34 @@ var
   Tokens : TTokens;
   Token  : TToken;
 begin
- 
+
+end;
+
+
+procedure TForm1.Button5Click(Sender: TObject);
+type
+    TValueType = (tkNumber, tkBoolean, tkBytes);
+    TValueRecord = record
+      Kind : TValueType;
+      case tp : TValueType of
+        tkNumber : (Number: Double);
+        tkBoolean: (True  : boolean);
+        tkBytes  : (bytes : array[0..7] of byte);
+    end;
+
+var
+  value : TValueRecord;
+begin
+  value.Kind := tkNumber;
+  value.Number := 201;
+  //  d := 125.56;
+
+//  v := NumberVal(d);
+
+//  Memo2.lines.add('value : ' + floattostr(v.number));
 end;
 
 end.
+
 
 

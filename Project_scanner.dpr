@@ -8,7 +8,10 @@ uses
   ByteArray in 'ByteArray.pas',
   DoubleArray in 'DoubleArray.pas',
   Stacks in 'Stacks.pas',
-  Exceptions in 'Exceptions.pas';
+  Exceptions in 'Exceptions.pas',
+  vm in 'vm.pas',
+  TokenArray in 'TokenArray.pas',
+  compiler in 'compiler.pas';
 
 {$R *.res}
 

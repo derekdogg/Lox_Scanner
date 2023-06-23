@@ -11,17 +11,23 @@ type
     Tokens : TTokens;
     TokenCount : integer;
     ln : TLineIterator;
+    function MakeToken : TToken;
+
+    function MakeWordToken : TToken;
+    function MakeStringToken : TToken;
+    function MakeEOFToken : TToken;
     function MakeBangEqualToken : TToken;
     function MakeGreaterThanOrEqualToToken : TToken;
     function MakeLessThanOrEqualToken : TToken;
     function MakeEqualEqualToken : TToken;
     function MakeSingleToken(const Kind : TTokenKind) : TToken;
+    function MakeNumberToken : TToken;
     function CurrentCharIsNumber : boolean;
     function charIsNumber(const c : char) : boolean;
     function MatchAny(const c : char; const Any : Array of TAscii) : boolean;
     function MatchChar(const c : char; const ascii : TAscii) : boolean;
     function Match(const Ascii : TAscii) : boolean;
-    function MakeNumberToken : TToken;
+
     function NullToken : TToken;
     function GetReserverdWordToken(const TokenKind : TTokenKind) : TToken;
     function MakeReservedOrNormalWordToken(tokenKind : TTokenKind) : TToken;
@@ -29,15 +35,14 @@ type
     function MatchSpecialChar(const c : char) : boolean;
 
     function SkipWhiteSpace : boolean;
-    function MakeWordToken : TToken;
-    function MakeStringToken : TToken;
+
     function LineLength : Integer;
     function SpaceBeforeWordStart(const WordStart : integer) : boolean;
     function SpaceAfterWordEnd(const WordEnd : integer) : boolean;
     function OpenBracketAfterWordEnd(const WordEnd : integer) : boolean;
     function MatchKeyWord(const word : String) : boolean;
     function CheckKeyWord(const word : String) : boolean;
-    function MakeToken : TToken;
+
     function CharInAsiiSubset : Boolean;
     function ScanLine(
       const LineRecord : TLine) : TTokens;
@@ -357,6 +362,14 @@ begin
   end;
 end;
 
+function TScanner.MakeEOFToken;
+begin
+   result.Kind := TkEOF;
+   result.start:= ln.chars.TextLength+1;  //because whatever the current length is we will add this onto it.
+   result.length:= 1;
+   result.line:= ln.lineIndex;
+end;
+
 function TScanner.MakeSingleToken(const Kind : TTokenKind) : TToken;
 begin
    result.Kind := Kind;
@@ -365,7 +378,6 @@ begin
    result.line:= ln.lineIndex;
    //result.text := TTokenName[Kind];
 end;
-
 
 function TScanner.MakeGreaterThanOrEqualToToken : TToken;
 begin
@@ -451,9 +463,15 @@ function TScanner.MakeToken : TToken;
           Token := MakeSingleToken(tkdot);
         end;
 
+        ord(slash) : begin
+           Token := MakeSingleToken(tkSlash);
+        end;
+
         ord(underscore) : begin
           //Token.Kind := tkunderscore;
-        end; 
+        end;
+
+
 
         //!,!=
         ord(bang) : begin
@@ -467,6 +485,9 @@ function TScanner.MakeToken : TToken;
              Token := MakeSingleToken(tkBang);
            end;
         end;
+
+
+
 
         //=, ==
         ord(equal) : begin
@@ -679,19 +700,26 @@ begin
 
 end;
 
+
 procedure TScanner.Scan;
 var
   Line : TLine;
+  Token : TToken;
 begin
   While ln.HasNext do
   begin
     Line := ln.Next;
     ScanLine(Line);
   end;
+  //finish of the tokens with an EOF token. This is important later when compiling.
+  Token := makeEOFToken;
+  Tokens.add(Token);
+  inc(TokenCount);
 end;
 
 
 end.
+
 
 
 

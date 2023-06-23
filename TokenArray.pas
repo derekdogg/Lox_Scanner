@@ -45,13 +45,19 @@ type
    FIndex : integer;
    FTokens : TTokens;
    FCurrent : pToken;
+   FPrevious : pToken;
  public
+   function Index : integer;
    function Current : pToken;
+   function Previous : pToken;
+
    function Count : integer;
-   function First : pToken;
-   function Next  : pToken;
-   function Prev  : pToken;
-   function Last  : pToken;
+   function MoveFirst : pToken;
+   function MoveNext  : pToken;
+   function peekNext : pToken;
+   function MovePrev  : pToken;
+   function PeekPrev : pToken;
+   function MoveLast  : pToken;
    procedure init(const Tokens : TTokens);
  end;
 
@@ -190,44 +196,49 @@ end;
     result := FTokens.Count;
   end;
 
-  function TTokenIterator.First : pToken;
+  function TTokenIterator.MoveFirst : pToken;
   begin
     result := nil;
     if not FTokens.Count > 0 then exit;
     FIndex := 0;
     FCurrent := FTokens.GetItem(FIndex);
+    FPrevious := nil;
     result := FCurrent;
   end;
 
-  function TTokenIterator.Last  : pToken;
+  function TTokenIterator.MoveLast  : pToken;
   begin
     result := nil;
     if not FTokens.Count > 0 then exit;
     FIndex := FTokens.Count-1;
     FCurrent := FTokens.GetItem(FIndex);
+    FPrevious := PeekPrev;
     result := FCurrent;
   end;
 
-  function TTokenIterator.Next  : pToken;
+  function TTokenIterator.MoveNext  : pToken;
   begin
     result := nil;
     if not FTokens.Count > 0 then exit;
 
     if FIndex = -1 then
     begin
-      result := First;
+
+      result := MoveFirst;
+      //FPrevious := Current;
       exit;
     end;
 
     inc(FIndex);
-    if FIndex < FTokens.Count-1 then
+    if FIndex < FTokens.Count then
     begin
+      FPrevious := FCurrent;
       FCurrent := FTokens.GetItem(FIndex);
       result := FCurrent;
     end;
   end;
 
-  function TTokenIterator.Prev  : pToken;
+  function TTokenIterator.MovePrev  : pToken;
   begin
     result := nil;
     if not FTokens.Count > 0 then exit;
@@ -235,20 +246,61 @@ end;
     begin
       dec(FIndex);
       FCurrent := FTokens.GetItem(FIndex);
+      FPrevious := PeekPrev;
       result := FCurrent;
     end;
   end;
+
+  function TTokenIterator.peekNext : pToken;
+  var
+    i : integer;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+    i := FIndex;
+    inc(i);
+    if i < FTokens.Count-1 then
+    begin
+      result := FTokens.GetItem(i);
+    end;
+  end;
+
+  function TTokenIterator.PeekPrev : pToken;
+  var
+    i : integer;
+  begin
+    result := nil;
+    if not FTokens.Count > 0 then exit;
+    i := FIndex;
+    if i > 0 then
+    begin
+      dec(i);
+      result := FTokens.GetItem(i);
+    end;
+  end;
+
+
+    function TTokenIterator.Previous : pToken;
+    begin
+       result := FPrevious;
+    end;
 
    function TTokenIterator.Current : pToken;
    begin
      result := FCurrent;
    end;
 
+    function TTokenIterator.Index : integer;
+    begin
+      result := FIndex;
+    end;
+
   procedure TTokenIterator.init(const Tokens : TTokens);
   begin
     FTokens := Tokens;
     FIndex := -1;
     FCurrent := nil;
+    FPrevious := nil;
   end;
 
 end.

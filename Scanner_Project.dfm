@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   Caption = 'Form1'
   ClientHeight = 749
-  ClientWidth = 744
+  ClientWidth = 753
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -34,7 +34,7 @@ object Form1: TForm1
   object Memo2: TMemo
     Left = 8
     Top = 271
-    Width = 728
+    Width = 353
     Height = 360
     Lines.Strings = (
       'Memo2')
@@ -66,5 +66,23 @@ object Form1: TForm1
     Caption = 'Chunk Testing'
     TabOrder = 5
     OnClick = Button3Click
+  end
+  object Button5: TButton
+    Left = 255
+    Top = 8
+    Width = 75
+    Height = 25
+    Caption = 'Number val'
+    TabOrder = 6
+    OnClick = Button5Click
+  end
+  object Memo3: TMemo
+    Left = 367
+    Top = 271
+    Width = 369
+    Height = 360
+    Lines.Strings = (
+      'Memo3')
+    TabOrder = 7
   end
 end

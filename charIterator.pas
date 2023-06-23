@@ -9,7 +9,7 @@ type
     text : string;
     TextLength : integer;
     index : integer;
-    current : Char;
+    current : char;
 
     function Move(const amount : integer) : boolean;
     function Seek(Const position : integer) : char;
@@ -38,7 +38,6 @@ begin
   Index := Position;
   result := text[index];
 end;
-
 
 function TIterator.PeekTo(Const position : integer) : char;
 begin

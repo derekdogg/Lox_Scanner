@@ -168,6 +168,7 @@ TTokenKind = (
   tkComma,
   tkminus,
   tkdot,
+  tkSlash,
   tkBangEqual,
   tkBang,
   tkEqual,
@@ -196,14 +197,15 @@ TTokenKind = (
   tkCloseBrace,
   tkInteger,
   tkunderscore,
-  tkThis);
+  tkThis,
+  tkEOF);
 
  const
 
 
 
 
-  TTokenName : Array[tkNull..tkThis] of string = (
+  TTokenName : Array[tkNull..tkEOF] of string = (
   'Null',
   'Number',
   'Quotes',
@@ -215,6 +217,7 @@ TTokenKind = (
   'Comma',
   'minus',
   'dot',
+  'Slash',
   'BangEqual',
   'Bang',
   'Equal',
@@ -243,7 +246,8 @@ TTokenKind = (
   'CurlyCloseBrace',
   'Integer',
   'underscore',
-  'this');
+  'this',
+  'EOF');
 
 
 type
@@ -255,7 +259,7 @@ type
     length: word;
     line: word;
   end;
-
+ 
 //  TTokens = Array[0..cMaxTokens] of TToken;
 
 
@@ -279,26 +283,26 @@ type
     OP_GET_SUPER,
     OP_EQUAL,
     OP_GREATER,
-  OP_LESS,
-  OP_ADD,
-  OP_SUBTRACT,
-  OP_MULTIPLY,
-  OP_DIVIDE,
-  OP_NOT,
-  OP_NEGATE,
-  OP_PRINT,
-  OP_JUMP,
-  OP_JUMP_IF_FALSE,
-  OP_LOOP,
-  OP_CALL,
-  OP_INVOKE,
-  OP_SUPER_INVOKE,
-  OP_CLOSURE,
-  OP_CLOSE_UPVALUE,
-  OP_RETURN,
-  OP_CLASS,
-  OP_INHERIT,
-  OP_METHOD
+    OP_LESS,
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE,
+    OP_NOT,
+    OP_NEGATE,
+    OP_PRINT,
+    OP_JUMP,
+    OP_JUMP_IF_FALSE,
+    OP_LOOP,
+    OP_CALL,
+    OP_INVOKE,
+    OP_SUPER_INVOKE,
+    OP_CLOSURE,
+    OP_CLOSE_UPVALUE,
+    OP_RETURN,
+    OP_CLASS,
+    OP_INHERIT,
+    OP_METHOD
 );
 
 
@@ -445,5 +449,8 @@ const
   );
 
 *)
+
+{ TToken }
+
 
 end.

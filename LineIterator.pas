@@ -1,6 +1,7 @@
 unit LineIterator;
 
 interface
+
 uses
   loxtypes,charIterator;
 
@@ -33,8 +34,8 @@ type
     function  Next : TLine;
   end;
 
-
 implementation
+
 uses sysutils;
 
 function TLineIterator.EOL: boolean;
