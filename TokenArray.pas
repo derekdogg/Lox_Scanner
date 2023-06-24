@@ -256,11 +256,10 @@ end;
     i : integer;
   begin
     result := nil;
-    if not FTokens.Count > 0 then exit;
     i := FIndex;
-    inc(i);
     if i < FTokens.Count-1 then
     begin
+      inc(i);
       result := FTokens.GetItem(i);
     end;
   end;
@@ -270,7 +269,6 @@ end;
     i : integer;
   begin
     result := nil;
-    if not FTokens.Count > 0 then exit;
     i := FIndex;
     if i > 0 then
     begin

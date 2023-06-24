@@ -116,7 +116,7 @@ begin
   prefixRule := getRule(FTokens.Previous.kind).prefix;
   if (@prefixRule = nil) then
   begin
-    error('Expected expression.');
+    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);
     exit;
   end;
 
