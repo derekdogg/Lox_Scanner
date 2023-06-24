@@ -251,15 +251,16 @@ end;
     end;
   end;
 
+
   function TTokenIterator.peekNext : pToken;
   var
     i : integer;
   begin
     result := nil;
     i := FIndex;
-    if i < FTokens.Count-1 then
+    inc(i);
+    if i < FTokens.Count then
     begin
-      inc(i);
       result := FTokens.GetItem(i);
     end;
   end;
@@ -270,9 +271,9 @@ end;
   begin
     result := nil;
     i := FIndex;
-    if i > 0 then
+    dec(i);
+    if i >= 0 then
     begin
-      dec(i);
       result := FTokens.GetItem(i);
     end;
   end;
