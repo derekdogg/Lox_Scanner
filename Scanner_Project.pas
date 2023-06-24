@@ -38,7 +38,17 @@ var
 
 implementation
 
-uses loxtypes,charIterator,LineIterator,scanner, IntegerArray, DoubleArray, Stacks, chunk, TokenArray, compiler;
+uses
+  loxtypes,
+  charIterator,
+  LineIterator,
+  scanner,
+  IntegerArray,
+  DoubleArray,
+  Stacks,
+  chunk,
+  TokenArray,
+  compiler, vm, ByteCodesArray;
 
 {$R *.dfm}
 
@@ -56,6 +66,8 @@ var
   constantIndex : byte;
   value : pDouble; //represents a constant
   ByteCode : string;
+
+  VM :  TVirtualMachine;
 begin
   try
   Memo2.lines.clear;
@@ -93,7 +105,7 @@ begin
 
 
   //try compiler to see what happens;
-   Memo3.Lines.Clear;
+  (* Memo3.Lines.Clear;
    Compiler := TCompiler.Create(Scanner);
    try
      Compiler.expression; //???
@@ -119,8 +131,20 @@ begin
      end;
    finally
      Compiler.Free;
+   end;  *)
+
+   Compiler := TCompiler.Create(Scanner);
+   try
+     Compiler.expression;
+     Iter.Init(Compiler.Chunks);
+     VM.Init(Iter);
+     VM.Run;
+     Memo3.Lines.Add(floattostr(VM.Result.Value));
+   finally
+      VM.Finalize;
+     Compiler.Free;
    end;
- 
+
 
 
   finally
@@ -131,47 +155,60 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  Integers : TDoubles;
-  p     : pDouble;
+  A,B,C : TByteCode;
+  res : pByteCode;
+  ByteCodes : TByteCodes;
+  p     : pByteCode;
   i     : integer;
   idx   : integer;
 
 begin
   try
+    FillChar(A,Sizeof(A),#0);
+    FillChar(B,Sizeof(A),#0);
+    FillChar(C,Sizeof(A),#0);
+
+    A.Operation := OP_CONSTANT;
+    B.Operation := OP_ADD;
+    C.Operation := OP_NIL;
 
     memo1.Lines.clear;
     p := nil;
-    Integers.Init;
+    ByteCodes.Init;
 
-    Memo1.lines.add(format('Initial Capacity : %d : ',[Integers.Capacity]));
-    Memo1.lines.add(format('Initial slots : %d : ',[Integers.slotcount]));
+    Memo1.lines.add(format('Initial Capacity : %d : ',[ByteCodes.Capacity]));
+    Memo1.lines.add(format('Initial slots : %d : ',[ByteCodes.slotcount]));
 
-    for i := 1 to 20 do
-    begin
-      Memo1.lines.add(format('Capacity : %d : ',[Integers.Capacity]));
-      Memo1.lines.add(format('Free Space before adding item : %d : %d ',[i,Integers.FreeSlots]));
-      Integers.Add(i/2);
+
+      Memo1.lines.add(format('Capacity : %d : ',[ByteCodes.Capacity]));
+      Memo1.lines.add(format('Free Space before adding item : %d : %d ',[i,ByteCodes.FreeSlots]));
+      ByteCodes.Add(A);
+      ByteCodes.Remove;
+      ByteCodes.Add(B);
+      ByteCodes.Remove;
+      ByteCodes.Add(C);
+      ByteCodes.Remove;
+      ByteCodes.Remove;
+      ByteCodes.Remove;
+      ByteCodes.Remove;
+      ByteCodes.Remove;
+      ByteCodes.Add(A);
+      ByteCodes.Add(A);
+      ByteCodes.Add(A);
+
+
+
+
+      //Integers.Add(i/2);
 
     //  Memo1.lines.add(format('Capacity : %d : ',[Chunk.Capacity]));
     //  Memo1.lines.add(format('Free Space after adding item :%d : %d',[i,Chunk.FreeSpace]));
-    end;
+    Res := ByteCodes.GetItem(0);
+    Memo1.lines.add('Count : ' + inttostr(ByteCodes.Count));
+    Memo1.lines.add('Op : ' + inttostr(Ord(res.Operation)));
 
-   (* memo1.Lines.beginupdate;
-    Memo1.lines.add('Resized : ' + inttostr(Chunk.ResizeCount));
-    Memo1.lines.add('Free Space after adding 8 items : ' + inttostr(Chunk.FreeSlots));
-    for i := 0 to Chunk.Count-1 do
-    begin
-      p := Chunk.Item(i);
-      if p^ <> i then
-      begin
-
-        break
-      end;
-      memo1.Lines.add(inttostr(p^));
-    end;
-    memo1.lines.endupdate; *)
   finally
-    Integers.Finalize;
+    ByteCodes.Finalize;
   end;
 end;
 
@@ -180,10 +217,64 @@ procedure TForm1.Button2Click(Sender: TObject);
 var
   IntegerStack : TIntegerStack;
   ByteStack : TByteStack;
-
-
+  ByteCodeStack : TByteCodeStack;
+  A,B,C,D,Divide : TByteCode;
+  L,R,Result : TByteCode;
+  value : Double;
 begin
-  IntegerStack.Init;
+  //10 / 2
+
+  A.Operation := OP_CONSTANT;
+  A.Value := 1;
+  B.Operation := OP_CONSTANT;
+  B.Value := 2;
+  C.Operation := OP_CONSTANT;
+  C.Value := 3;
+  D.Operation := OP_CONSTANT;
+  D.Value := 4;
+
+  ByteCodeStack.init;
+  ByteCodeStack.Push(A);
+  ByteCodeStack.Push(B);
+
+  ByteCodeStack.Pop;
+  ByteCodeStack.Pop;
+
+  ByteCodeStack.Push(C);
+
+  result := ByteCodeStack.Pop;
+
+  ByteCodeStack.Finalize;
+
+
+  //------------- BYTE CODE DIVISION -------------------//
+
+
+  ByteCodeStack.init;
+  ByteCodeStack.Push(A);
+  ByteCodeStack.Push(B);
+
+
+  R := ByteCodeStack.Pop;
+  L := ByteCodeStack.Pop;
+
+
+  Result.Operation := OP_CONSTANT;
+  Result.Value := L.value / R.Value; //OP_DIVIDE
+
+  ByteCodeStack.Push(Result);
+
+  Assert(Result.Value = 2);
+
+
+
+
+
+  ByteCodeStack.Finalize;
+
+
+
+(*  IntegerStack.Init;
   IntegerStack.Push(1);
   IntegerStack.Push(2);
   IntegerStack.Push(3);
@@ -197,9 +288,9 @@ begin
   //Memo1.Lines.add(inttostr(IntegerStack.Pop)); //<-- should be -1, i.e. pop is not equivalent to push
 
   IntegerStack.Finalize;
+  *)
 
-
-  ByteStack.Init;
+  (*ByteStack.Init;
   ByteStack.Push(1);
   ByteStack.Push(2);
   ByteStack.Push(3);
@@ -212,7 +303,7 @@ begin
   Memo1.Lines.add(inttostr(ByteStack.Pop));
   //Memo1.Lines.add(inttostr(ByteStack.Pop)); //<-- should be -1, i.e. pop is not equivalent to push
 
-  ByteStack.Finalize;
+  ByteStack.Finalize; *)
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -222,6 +313,7 @@ var
   constantIndex : byte;
   value : pDouble; //represents a constant
   DIter : TDoubleIterator;
+  ByteCode : TByteCode;
 begin
   try
     Chunk.Init;
@@ -259,9 +351,14 @@ begin
        end;
     end;
   end;
+
+ 
+
   finally
     Chunk.Finalize;
   end;
+
+
 
 end;
 

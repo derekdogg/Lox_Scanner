@@ -11,7 +11,8 @@ uses
   Exceptions in 'Exceptions.pas',
   vm in 'vm.pas',
   TokenArray in 'TokenArray.pas',
-  compiler in 'compiler.pas';
+  compiler in 'compiler.pas',
+  ByteCodesArray in 'ByteCodesArray.pas';
 
 {$R *.res}
 

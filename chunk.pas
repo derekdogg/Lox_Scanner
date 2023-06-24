@@ -63,17 +63,15 @@ type
     procedure init;
     procedure finalize;
   end;
-
-
-
+ 
   //use for dissasembly? Maybe useful
   TInstructionPointer = record
   private
-    FBytes   : TBytes;
-    FConstants : TDoubles;
-    FIndex : integer;
-    FCurrent  : pByte;
-    FPrevious : pByte;
+    FBytes      : TBytes;
+    FConstants  : TDoubles;
+    FIndex      : integer;
+    FCurrent    : pByte;
+    FPrevious   : pByte;
   public
     function ByteCount : integer;
     function ConstantCount : integer;

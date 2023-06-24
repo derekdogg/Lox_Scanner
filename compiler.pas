@@ -31,10 +31,6 @@ type
 
   TParseRules = array[tknull..tkEOF] of TParseRule;
 
-
-
-
-
   TCompiler = class
   private
     FChunks : TChunks;

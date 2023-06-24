@@ -2,55 +2,179 @@ unit vm;
 
 interface
 uses
-  Chunk;
+  Chunk,Stacks,
+  LOXTypes;
 
 type
   TInterpretResult = (INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
+  //to do : add in Negate next;
+
   TVirtualMachine = record
   private
-    FOpCodeIterator : TInstructionPointer;
-    FChunk  : TChunks;
+    FInstructionPointer     : TInstructionPointer; //pointer to instructions
+    FStack  : TByteCodeStack; //byte code stack
+    Procedure Add;
+    Procedure Minus;
+    Procedure Divide;
+    Procedure Multiply;
+    procedure HandleRunTimeError;
   public
+    function Result : TByteCode;
     function Run : TInterpretResult;
-    procedure init;
+    procedure init(const IP : TInstructionPointer);
     procedure finalize;
   end;
 
 
 implementation
-uses
-  LOXTypes;
+
 
 { TVirtualMachine }
 
 
-function TVirtualMachine.Run : TInterpretResult;
-var
-  instruction : TOPCodes;
+function TVirtualMachine.Result: TByteCode;
 begin
-(*  result := INTERPRET_RUNTIME_ERROR;
-  repeat
-    instruction := FOpCodeIterator.Next;
-    Case FOpCodeIterator.Next of
-      OP_RETURN: Begin
-        result := INTERPRET_OK;
-        exit;
-      end;
-    end;
-  until Instruction = OP_NULL;  *)
+  assert(FStack.Count = 1);
+  result := FStack.Pop;
 end;
 
+function TVirtualMachine.Run : TInterpretResult;
+var
+  ByteCode : TByteCode;
+  constantIndex : integer;
+  Value : pDouble;
+
+begin
+  while FInstructionPointer.Next <> nil do
+  begin
+    ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
+    if (FInstructionPointer.Current^ = byte(OP_CONSTANT)) then
+    begin
+      if FInstructionPointer.Next <> nil then
+      begin
+        constantIndex := FInstructionPointer.Current^;
+        value := FInstructionPointer.Constant(constantIndex);
+        Bytecode.Value := Value^;
+      end;
+    end;
+    //push constants onto the stack
+    if ByteCode.Operation = OP_CONSTANT then
+    begin
+      FStack.Push(ByteCode);
+    end;
+
+    Case ByteCode.Operation of
+     OP_ADD : begin
+        Add;
+     end;
+
+     OP_SUBTRACT : begin
+       Minus;
+     end;
+
+
+     OP_DIVIDE : begin
+       divide;
+     end;
+
+     OP_MULTIPLY : begin
+       Multiply;
+     end;
+   end;
+  end;
+end;
+
+
+procedure TVirtualMachine.HandleRunTimeError;
+begin
+
+end;
+
+procedure TVirtualMachine.Add;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_ADDITION in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_ADD));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    result.Value := L.Value + R.Value;
+    FStack.Push(Result);
+
+  except
+     HandleRunTimeError;
+  end;
+end;
+
+procedure TVirtualMachine.Minus;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_SUBTRACT in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    result.Value := L.Value - R.Value;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError;
+  end;
+end;
+
+procedure TVirtualMachine.Multiply;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_MULTIPLY in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_MULTIPLY));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    result.Value := L.Value * R.Value;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError; //<== place holders for now
+  end;
+end;
+
+procedure TVirtualMachine.Divide;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_DIVIDE in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_DIVIDE));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    result.Value := L.Value / R.Value;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError;
+  end;
+end;
 
 procedure TVirtualMachine.finalize;
 begin
-  FChunk.Finalize;
+  FStack.Finalize;
 end;
 
-procedure TVirtualMachine.init;
+procedure TVirtualMachine.init(const IP : TInstructionPointer);
 begin
-  FChunk.Init;
-  FOpCodeIterator.Init(FChunk);
+  FInstructionPointer := IP;
+  FStack.Init;
 end;
+
+
 
 end.

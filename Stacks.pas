@@ -2,11 +2,11 @@ unit Stacks;
 
 interface
 uses
+  LOXTypes,
   IntegerArray,
   ByteArray,
-  DoubleArray;
-
-
+  DoubleArray,
+  ByteCodesArray;
 type
 
   TIntegerStack = record
@@ -33,7 +33,7 @@ type
     procedure Finalize;
   end;
 
-  TDoubleStack = record
+  (*TDoubleStack = record
   private
     FIndex    : Integer;
     FItems    : TBytes;
@@ -43,9 +43,21 @@ type
     function  Pop : Byte;
     procedure Init;
     procedure Finalize;
+  end; *)
+
+  TByteCodeStack = record
+  private
+    FCount    : Integer;
+    FIndex    : Integer;
+    FItems    : TByteCodes;
+    pStackTop : pByteCode;
+  public
+    Function Count : Integer;
+    procedure Push(const Item : TByteCode);
+    function  Pop : TByteCode;
+    procedure Init;
+    procedure Finalize;
   end;
-
-
 
 
 implementation
@@ -111,33 +123,49 @@ begin
   inc(pStackTop);
 end;
 
-{ TDoubleStack }
+{TByteCodeStack}
 
-procedure TDoubleStack.Finalize;
+function TByteCodeStack.Count: Integer;
+begin
+  result := FCount;
+end;
+
+procedure TByteCodeStack.Finalize;
 begin
   FItems.Finalize;
 end;
 
-procedure TDoubleStack.Init;
+procedure TByteCodeStack.Init;
 begin
+  FCount := 0;
   FIndex := 0;
   FItems.Init;
-  pStackTop := FItems.Item(0);
+  pStackTop := FItems.GetItem(0);
 end;
 
-function TDoubleStack.Pop: Byte;
+function TByteCodeStack.Pop: TByteCode;
+var
+ removed : PByteCode;
 begin
+  
   if FIndex = 0 then raise exception.create('Nothing to pop');
+
+  if FItems.Remove = nil then raise exception.create('Failure to remove items from stack');
+  Dec(FCount);
   dec(FIndex);
   dec(pStackTop);
   result := pStackTop^;
 end;
-
-procedure TDoubleStack.Push(const Item: byte);
+           // 3 count compare to 1 count;
+procedure TByteCodeStack.Push(const Item: TByteCode);
 begin
-   inc(FIndex);
-  FItems.Add(Item);
+  inc(FCount);
+  inc(FIndex);
+  FItems.Add(Item); //<==== the indexes get out of synch because the stack index and the array index are wildly different.
   inc(pStackTop);
 end;
+
+
+
 
 end.
