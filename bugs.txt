@@ -1,1 +1,11 @@
+One of the things I would like to have a look at soon is the dynamic arrays. 
+
+I got a bit carried away with getting one working, and then went a bit nuts with copy and paste.
+
+They are pretty rudimentary in approach (that was done for a reason to get a handle on how you might roll your own dynamic array, and learn some stuff).
+
+
+The actual scanner itself is fairly relaxed about what it scans, and when it encounters syntax not in LOX it doesn't spit the dummy.
+
+For example, the scanner itself will happily chew through actual Delphi pas files and spit out tokens for it.
 
