@@ -386,7 +386,6 @@ begin
   number := strToFloat(text);
 
   FChunks.AddConstant(number);
- // emitConstant(numberval(number));
 end;
 
 procedure TCompiler.grouping(const canAssign : boolean);
@@ -411,7 +410,7 @@ end;
 
 
 
-function TCompiler.argumentList: Byte;
+function TCompiler.argumentList: Byte; //we never get to call currently with the limited expression we calculate...
 var
   argCount: Byte;
 begin

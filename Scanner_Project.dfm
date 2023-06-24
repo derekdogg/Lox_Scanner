@@ -38,6 +38,7 @@ object Form1: TForm1
     Height = 360
     Lines.Strings = (
       'Memo2')
+    ScrollBars = ssVertical
     TabOrder = 2
   end
   object Button1: TButton
@@ -82,6 +83,7 @@ object Form1: TForm1
     Height = 360
     Lines.Strings = (
       'Memo3')
+    ScrollBars = ssVertical
     TabOrder = 7
   end
 end
