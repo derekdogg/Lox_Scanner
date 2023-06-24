@@ -142,7 +142,7 @@ begin
      Iter.Init(Compiler.Chunks);
      VM.Init(Iter);
      VM.Run;
-     Memo3.Lines.Add(floattostr(VM.Result.Value));
+     Memo3.Lines.Add('result := ' + floattostr(VM.Result.Value));
    finally
       VM.Finalize;
      Compiler.Free;

@@ -18,6 +18,7 @@ type
     Procedure Minus;
     Procedure Divide;
     Procedure Multiply;
+    Procedure Negate;
     procedure HandleRunTimeError;
   public
     function Result : TByteCode;
@@ -81,6 +82,11 @@ begin
      OP_MULTIPLY : begin
        Multiply;
      end;
+
+     OP_NEGATE : begin
+       Negate;
+     end;
+
    end;
   end;
 end;
@@ -143,6 +149,24 @@ begin
     FStack.Push(Result);
   except
      HandleRunTimeError; //<== place holders for now
+  end;
+end;
+
+procedure TVirtualMachine.Negate;
+var
+  R : TByteCode;
+begin
+  //we assume here we're sitting on an OP_NEGATE in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_NEGATE));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    Assert(R.Operation = OP_CONSTANT); //??
+
+    R.Value := - R.Value;
+    FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+  except
+     HandleRunTimeError;
   end;
 end;
 
