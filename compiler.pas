@@ -45,7 +45,7 @@ type
     procedure CreateRuleForOpen_bracket;
     procedure CreateRulesForClose_bracket;
     procedure CreateRulesForNumber;
-    procedure CreateRulesForEqual;
+    procedure CreateRulesForEqualEqual;
     procedure CreateRulesForMultiply;
     procedure CreateRulesForEOF;
     procedure CreateRulesForDivide;
@@ -238,13 +238,12 @@ begin
 end;
 
 
-procedure TCompiler.CreateRulesForEqual;
+procedure TCompiler.CreateRulesForEqualEqual;
 begin
-  // [TOKEN_EQUAL]         = {NULL,     NULL,   PREC_NONE},
 
-  FParseRules[tkEqual].Prefix := nil;
-  FParseRules[tkEqual].Infix := nil;
-  FParseRules[tkEqual].Precedence := PREC_NONE;
+  FParseRules[tkEqualEqual].Prefix := nil;
+  FParseRules[tkEqualEqual].Infix := binary;
+  FParseRules[tkEqualEqual].Precedence := PREC_EQUALITY;
 end;
 
 
@@ -297,7 +296,7 @@ begin
   CreateRuleForOpen_bracket;
   CreateRulesForClose_bracket;
   CreateRulesForNumber;
-  CreateRulesForEqual;
+  CreateRulesForEqualEqual;
   CreateRulesForPlus;
   CreateRulesForMinus;
   CreateRulesForMultiply;
@@ -496,11 +495,11 @@ begin
 
 
   Case (TokenKind) of
-    TkPlus      : FChunks.AddADD;
-    TkMinus     : FChunks.AddSUBTRACT;
-    tkAsterisk  : FChunks.AddMULTIPLY;
-    tkEqual     : FChunks.AddEQUAL;
-    tkSlash     : FChunks.AddDivide;
+    TkPlus        : FChunks.AddADD;
+    TkMinus       : FChunks.AddSUBTRACT;
+    tkAsterisk    : FChunks.AddMULTIPLY;
+    tkEqualEqual  : FChunks.AddEQUAL;
+    tkSlash       : FChunks.AddDivide;
   end;
 
    {
@@ -610,13 +609,7 @@ end.
   [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
 //< Types of Values table-equal
   [TOKEN_EQUAL]         = {NULL,     NULL,   PREC_NONE},
-/* Compiling Expressions rules < Types of Values table-comparisons
-  [TOKEN_EQUAL_EQUAL]   = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_GREATER]       = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_GREATER_EQUAL] = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_LESS]          = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_LESS_EQUAL]    = {NULL,     NULL,   PREC_NONE},
-*/
+
 //> Types of Values table-comparisons
   [TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
   [TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON},

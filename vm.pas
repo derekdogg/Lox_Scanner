@@ -15,10 +15,11 @@ type
     FInstructionPointer     : TInstructionPointer; //pointer to instructions
     FStack  : TByteCodeStack; //byte code stack
     Procedure Add;
-    Procedure Minus;
+    Procedure subtract;
     Procedure Divide;
     Procedure Multiply;
     Procedure Negate;
+    procedure Equal;
     procedure HandleRunTimeError;
   public
     function Result : TByteCode;
@@ -60,18 +61,25 @@ begin
       end;
     end;
     //push constants onto the stack
+
+
     if ByteCode.Operation = OP_CONSTANT then
     begin
       FStack.Push(ByteCode);
     end;
 
     Case ByteCode.Operation of
+
+     OP_EQUAL : begin
+        equal;
+     end;
+
      OP_ADD : begin
         Add;
      end;
 
      OP_SUBTRACT : begin
-       Minus;
+       subtract;
      end;
 
 
@@ -86,8 +94,7 @@ begin
      OP_NEGATE : begin
        Negate;
      end;
-
-   end;
+    end;
   end;
 end;
 
@@ -116,7 +123,7 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.Minus;
+procedure TVirtualMachine.subtract;
 var
   L,R,Result : TByteCode;
 begin
@@ -179,6 +186,7 @@ begin
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
+    Assert(R.Value <> 0); //divide by zero exceptions.
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
     result.Value := L.Value / R.Value;
@@ -186,6 +194,28 @@ begin
   except
      HandleRunTimeError;
   end;
+end;
+
+procedure TVirtualMachine.Equal;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_DIVIDE in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_EQUAL));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    if r.Value = l.value then
+      result.value := 1
+    else
+      result.value := 0;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError;
+  end;
+
 end;
 
 procedure TVirtualMachine.finalize;
