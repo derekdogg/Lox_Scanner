@@ -46,6 +46,7 @@ type
     procedure CreateRulesForClose_bracket;
     procedure CreateRulesForNumber;
     procedure CreateRulesForEqualEqual;
+    procedure CreateRulesForNotEqual;
     procedure CreateRulesForMultiply;
     procedure CreateRulesForEOF;
     procedure CreateRulesForDivide;
@@ -229,6 +230,14 @@ begin
   FParseRules[tkSlash].Precedence := PREC_FACTOR;
 end;
 
+procedure TCompiler.CreateRulesForNotEqual;
+begin
+// [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
+  FParseRules[tkBangEqual].Prefix := nil;
+  FParseRules[tkBangEqual].Infix := binary;
+  FParseRules[tkBangEqual].Precedence := PREC_EQUALITY;
+end;
+
 procedure TCompiler.CreateRulesForNumber;
 begin
   // [TOKEN_NUMBER]   = {number,   NULL,   PREC_NONE},
@@ -297,6 +306,7 @@ begin
   CreateRulesForClose_bracket;
   CreateRulesForNumber;
   CreateRulesForEqualEqual;
+  CreateRulesForNotEqual;
   CreateRulesForPlus;
   CreateRulesForMinus;
   CreateRulesForMultiply;
@@ -499,6 +509,7 @@ begin
     TkMinus       : FChunks.AddSUBTRACT;
     tkAsterisk    : FChunks.AddMULTIPLY;
     tkEqualEqual  : FChunks.AddEQUAL;
+    tkBangEqual   : FChunks.AddNOTEqual;
     tkSlash       : FChunks.AddDivide;
   end;
 

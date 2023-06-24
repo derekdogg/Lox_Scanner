@@ -40,6 +40,7 @@ type
     Function AddSET_PROPERTY : Integer;
     Function AddGET_SUPER : Integer;
     Function AddEQUAL : Integer;
+    function AddNotEQUAL: Integer;
     Function AddGREATER : Integer;
     Function AddLESS : Integer;
     Function AddADD : Integer;
@@ -141,6 +142,12 @@ end;
 function TChunks.AddEQUAL: Integer;
 begin
   result := FOPCodes.Add(ord(OP_EQUAL));
+end;
+
+function TChunks.AddNotEQUAL: Integer;
+begin
+  result := AddEqual;
+  result := AddNOT;
 end;
 
 function TChunks.AddFALSE: Integer;

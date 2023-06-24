@@ -20,6 +20,7 @@ type
     Procedure Multiply;
     Procedure Negate;
     procedure Equal;
+    procedure NotEqual;
     procedure HandleRunTimeError;
   public
     function Result : TByteCode;
@@ -73,6 +74,11 @@ begin
      OP_EQUAL : begin
         equal;
      end;
+
+     OP_NOT : begin
+        NotEqual;
+     end;
+
 
      OP_ADD : begin
         Add;
@@ -177,6 +183,7 @@ begin
   end;
 end;
 
+
 procedure TVirtualMachine.Divide;
 var
   L,R,Result : TByteCode;
@@ -196,11 +203,25 @@ begin
   end;
 end;
 
+procedure TVirtualMachine.NotEqual;
+var
+  Result : TByteCode;
+begin
+  Assert(FInstructionPointer.Current^ = byte(OP_NOT));
+  try
+    result := FStack.Pop;
+    Result.Value := -Result.Value;
+    FStack.Push(Result);
+   except
+     HandleRunTimeError;
+  end;
+end;
+
 procedure TVirtualMachine.Equal;
 var
   L,R,Result : TByteCode;
 begin
-  //we assume here we're sitting on an OP_DIVIDE in the IP
+  //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_EQUAL));
   //this also means we assume the correct values are sitting in Stack...
   try
@@ -210,12 +231,11 @@ begin
     if r.Value = l.value then
       result.value := 1
     else
-      result.value := 0;
+      result.value := -1;
     FStack.Push(Result);
   except
      HandleRunTimeError;
   end;
-
 end;
 
 procedure TVirtualMachine.finalize;
