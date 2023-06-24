@@ -105,7 +105,7 @@ begin
 
 
   //try compiler to see what happens;
-  (* Memo3.Lines.Clear;
+   Memo3.Lines.Clear;
    Compiler := TCompiler.Create(Scanner);
    try
      Compiler.expression; //???
@@ -131,8 +131,11 @@ begin
      end;
    finally
      Compiler.Free;
-   end;  *)
+   end;
 
+
+   //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
+   // is giving 4 currently - however, byte code is legit.
    Compiler := TCompiler.Create(Scanner);
    try
      Compiler.expression;

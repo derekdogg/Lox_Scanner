@@ -28,7 +28,7 @@ object Form1: TForm1
     Width = 728
     Height = 226
     Lines.Strings = (
-      'Memo1')
+      '(5 - (3 - 1)) + -1')
     TabOrder = 1
   end
   object Memo2: TMemo
