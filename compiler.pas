@@ -193,6 +193,7 @@ end;
 
 constructor TCompiler.Create(Const Scanner : TScanner);
 begin
+  Assert(Scanner.TokenCount > 1);   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
   FChunks.Init;
   FScanner := Scanner;
 
@@ -405,7 +406,7 @@ begin
   result := (FTokens.Current.Kind = Expected);
   if not result then exit;
 
-  result := advance();
+  result := advance;
 end;
 
 
