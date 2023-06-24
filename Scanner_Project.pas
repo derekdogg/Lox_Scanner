@@ -18,7 +18,6 @@ type
     Memo3: TMemo;
     procedure BtnScanClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
@@ -215,99 +214,6 @@ begin
   end;
 end;
 
-
-procedure TForm1.Button2Click(Sender: TObject);
-var
-  IntegerStack : TIntegerStack;
-  ByteStack : TByteStack;
-  ByteCodeStack : TByteCodeStack;
-  A,B,C,D,Divide : TByteCode;
-  L,R,Result : TByteCode;
-  value : Double;
-begin
-  //10 / 2
-
-  A.Operation := OP_CONSTANT;
-  A.Value := 1;
-  B.Operation := OP_CONSTANT;
-  B.Value := 2;
-  C.Operation := OP_CONSTANT;
-  C.Value := 3;
-  D.Operation := OP_CONSTANT;
-  D.Value := 4;
-
-  ByteCodeStack.init;
-  ByteCodeStack.Push(A);
-  ByteCodeStack.Push(B);
-
-  ByteCodeStack.Pop;
-  ByteCodeStack.Pop;
-
-  ByteCodeStack.Push(C);
-
-  result := ByteCodeStack.Pop;
-
-  ByteCodeStack.Finalize;
-
-
-  //------------- BYTE CODE DIVISION -------------------//
-
-
-  ByteCodeStack.init;
-  ByteCodeStack.Push(A);
-  ByteCodeStack.Push(B);
-
-
-  R := ByteCodeStack.Pop;
-  L := ByteCodeStack.Pop;
-
-
-  Result.Operation := OP_CONSTANT;
-  Result.Value := L.value / R.Value; //OP_DIVIDE
-
-  ByteCodeStack.Push(Result);
-
-  Assert(Result.Value = 2);
-
-
-
-
-
-  ByteCodeStack.Finalize;
-
-
-
-(*  IntegerStack.Init;
-  IntegerStack.Push(1);
-  IntegerStack.Push(2);
-  IntegerStack.Push(3);
-  IntegerStack.Push(4);
-
-
-  Memo1.Lines.add(inttostr(IntegerStack.Pop));
-  Memo1.Lines.add(inttostr(IntegerStack.Pop));
-  Memo1.Lines.add(inttostr(IntegerStack.Pop));
-  Memo1.Lines.add(inttostr(IntegerStack.Pop));
-  //Memo1.Lines.add(inttostr(IntegerStack.Pop)); //<-- should be -1, i.e. pop is not equivalent to push
-
-  IntegerStack.Finalize;
-  *)
-
-  (*ByteStack.Init;
-  ByteStack.Push(1);
-  ByteStack.Push(2);
-  ByteStack.Push(3);
-  ByteStack.Push(4);
-
-
-  Memo1.Lines.add(inttostr(ByteStack.Pop));
-  Memo1.Lines.add(inttostr(ByteStack.Pop));
-  Memo1.Lines.add(inttostr(ByteStack.Pop));
-  Memo1.Lines.add(inttostr(ByteStack.Pop));
-  //Memo1.Lines.add(inttostr(ByteStack.Pop)); //<-- should be -1, i.e. pop is not equivalent to push
-
-  ByteStack.Finalize; *)
-end;
 
 procedure TForm1.Button3Click(Sender: TObject);
 var

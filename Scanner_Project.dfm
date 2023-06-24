@@ -56,7 +56,6 @@ object Form1: TForm1
     Height = 25
     Caption = 'Stack Testing'
     TabOrder = 4
-    OnClick = Button2Click
   end
   object Button3: TButton
     Left = 336
