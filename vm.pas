@@ -20,6 +20,8 @@ type
     Procedure Multiply;
     Procedure Negate;
     procedure Equal;
+    procedure Greater;
+    procedure Less;
     procedure NotEqual;
     procedure HandleRunTimeError;
   public
@@ -63,43 +65,49 @@ begin
     end;
     //push constants onto the stack
 
-
     if ByteCode.Operation = OP_CONSTANT then
     begin
       FStack.Push(ByteCode);
     end;
 
     Case ByteCode.Operation of
+      OP_GREATER : begin
+         greater;
+      end;
 
-     OP_EQUAL : begin
+      OP_LESS : begin
+         less;
+      end;
+
+      OP_EQUAL : begin
         equal;
-     end;
+      end;
 
-     OP_NOT : begin
+      OP_NOT : begin
         NotEqual;
-     end;
+      end;
 
 
-     OP_ADD : begin
+      OP_ADD : begin
         Add;
-     end;
+      end;
 
-     OP_SUBTRACT : begin
-       subtract;
-     end;
+      OP_SUBTRACT : begin
+        subtract;
+      end;
 
 
-     OP_DIVIDE : begin
-       divide;
-     end;
+      OP_DIVIDE : begin
+        divide;
+      end;
 
-     OP_MULTIPLY : begin
-       Multiply;
-     end;
+      OP_MULTIPLY : begin
+        Multiply;
+      end;
 
-     OP_NEGATE : begin
-       Negate;
-     end;
+      OP_NEGATE : begin
+        Negate;
+      end;
     end;
   end;
 end;
@@ -243,11 +251,55 @@ begin
   FStack.Finalize;
 end;
 
+procedure TVirtualMachine.Greater;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_EQUAL in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    if l.Value > r.value then
+      result.value := 1
+    else
+      result.value := -1;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError;
+  end;
+end;
+
+
+procedure TVirtualMachine.Less;
+var
+  L,R,Result : TByteCode;
+begin
+  //we assume here we're sitting on an OP_EQUAL in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_LESS));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result.Operation := OP_CONSTANT;
+    if l.Value < r.value then
+      result.value := 1
+    else
+      result.value := -1;
+    FStack.Push(Result);
+  except
+     HandleRunTimeError;
+  end;
+end;
+
 procedure TVirtualMachine.init(const IP : TInstructionPointer);
 begin
   FInstructionPointer := IP;
   FStack.Init;
 end;
+
 
 
 

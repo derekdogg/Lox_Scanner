@@ -48,8 +48,10 @@ type
     procedure CreateRulesForEqualEqual;
     procedure CreateRulesForNotEqual;
     procedure CreateRulesForMultiply;
-    procedure CreateRulesForEOF;
     procedure CreateRulesForDivide;
+    procedure CreateRulesForLessThan;
+    procedure CreateRulesForGreaterThan;
+    procedure CreateRulesForEOF;
     procedure CreateRules;
     //--------------------------------------------------------------------------
     procedure init;
@@ -249,12 +251,28 @@ end;
 
 procedure TCompiler.CreateRulesForEqualEqual;
 begin
-
+  //[TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
   FParseRules[tkEqualEqual].Prefix := nil;
   FParseRules[tkEqualEqual].Infix := binary;
   FParseRules[tkEqualEqual].Precedence := PREC_EQUALITY;
 end;
 
+
+procedure TCompiler.CreateRulesForGreaterThan;
+begin
+  //[TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON}
+  FParseRules[tkGreater_Than].Prefix := nil;
+  FParseRules[tkGreater_Than].Infix := binary;
+  FParseRules[tkGreater_Than].Precedence := PREC_COMPARISON;
+end;
+
+procedure TCompiler.CreateRulesForLessThan;
+begin
+  // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
+  FParseRules[tkLess_Than].Prefix := nil;
+  FParseRules[tkLess_Than].Infix := binary;
+  FParseRules[tkLess_Than].Precedence := PREC_COMPARISON;
+end;
 
 procedure TCompiler.CreateRulesForPlus;
 begin
@@ -307,6 +325,8 @@ begin
   CreateRulesForNumber;
   CreateRulesForEqualEqual;
   CreateRulesForNotEqual;
+  CreateRulesForLessThan;
+  CreateRulesForGreaterThan;
   CreateRulesForPlus;
   CreateRulesForMinus;
   CreateRulesForMultiply;
@@ -505,12 +525,14 @@ begin
 
 
   Case (TokenKind) of
-    TkPlus        : FChunks.AddADD;
-    TkMinus       : FChunks.AddSUBTRACT;
-    tkAsterisk    : FChunks.AddMULTIPLY;
-    tkEqualEqual  : FChunks.AddEQUAL;
-    tkBangEqual   : FChunks.AddNOTEqual;
-    tkSlash       : FChunks.AddDivide;
+    TkPlus          : FChunks.AddADD;
+    TkMinus         : FChunks.AddSUBTRACT;
+    tkAsterisk      : FChunks.AddMULTIPLY;
+    tkEqualEqual    : FChunks.AddEQUAL;
+    tkBangEqual     : FChunks.AddNOTEqual;
+    tkLess_Than     : FChunks.AddLess;
+    tkSlash         : FChunks.AddDivide;
+    tkgreater_than  : FChunks.AddGREATER;
   end;
 
    {

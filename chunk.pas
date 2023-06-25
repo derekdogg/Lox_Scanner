@@ -43,6 +43,7 @@ type
     function AddNotEQUAL: Integer;
     Function AddGREATER : Integer;
     Function AddLESS : Integer;
+    Function AddLESSTHANEQUAL : integer;
     Function AddADD : Integer;
     Function AddSUBTRACT : Integer;
     Function AddMULTIPLY : Integer;
@@ -208,6 +209,12 @@ end;
 function TChunks.AddLESS: Integer;
 begin
   result := FOPCodes.Add(ord(OP_LESS));
+end;
+
+function TChunks.AddLESSTHANEQUAL: integer;
+begin
+  result := FOPCodes.Add(ord(OP_GREATER));
+  result := FOPCodes.Add(ord(OP_NOT));
 end;
 
 function TChunks.AddLOOP: Integer;
