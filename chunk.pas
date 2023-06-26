@@ -44,6 +44,7 @@ type
     Function AddGREATER : Integer;
     Function AddLESS : Integer;
     Function AddLESSTHANEQUAL : integer;
+    function AddGREATERTHANEQUAL: Integer;
     Function AddADD : Integer;
     Function AddSUBTRACT : Integer;
     Function AddMULTIPLY : Integer;
@@ -186,6 +187,12 @@ begin
   result := FOPCodes.Add(ord(OP_GREATER));
 end;
 
+function TChunks.AddGREATERTHANEQUAL: Integer;
+begin
+  result := AddLESS;
+  result := AddNOT;
+end;
+
 function TChunks.AddINHERIT: Integer;
 begin
   result := FOPCodes.Add(ord(OP_INHERIT));
@@ -213,8 +220,8 @@ end;
 
 function TChunks.AddLESSTHANEQUAL: integer;
 begin
-  result := FOPCodes.Add(ord(OP_GREATER));
-  result := FOPCodes.Add(ord(OP_NOT));
+  result := AddGreater;//FOPCodes.Add(ord(OP_GREATER));
+  result := AddNot;//FOPCodes.Add(ord(OP_NOT));
 end;
 
 function TChunks.AddLOOP: Integer;
