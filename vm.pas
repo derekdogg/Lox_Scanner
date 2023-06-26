@@ -240,6 +240,8 @@ procedure TVirtualMachine.Equal;
 var
   L,R,Result : TByteCode;
 begin
+   Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_EQUAL));
   //this also means we assume the correct values are sitting in Stack...
