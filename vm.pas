@@ -33,6 +33,8 @@ type
 
 
 implementation
+uses
+  sysutils;
 
 
 { TVirtualMachine }
@@ -54,23 +56,19 @@ begin
   while FInstructionPointer.Next <> nil do
   begin
     ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
-    if (FInstructionPointer.Current^ = byte(OP_CONSTANT)) then
-    begin
-      if FInstructionPointer.Next <> nil then
-      begin
-        constantIndex := FInstructionPointer.Current^;
-        value := FInstructionPointer.Constant(constantIndex);
-        Bytecode.Value := Value^;
-      end;
-    end;
-    //push constants onto the stack
-
-    if ByteCode.Operation = OP_CONSTANT then
-    begin
-      FStack.Push(ByteCode);
-    end;
 
     Case ByteCode.Operation of
+
+      OP_CONSTANT : begin
+
+           if FInstructionPointer.Next = nil then raise exception.create('Expected constant value following constant operation');
+           constantIndex := FInstructionPointer.Current^;
+           value := FInstructionPointer.Constant(constantIndex);
+           Bytecode.Value := Value^;
+           FStack.Push(ByteCode);
+      end;
+
+
       OP_GREATER : begin
          greater;
       end;
@@ -122,6 +120,8 @@ procedure TVirtualMachine.Add;
 var
   L,R,Result : TByteCode;
 begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_ADDITION in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_ADD));
   //this also means we assume the correct values are sitting in Stack...
@@ -141,6 +141,10 @@ procedure TVirtualMachine.subtract;
 var
   L,R,Result : TByteCode;
 begin
+
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+
   //we assume here we're sitting on an OP_SUBTRACT in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
   //this also means we assume the correct values are sitting in Stack...
@@ -159,6 +163,8 @@ procedure TVirtualMachine.Multiply;
 var
   L,R,Result : TByteCode;
 begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_MULTIPLY in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
@@ -177,6 +183,7 @@ procedure TVirtualMachine.Negate;
 var
   R : TByteCode;
 begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_NEGATE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
@@ -196,6 +203,8 @@ procedure TVirtualMachine.Divide;
 var
   L,R,Result : TByteCode;
 begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_DIVIDE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
@@ -215,6 +224,8 @@ procedure TVirtualMachine.NotEqual;
 var
   Result : TByteCode;
 begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   Assert(FInstructionPointer.Current^ = byte(OP_NOT));
   try
     result := FStack.Pop;

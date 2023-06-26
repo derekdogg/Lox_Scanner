@@ -53,6 +53,7 @@ type
     pStackTop : pByteCode;
   public
     Function Count : Integer;
+    Function Peek(const index : integer) : pByteCode;
     procedure Push(const Item : TByteCode);
     function  Pop : TByteCode;
     procedure Init;
@@ -141,6 +142,11 @@ begin
   FIndex := 0;
   FItems.Init;
   pStackTop := FItems.GetItem(0);
+end;
+
+function TByteCodeStack.Peek(const index: integer): pByteCode;
+begin
+  result := FItems.GetItem(Index);
 end;
 
 function TByteCodeStack.Pop: TByteCode;
