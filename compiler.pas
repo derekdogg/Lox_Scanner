@@ -556,7 +556,11 @@ begin
     tkGreaterThanEqual  : FChunks.AddGREATERTHANEQUAL;
     tkgreater_than      : FChunks.AddGREATER;
     tkSlash             : FChunks.AddDivide;
-  end;
+    else
+    begin
+      raise exception.create('A token kind not catered for in a binary operation was encountered');
+    end;
+  end
 
    {
 //> Types of Values comparison-operators
