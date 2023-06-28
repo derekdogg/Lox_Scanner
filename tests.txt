@@ -1,4 +1,4 @@
-Notes - where we eval using == we are currently expecting 1 (for true) or -1 (for false). This kind of sucks and will need fixing up at some point.
+Notes - where we eval using == for boolean we are currently expecting 1 (for true) or -1 (for false). This kind of sucks and will need fixing up at some point.
 I personally would just prefer 'false' and 'true'
 
 
