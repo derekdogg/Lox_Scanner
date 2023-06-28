@@ -15,6 +15,8 @@ type
   end;
 
   TLines = array[0..cMaxLines] of TLine;
+  //todo : fix this constant.
+
 
   TLineProcedure = procedure(Const Line : TLine);
 
