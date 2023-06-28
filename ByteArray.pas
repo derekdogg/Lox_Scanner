@@ -8,7 +8,7 @@ type
 
   TBytes = record
   const
-    NUM_SLOTS = 10;
+    //NUM_SLOTS = 10;
     INCREMENT_CAPACITY_BY = 2;
   private
     FResizeCount   : integer;
@@ -30,7 +30,7 @@ type
     function Count : integer;
     function Add(const value : byte) : integer;
     function  Item(const index : integer) : pByte;
-    constructor init;
+    constructor init(const Count : integer);
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
@@ -138,13 +138,13 @@ begin
   assert(FCapacity mod sizeof(Byte) = 0);
 end;
 
-Constructor TBytes.init;
+Constructor TBytes.init(const Count : integer);
 begin
   FresizeCount := 0;
   FItems := nil;
   Findex := 0;
   Fcount := 0;
-  Fcapacity := NUM_SLOTS * sizeof(Byte);
+  Fcapacity := count * sizeof(Byte);
   Fprevcapacity := Fcapacity;
 
   AllocateArray(FItems,Fcapacity);

@@ -409,7 +409,48 @@ const
 //< Methods and Initializers method-op;
 );
 
+Type 
+  TObjectKind = (
+    //> Methods and Initializers obj-type-bound-method
+    OBJ_BOUND_METHOD,
+    //< Methods and Initializers obj-type-bound-method
+    //> Classes and Instances obj-type-class
+    OBJ_CLASS,
+    //< Classes and Instances obj-type-class
+    //> Closures obj-type-closure
+    OBJ_CLOSURE,
+    //< Closures obj-type-closure
+    //> Calls and Functions obj-type-function
+    OBJ_FUNCTION,
+    //< Calls and Functions obj-type-function
+    //> Classes and Instances obj-type-instance
+    OBJ_INSTANCE,
+    //< Classes and Instances obj-type-instance
+    //> Calls and Functions obj-type-native
+    OBJ_NATIVE,
+    //< Calls and Functions obj-type-native
+    OBJ_STRING,
+    //> Closures obj-type-upvalue
+    OBJ_UPVALUE
+    //< Closures obj-type-upvalue
+  );
 
+  pLoxObject = ^TLoxObject;
+  TLoxObject = record
+    Kind     : TObjectKind;
+    IsMarked : Boolean;
+    Next     : pLoxObject;
+  end;
+
+
+  TKind = (tvNumber,tvBoolean, tvNull, tvObject);
+  TLoxValue = record
+     Case TKind of
+       tvNumber  :  (number : Double);
+       tvBoolean :  (bool   : Boolean);
+       tvNull    :  ();
+       tvObject  :  (Obj : pLoxObject);
+    end;
 
 
 

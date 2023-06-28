@@ -105,7 +105,7 @@ end;
 procedure TByteStack.Init;
 begin
   FIndex := 0;
-  FItems.Init;
+  FItems.Init(16);
   pStackTop := FItems.Item(0);
 end;
 

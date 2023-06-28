@@ -7,6 +7,7 @@ uses
   Dialogs, StdCtrls;
 
 type
+
   TForm1 = class(TForm)
     BtnScan: TButton;
     Memo1: TMemo;
@@ -30,7 +31,7 @@ type
     { Public declarations }
   end;
 
-  
+
 
 var
   Form1: TForm1;
@@ -50,6 +51,8 @@ uses
   compiler, vm, ByteCodesArray;
 
 {$R *.dfm}
+
+
 
 procedure TForm1.BtnScanClick(Sender: TObject);
 var
@@ -261,13 +264,11 @@ begin
     end;
   end;
 
- 
+
 
   finally
     Chunk.Finalize;
   end;
-
-
 
 end;
 
@@ -281,29 +282,8 @@ end;
 
 
 procedure TForm1.Button5Click(Sender: TObject);
-type
-    TValueType = (tkNumber, tkBoolean, tkBytes);
-    TValueRecord = record
-      Kind : TValueType;
-      case tp : TValueType of
-        tkNumber : (Number: Double);
-        tkBoolean: (True  : boolean);
-        tkBytes  : (bytes : array[0..7] of byte);
-    end;
-
-var
-  value : TValueRecord;
 begin
-  value.Kind := tkNumber;
-  value.Number := 201;
-  //  d := 125.56;
-
-//  v := NumberVal(d);
-
-//  Memo2.lines.add('value : ' + floattostr(v.number));
+ //blah
 end;
 
 end.
-
-
-

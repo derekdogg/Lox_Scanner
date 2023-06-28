@@ -317,7 +317,7 @@ end;
 
 procedure TChunks.init;
 begin
-   FOPCodes.Init;
+   FOPCodes.Init(64);
    FConstants.Init;
 end;
 
