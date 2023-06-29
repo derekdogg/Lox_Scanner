@@ -314,6 +314,7 @@ type
 
 
 const
+  
   TOP_Code_name : Array[OP_NULL..OP_METHOD] of string  = (
    'OP_NULL',
 //> op-constant
@@ -442,19 +443,99 @@ Type
     Next     : pLoxObject;
   end;
 
-
   TKind = (tvNumber,tvBoolean, tvNull, tvObject);
-  TLoxValue = record
-     Case TKind of
-       tvNumber  :  (number : Double);
-       tvBoolean :  (bool   : Boolean);
-       tvNull    :  ();
-       tvObject  :  (Obj : pLoxObject);
-    end;
+  TNumber = Double;
+
+
+  TEightBytes = array[0..7] of byte;
+  TValue = record
+  private
+    FKind  : TKind;
+    FValue : TEightBytes;
+    FNull  : Boolean;
+    function getNumber  : TNumber;
+    procedure SetNumber(const value : TNumber);
+
+    function getBoolean : Boolean;
+    procedure setBoolean(const value : Boolean);
+
+    procedure setObject(const value : pLoxObject);
+    function  getObject : pLoxObject;
+
+    procedure setNull(const value : Boolean);
+  public
+    property Kind       : TKind read FKind write FKind;
+    property Number     : TNumber read getNumber write SetNumber;
+    property Boolean    : Boolean read getBoolean write setBoolean;
+    property Bytes      : TEightBytes read FValue;
+    property LoxObject  : pLoxObject read getObject write setObject;
+    property Null       : boolean read FNull write setNull;
+  end;
 
 
 
 implementation
+
+procedure TValue.setNull(const value : Boolean);
+begin
+  FNull := Value;
+  FKind := tvNull;
+  fillchar(FValue,sizeof(FValue),#0);
+end;
+
+procedure TValue.setObject(const value : pLoxObject);
+begin
+
+  FKind := tvObject;
+  Move(Longint(value),FValue[0], SizeOf(Value));
+end;
+
+function TValue.getObject : pLoxObject;
+begin
+  result := nil;
+  if FKind = tvObject then
+    Move(FValue[0], Result, SizeOf(Result));
+end;
+
+
+function TValue.getBoolean : Boolean;
+
+begin
+  result := false;
+  if FKind = tvObject then
+  begin
+    result := getNumber <=0;
+    exit;
+  end;
+  Move(FValue[0], Result, SizeOf(Result))
+end;
+
+procedure TValue.setBoolean(const value : Boolean);
+begin
+  assert(FKind <> tvObject); //this is not cool to set the bytes of an existing pointer?
+  FKind := tvBoolean;
+  Move(value,FValue[0], SizeOf(Value));
+end;
+
+function TValue.getNumber : TNumber;
+var
+  l : Longint;
+begin
+  if FKind = tvObject then
+  begin
+    Move(FValue[0], l, SizeOf(l));
+    result := l;
+    exit;
+  end;
+  Move(FValue[0], Result, SizeOf(Result))
+end;
+
+procedure TValue.SetNumber(const value : TNumber);
+begin
+   Fkind := tvNumber;
+   Move(value,FValue[0], SizeOf(Value))
+end;
+
 
 (*
 
