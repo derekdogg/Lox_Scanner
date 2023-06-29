@@ -282,8 +282,38 @@ end;
 
 
 procedure TForm1.Button5Click(Sender: TObject);
+var
+  a : TValue;
+  n : TNumber;
+  b : Boolean;
+
+
+  o,x : pLoxObject;
+
 begin
- //blah
+  fillchar(o,sizeof(o),#0);
+  new(o);
+
+
+  o.IsMarked := true;
+  o.Kind := OBJ_INSTANCE;
+
+  a.LoxObject := o;
+  a.boolean := true;
+(*
+  x := a.LoxObject;
+
+
+  n := a.Number;
+  b := a.Boolean;
+  (*a.Number := -1;
+  n := a.Number;
+
+  b := a.Boolean;
+
+  Memo3.lines.add(floattostr(n));
+  Memo3.lines.add(booltostr(b));  *)
+  dispose(o);
 end;
 
 end.
