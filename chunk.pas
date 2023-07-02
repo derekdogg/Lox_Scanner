@@ -12,18 +12,18 @@ type
 
   TConstantChunk = record
     OpCode    : TOpCodes;
-    constant  : Double;
+    constant  : TValue;
   end;
 
   TChunks = record
   private
     FConstantCount : integer;
     FOpCodes       : TBytes;
-    FConstants     : TDoubles;
+    FConstants     : TValues;
     // FLine      : TIntegers;
   public
-    function Constants : TDoubles;
-    function AddConstant(const Value: Double) : Integer;
+    function Constants : TValues;
+    function AddConstant(const Value: TValue) : Integer;
     function AddReturn : integer;
     Function AddNIL : Integer;
     Function AddTRUE : Integer;
@@ -71,14 +71,14 @@ type
   TInstructionPointer = record
   private
     FBytes      : TBytes;
-    FConstants  : TDoubles;
+    FConstants  : TValues;
     FIndex      : integer;
     FCurrent    : pByte;
     FPrevious   : pByte;
   public
     function ByteCount : integer;
     function ConstantCount : integer;
-    function Constant(const Index : byte) : pDouble;
+    function Constant(const Index : byte) : pValue;
     function ByteAt(const Index : integer) : pByte;
     function Index : integer;
     function Current : pByte;
@@ -123,7 +123,7 @@ begin
 end;
 
 //add constant opcode followed by index of constant in constants array
-function TChunks.AddConstant(const Value: Double) : Integer;
+function TChunks.AddConstant(const Value: TValue) : Integer;
 begin
   if FConstantCount = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
   inc(FConstantCount);
@@ -304,7 +304,7 @@ begin
   result := FOPCodes.Add(ord(OP_TRUE));
 end;
 
-function TChunks.Constants: TDoubles;
+function TChunks.Constants: TValues;
 begin
   result := FConstants;
 end;
@@ -329,7 +329,7 @@ begin
   result := FBytes.Count;
 end;
 
-function TInstructionPointer.Constant(const Index : byte) : pDouble;
+function TInstructionPointer.Constant(const Index : byte) : pValue;
 begin
   assert((index >= 0) and (index < FConstants.count));
   result := FConstants.Item(Index);

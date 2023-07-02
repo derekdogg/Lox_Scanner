@@ -356,7 +356,6 @@ begin
 end;
 
 
-
 procedure TCompiler.Error(const msg: String);
 begin
   raise exception.create(msg);
@@ -426,7 +425,7 @@ var
   token : pToken;
   number : double;
   text : string;
-
+  Value : TValue;
 begin
   Token := FTokens.Previous;
   if Token = nil then exit;
@@ -434,9 +433,9 @@ begin
   text := FScanner.ln.items[Token.Line].text;
   text := copy(text,token.Start,token.length);
 
-  number := strToFloat(text);
+  Value.Number := strToFloat(text);
 
-  FChunks.AddConstant(number);
+  FChunks.AddConstant(Value);
 end;
 
 procedure TCompiler.grouping(const canAssign : boolean);

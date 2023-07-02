@@ -2,12 +2,14 @@ unit DoubleArray;
 
 interface
 
+uses LOXTypes;
+
 type
 
   //pSlotType = ^TSlotType;
-  //TSlotType = Double;
+  //TSlotType = TValue;
 
-  TDoubles = record
+  TValues = record
   const
     NUM_SLOTS = 10;
     INCREMENT_CAPACITY_BY = 2;
@@ -28,67 +30,67 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : Double) : integer;
-    function  Item(const index : integer) : pDouble;
+    function Add(const value : TValue) : integer;
+    function  Item(const index : integer) : pValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
 
- TDoubleIterator = record
+ TValueIterator = record
  private
    FIndex : integer;
-   FDoubles : TDoubles;
-   FCurrent : pDouble;
-   FPrevious : pDouble;
+   FTValues : TValues;
+   FCurrent : pValue;
+   FPrevious : pValue;
  public
    function Index : integer;
-   function Current : pDouble;
-   function Previous : pDouble;
+   function Current : pValue;
+   function Previous : pValue;
 
    function Count : integer;
-   function MoveFirst : pDouble;
-   function MoveNext  : pDouble;
-   function peekNext : pDouble;
-   function MovePrev  : pDouble;
-   function PeekPrev : pDouble;
-   function MoveLast  : pDouble;
-   procedure init(const Doubles : TDoubles);
+   function MoveFirst : pValue;
+   function MoveNext  : pValue;
+   function peekNext : pValue;
+   function MovePrev  : pValue;
+   function PeekPrev : pValue;
+   function MoveLast  : pValue;
+   procedure init(const TValues : TValues);
  end;
 
 
 
 implementation
 
-function TDoubleIterator.Count : integer;
+function TValueIterator.Count : integer;
   begin
-    result := FDoubles.Count;
+    result := FTValues.Count;
   end;
 
-  function TDoubleIterator.MoveFirst : pDouble;
+  function TValueIterator.MoveFirst : pValue;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
+    if not FTValues.Count > 0 then exit;
     FIndex := 0;
-    FCurrent := FDoubles.Item(FIndex);
+    FCurrent := FTValues.Item(FIndex);
     FPrevious := nil;
     result := FCurrent;
   end;
 
-  function TDoubleIterator.MoveLast  : pDouble;
+  function TValueIterator.MoveLast  : pValue;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
-    FIndex := FDoubles.Count-1;
-    FCurrent := FDoubles.Item(FIndex);
+    if not FTValues.Count > 0 then exit;
+    FIndex := FTValues.Count-1;
+    FCurrent := FTValues.Item(FIndex);
     FPrevious := PeekPrev;
     result := FCurrent;
   end;
 
-  function TDoubleIterator.MoveNext  : pDouble;
+  function TValueIterator.MoveNext  : pValue;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
+    if not FTValues.Count > 0 then exit;
 
     if FIndex = -1 then
     begin
@@ -99,74 +101,74 @@ function TDoubleIterator.Count : integer;
     end;
 
     inc(FIndex);
-    if FIndex < FDoubles.Count then
+    if FIndex < FTValues.Count then
     begin
       FPrevious := FCurrent;
-      FCurrent := FDoubles.Item(FIndex);
+      FCurrent := FTValues.Item(FIndex);
       result := FCurrent;
     end;
   end;
 
-  function TDoubleIterator.MovePrev  : pDouble;
+  function TValueIterator.MovePrev  : pValue;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
+    if not FTValues.Count > 0 then exit;
     if FIndex > 0 then
     begin
       dec(FIndex);
-      FCurrent := FDoubles.Item(FIndex);
+      FCurrent := FTValues.Item(FIndex);
       FPrevious := PeekPrev;
       result := FCurrent;
     end;
   end;
 
-  function TDoubleIterator.peekNext : pDouble;
+  function TValueIterator.peekNext : pValue;
   var
     i : integer;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
+    if not FTValues.Count > 0 then exit;
     i := FIndex;
     inc(i);
-    if i < FDoubles.Count-1 then
+    if i < FTValues.Count-1 then
     begin
-      result := FDoubles.Item(i);
+      result := FTValues.Item(i);
     end;
   end;
 
-  function TDoubleIterator.PeekPrev : pDouble;
+  function TValueIterator.PeekPrev : pValue;
   var
     i : integer;
   begin
     result := nil;
-    if not FDoubles.Count > 0 then exit;
+    if not FTValues.Count > 0 then exit;
     i := FIndex;
     if i > 0 then
     begin
       dec(i);
-      result := FDoubles.Item(i);
+      result := FTValues.Item(i);
     end;
   end;
 
 
-    function TDoubleIterator.Previous : pDouble;
+    function TValueIterator.Previous : pValue;
     begin
        result := FPrevious;
     end;
 
-   function TDoubleIterator.Current : pDouble;
+   function TValueIterator.Current : pValue;
    begin
      result := FCurrent;
    end;
 
-    function TDoubleIterator.Index : integer;
+    function TValueIterator.Index : integer;
     begin
       result := FIndex;
     end;
 
-  procedure TDoubleIterator.init(const Doubles : TDoubles);
+  procedure TValueIterator.init(const TValues : TValues);
   begin
-    FDoubles := Doubles;
+    FTValues := TValues;
     FIndex := -1;
     FCurrent := nil;
     FPrevious := nil;
@@ -176,18 +178,18 @@ function TDoubleIterator.Count : integer;
 
  
 
-function TDoubles.SlotCount : integer;
+function TValues.SlotCount : integer;
 begin
-  result := FCapacity div Sizeof(Double);
+  result := FCapacity div Sizeof(TValue);
 end;
 
-function TDoubles.Capacity : integer;
+function TValues.Capacity : integer;
 begin
   result := FCapacity;
 end;
 
 
-procedure TDoubles.AllocateArray(var p : pointer; const size : integer);
+procedure TValues.AllocateArray(var p : pointer; const size : integer);
 begin
   assert(p = nil);
   getMem(p,size);
@@ -195,12 +197,12 @@ begin
 
 end;
 
-function TDoubles.Count: integer;
+function TValues.Count: integer;
 begin
   result := FCount;
 end;
 
-procedure  TDoubles.GrowArray;
+procedure  TValues.GrowArray;
 var
   pCopyItems : pointer;
 begin
@@ -217,9 +219,9 @@ begin
 end;
 
 
-function TDoubles.Add(const value : Double) : integer;
+function TValues.Add(const value : TValue) : integer;
 var
-  pIndex : pDouble;
+  pIndex : pValue;
 begin
   result := FCount;
   GrowArray;
@@ -228,21 +230,21 @@ begin
   inc(FCount);
 end;
 
-function TDoubles.Item(const index: integer): pDouble;
+function TValues.Item(const index: integer): pValue;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
-  assert((FIndex * sizeof(Double)) <= FCapacity);
+  assert((FIndex * sizeof(TValue)) <= FCapacity);
   result := @FItems^;
   inc(result,index);
 end;
 
-function TDoubles.ResizeCount: integer;
+function TValues.ResizeCount: integer;
 begin
   result := FResizeCount;
 end;
 
-procedure TDoubles.finalize;
+procedure TValues.finalize;
 begin
   if assigned(FItems) then
   begin
@@ -251,32 +253,32 @@ begin
   end;
 end;
 
-function TDoubles.FreeSlots: integer;
+function TValues.FreeSlots: integer;
 begin
   result := 0;
   if FCapacity = 0 then exit;
-  result := (FCapacity - (FCount * sizeof(Double))) div Sizeof(Double);
+  result := (FCapacity - (FCount * sizeof(TValue))) div Sizeof(TValue);
 end;
 
-function TDoubles.IsFull : boolean;
+function TValues.IsFull : boolean;
 begin
-  result := (FCount * sizeof(double)) = FCapacity
+  result := (FCount * sizeof(TValue)) = FCapacity
 end;
 
-procedure TDoubles.growCapacity;
+procedure TValues.growCapacity;
 begin
   FPrevCapacity := FCapacity;
   FCapacity := FCapacity  * INCREMENT_CAPACITY_BY;
-  assert(FCapacity mod sizeof(double) = 0);
+  assert(FCapacity mod sizeof(TValue) = 0);
 end;
 
-Constructor TDoubles.init;
+Constructor TValues.init;
 begin
   FresizeCount := 0;
   FItems := nil;
   Findex := 0;
   Fcount := 0;
-  Fcapacity := NUM_SLOTS * sizeof(double);
+  Fcapacity := NUM_SLOTS * sizeof(TValue);
   Fprevcapacity := Fcapacity;
 
   AllocateArray(FItems,Fcapacity);

@@ -259,7 +259,7 @@ type
     length: word;
     line: word;
   end;
- 
+
 //  TTokens = Array[0..cMaxTokens] of TToken;
 
 
@@ -305,16 +305,11 @@ type
         OP_METHOD
 );
 
-  pByteCode = ^TByteCode;
-  TByteCode = record
-    Operation : TOPCODES;
-    value     : Double; //value associated with operation
-  end;
 
 
 
 const
-  
+
   TOP_Code_name : Array[OP_NULL..OP_METHOD] of string  = (
    'OP_NULL',
 //> op-constant
@@ -410,7 +405,7 @@ const
 //< Methods and Initializers method-op;
 );
 
-Type 
+Type
   TObjectKind = (
     //> Methods and Initializers obj-type-bound-method
     OBJ_BOUND_METHOD,
@@ -446,13 +441,12 @@ Type
   TKind = (tvNumber,tvBoolean, tvNull, tvObject);
   TNumber = Double;
 
-
+  pValue = ^TValue;
   TEightBytes = array[0..7] of byte;
   TValue = record
   private
     FKind  : TKind;
     FValue : TEightBytes;
-    FNull  : Boolean;
     function getNumber  : TNumber;
     procedure SetNumber(const value : TNumber);
 
@@ -463,29 +457,40 @@ Type
     function  getObject : pLoxObject;
 
     procedure setNull(const value : Boolean);
+    function getNull: boolean;
+
+    function GetString : String;
   public
-    property Kind       : TKind read FKind write FKind;
+   property Kind       : TKind read FKind write FKind;
     property Number     : TNumber read getNumber write SetNumber;
     property Boolean    : Boolean read getBoolean write setBoolean;
     property Bytes      : TEightBytes read FValue;
     property LoxObject  : pLoxObject read getObject write setObject;
-    property Null       : boolean read FNull write setNull;
+    property ToString   : string read getString;
+    property Null       : boolean read getNull write setNull;
+  end;
+
+
+  pByteCode = ^TByteCode;
+  TByteCode = record
+    Operation : TOPCODES;
+    Value     : TValue; //value associated with operation
   end;
 
 
 
+
 implementation
+uses sysUtils;
 
 procedure TValue.setNull(const value : Boolean);
 begin
-  FNull := Value;
   FKind := tvNull;
   fillchar(FValue,sizeof(FValue),#0);
 end;
 
 procedure TValue.setObject(const value : pLoxObject);
 begin
-
   FKind := tvObject;
   Move(Longint(value),FValue[0], SizeOf(Value));
 end;
@@ -497,9 +502,23 @@ begin
     Move(FValue[0], Result, SizeOf(Result));
 end;
 
+function TValue.GetString: String;
+begin
+  case FKind of
+   tvObject : begin
+     result := '';
+   end;
+   tvBoolean : begin
+     result := BoolToStr(getBoolean,true);
+   end;
+
+   tvNumber : begin
+     result := floatToStr(GetNumber);
+   end;
+   end;
+end;
 
 function TValue.getBoolean : Boolean;
-
 begin
   result := false;
   if FKind = tvObject then
@@ -514,7 +533,14 @@ procedure TValue.setBoolean(const value : Boolean);
 begin
   assert(FKind <> tvObject); //this is not cool to set the bytes of an existing pointer?
   FKind := tvBoolean;
-  Move(value,FValue[0], SizeOf(Value));
+  FillChar(FValue,Sizeof(FValue),#0);
+  Move(value, FValue[0], SizeOf(Value))
+
+end;
+
+function TValue.getNull: boolean;
+begin
+  result := fKind = tvNull;
 end;
 
 function TValue.getNumber : TNumber;

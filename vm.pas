@@ -38,8 +38,6 @@ uses
 
 
 { TVirtualMachine }
-
-
 function TVirtualMachine.Result: TByteCode;
 begin
   assert(FStack.Count = 1);
@@ -50,7 +48,7 @@ function TVirtualMachine.Run : TInterpretResult;
 var
   ByteCode : TByteCode;
   constantIndex : integer;
-  Value : pDouble;
+  Value : pValue;
 
 begin
   while FInstructionPointer.Next <> nil do
@@ -129,7 +127,7 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    result.Value := L.Value + R.Value;
+    result.Value.Number := L.Value.Number + R.Value.Number;
     FStack.Push(Result);
 
   except
@@ -152,7 +150,7 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    result.Value := L.Value - R.Value;
+    result.Value.number := L.Value.Number - R.Value.Number;
     FStack.Push(Result);
   except
      HandleRunTimeError;
@@ -172,7 +170,7 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    result.Value := L.Value * R.Value;
+    result.Value.Number := L.Value.Number * R.Value.Number;
     FStack.Push(Result);
   except
      HandleRunTimeError; //<== place holders for now
@@ -191,7 +189,7 @@ begin
     R := FStack.Pop;
     Assert(R.Operation = OP_CONSTANT); //??
 
-    R.Value := - R.Value;
+    R.Value.Number := - R.Value.Number;
     FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
   except
      HandleRunTimeError;
@@ -210,10 +208,10 @@ begin
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
-    Assert(R.Value <> 0); //divide by zero exceptions.
+    Assert(R.Value.Number <> 0); //divide by zero exceptions.
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    result.Value := L.Value / R.Value;
+    result.Value.Number := L.Value.Number / R.Value.Number;
     FStack.Push(Result);
   except
      HandleRunTimeError;
@@ -229,7 +227,7 @@ begin
   Assert(FInstructionPointer.Current^ = byte(OP_NOT));
   try
     result := FStack.Pop;
-    Result.Value := -Result.Value;
+    Result.Value.boolean :=  Not Result.Value.Boolean;
     FStack.Push(Result);
    except
      HandleRunTimeError;
@@ -249,10 +247,10 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    if r.Value = l.value then
-      result.value := 1
+    if r.Value.number = l.value.number then
+      result.value.Boolean := true
     else
-      result.value := -1;
+      result.value.Boolean := false;
     FStack.Push(Result);
   except
      HandleRunTimeError;
@@ -275,10 +273,10 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    if l.Value > r.value then
-      result.value := 1
+    if l.Value.Number > r.value.Number then
+      result.value.Boolean := true
     else
-      result.value := -1;
+      result.value.Boolean := false;
     FStack.Push(Result);
   except
      HandleRunTimeError;
@@ -297,10 +295,10 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    if l.Value < r.value then
-      result.value := 1
+    if l.Value.Number < r.value.Number then
+      result.value.Boolean := true
     else
-      result.value := -1;
+      result.value.Boolean := false;
     FStack.Push(Result);
   except
      HandleRunTimeError;

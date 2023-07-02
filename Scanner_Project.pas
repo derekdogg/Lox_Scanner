@@ -66,7 +66,7 @@ var
   Tokens : TTokenIterator;
   Iter :  TInstructionPointer;
   constantIndex : byte;
-  value : pDouble; //represents a constant
+  value : pValue; //represents a constant
   ByteCode : string;
 
   VM :  TVirtualMachine;
@@ -125,7 +125,7 @@ begin
           begin
             constantIndex := Iter.Current^;
             value := Iter.Constant(constantIndex);
-            ByteCode := ByteCode + '=' + floattostr(value^);
+            ByteCode := ByteCode + '=' + floattostr(value.Number);
           end;
         end;
 
@@ -144,7 +144,7 @@ begin
      Iter.Init(Compiler.Chunks);
      VM.Init(Iter);
      VM.Run;
-     Memo3.Lines.Add('result := ' + floattostr(VM.Result.Value));
+     Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
      Compiler.Free;
@@ -223,19 +223,20 @@ var
   Chunk : TChunks;
   Iter :  TInstructionPointer;
   constantIndex : byte;
-  value : pDouble; //represents a constant
-  DIter : TDoubleIterator;
+  value : TValue; //represents a constant
+  DIter : TValueIterator;
   ByteCode : TByteCode;
 begin
   try
     Chunk.Init;
   //Chunk.AddReturn;
-    Chunk.AddConstant(12.12);  //2 byte
+    Value.Number := 12.12;
+    Chunk.AddConstant(Value);  //2 byte
     Chunk.AddADD;
-    Chunk.AddConstant(45);     //2 byte
+    Value.Number := 45;
+    Chunk.AddConstant(value);  //2 byte
     Chunk.AddReturn;           //1 byte
     Chunk.AddCLOSE_UPVALUE;    //1 byte
-    Chunk.AddConstant(55);     //2 byte
 
 
  (* DIter.Init(Chunk.Constants);
@@ -258,8 +259,8 @@ begin
        if Iter.Next <> nil then
        begin
          constantIndex := Iter.Current^;
-         value := Iter.Constant(constantIndex);
-         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + floattostr(value^));
+         value := Iter.Constant(constantIndex)^;
+         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + floattostr(value.Number));
        end;
     end;
   end;
@@ -283,23 +284,11 @@ end;
 
 procedure TForm1.Button5Click(Sender: TObject);
 var
-  a : TValue;
-  n : TNumber;
-  b : Boolean;
-
-
-  o,x : pLoxObject;
+  val : TValue;
 
 begin
-  fillchar(o,sizeof(o),#0);
-  new(o);
+  val.Boolean := true;
 
-
-  o.IsMarked := true;
-  o.Kind := OBJ_INSTANCE;
-
-  a.LoxObject := o;
-  a.boolean := true;
 (*
   x := a.LoxObject;
 
@@ -313,7 +302,7 @@ begin
 
   Memo3.lines.add(floattostr(n));
   Memo3.lines.add(booltostr(b));  *)
-  dispose(o);
+  //dispose(p);
 end;
 
 end.
