@@ -27,6 +27,7 @@ type
     procedure DoFalse;
     procedure DoNil;
     procedure HandleRunTimeError;
+    Function isFalsey(value : TValue) : Boolean;
   public
     function Result : TByteCode;
     function Run : TInterpretResult;
@@ -232,6 +233,15 @@ begin
   end;
 end;
 
+Function TVirtualMachine.isFalsey(value : TValue) : Boolean;
+begin
+   result := (Value.Kind = tvNull) OR ((Value.Kind = tvBoolean) and not(Value.Boolean));
+end;
+
+{  C code...
+  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 procedure TVirtualMachine.NotEqual;
 var
   Result : TByteCode;
@@ -240,8 +250,7 @@ begin
   //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   Assert(FInstructionPointer.Current^ = byte(OP_NOT));
   try
-    result := FStack.Pop;
-    Result.Value.Boolean :=  Not Result.Value.Boolean;
+    result.Value.Boolean := isFalsey(FStack.pop.value);
     FStack.Push(Result);
    except
      HandleRunTimeError;
