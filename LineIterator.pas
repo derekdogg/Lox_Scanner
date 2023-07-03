@@ -16,7 +16,7 @@ type
 
   TLines = array[0..cMaxLines] of TLine;
   //todo : fix this constant.
-
+  //take a peek at this function TStrings.GetTextStr: string;
 
   TLineProcedure = procedure(Const Line : TLine);
 

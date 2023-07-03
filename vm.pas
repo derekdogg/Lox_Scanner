@@ -23,6 +23,8 @@ type
     procedure Greater;
     procedure Less;
     procedure NotEqual;
+    procedure DoTrue;
+    procedure DoFalse;
     procedure HandleRunTimeError;
   public
     function Result : TByteCode;
@@ -66,6 +68,13 @@ begin
            FStack.Push(ByteCode);
       end;
 
+      OP_TRUE : begin
+         DoTrue;
+      end;
+
+      OP_FALSE : begin
+         DoFalse;
+      end;
 
       OP_GREATER : begin
          greater;
@@ -222,12 +231,12 @@ procedure TVirtualMachine.NotEqual;
 var
   Result : TByteCode;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+  //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   Assert(FInstructionPointer.Current^ = byte(OP_NOT));
   try
     result := FStack.Pop;
-    Result.Value.boolean :=  Not Result.Value.Boolean;
+    Result.Value.Boolean :=  Not Result.Value.Boolean;
     FStack.Push(Result);
    except
      HandleRunTimeError;
@@ -238,8 +247,8 @@ procedure TVirtualMachine.Equal;
 var
   L,R,Result : TByteCode;
 begin
-   Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+   //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+   //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_EQUAL));
   //this also means we assume the correct values are sitting in Stack...
@@ -248,9 +257,13 @@ begin
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
     if r.Value.number = l.value.number then
-      result.value.Boolean := true
+    begin
+      result.value.Boolean := true;
+    end
     else
+    begin
       result.value.Boolean := false;
+    end;
     FStack.Push(Result);
   except
      HandleRunTimeError;
@@ -260,6 +273,25 @@ end;
 procedure TVirtualMachine.finalize;
 begin
   FStack.Finalize;
+end;
+
+procedure TVirtualMachine.DoTrue;
+var
+  ByteCode : TByteCode;
+begin
+  ByteCode.Operation := OP_TRUE;
+  ByteCode.Value.Boolean := true;
+  FStack.Push(ByteCode);
+end;
+
+
+procedure TVirtualMachine.DoFalse;
+var
+  ByteCode : TByteCode;
+begin
+  ByteCode.Operation := OP_FALSE;
+  ByteCode.Value.Boolean := false;
+  FStack.Push(ByteCode);
 end;
 
 procedure TVirtualMachine.Greater;

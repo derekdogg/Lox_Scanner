@@ -98,6 +98,7 @@ implementation
   function TScanner.CheckKeyWord(Const word : String) : boolean;
   var wordStart, WordEnd : integer;
   begin
+
     wordStart := ln.chars.Index;
     WordEnd   := ln.chars.Index + Length(word)-1;
 
@@ -268,15 +269,16 @@ begin
   result := NullToken;
 
   if not MatchKeyWord(TTokenName[TokenKind]) then exit;
-  if not checkKeyWord(TTokenName[TokenKind]) then exit;
+  //if not checkKeyWord(TTokenName[TokenKind]) then exit;   I think this was my initial attempt at checking the text for errors.
+  // but it doesn't quite work correctly. i.e. (true==false) will not pass the test, therefore I have removed it temporarily.
 
-  begin
+
     result.start := ln.chars.index;
     result.length := length(TTokenName[TokenKind]);
     result.line := ln.LineIndex;
     result.Kind := tokenKind;
-    //result.text := TTokenName[tokenKind];
-  end;
+
+
 end;
 
 

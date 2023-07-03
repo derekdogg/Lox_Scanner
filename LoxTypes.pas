@@ -461,7 +461,7 @@ Type
 
     function GetString : String;
   public
-   property Kind       : TKind read FKind write FKind;
+    property Kind       : TKind read FKind write FKind;
     property Number     : TNumber read getNumber write SetNumber;
     property Boolean    : Boolean read getBoolean write setBoolean;
     property Bytes      : TEightBytes read FValue;

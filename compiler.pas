@@ -49,6 +49,9 @@ type
     procedure CreateRulesForNotEqual;
     procedure CreateRulesForMultiply;
     procedure CreateRulesForDivide;
+    procedure CreateRulesForTrue;
+    procedure CreateRulesForFalse;
+    procedure CreateRulesForNil;
     procedure CreateRulesForLessThan;
     procedure CreateRulesForLessThanEqual;
     procedure CreateRulesForGreaterThanEqual;
@@ -68,6 +71,7 @@ type
     procedure Binary(const canAssign : boolean);
     procedure Unary(const canAssign : boolean);
     procedure call(const canAssign : boolean);
+    procedure literal(const CanAssign : boolean);
     procedure grouping(const canAssign : boolean);
     procedure parsePrecedence(precedence : TPrecedence);
     function getRule(TokenKind : TTokenKind) : TParseRule;
@@ -235,6 +239,11 @@ begin
   FParseRules[tkSlash].Precedence := PREC_FACTOR;
 end;
 
+procedure TCompiler.CreateRulesForNil;
+begin
+
+end;
+
 procedure TCompiler.CreateRulesForNotEqual;
 begin
 // [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
@@ -260,6 +269,22 @@ begin
   FParseRules[tkEqualEqual].Precedence := PREC_EQUALITY;
 end;
 
+
+procedure TCompiler.CreateRulesForFalse;
+begin
+ //[TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE}
+  FParseRules[tkFalse].Prefix := literal;
+  FParseRules[tkFalse].Infix := nil;
+  FParseRules[tkFalse].Precedence := PREC_NONE;
+end;
+
+procedure TCompiler.CreateRulesForTrue;
+begin
+   //[TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE}
+  FParseRules[tkTrue].Prefix := literal;
+  FParseRules[tkTrue].Infix := nil;
+  FParseRules[tkTrue].Precedence := PREC_NONE;
+end;
 
 procedure TCompiler.CreateRulesForGreaterThan;
 begin
@@ -301,6 +326,8 @@ begin
   FParseRules[tkPlus].Infix := binary;
   FParseRules[tkPlus].Precedence := PREC_TERM;
 end;
+
+
 
 
 
@@ -352,6 +379,8 @@ begin
   CreateRulesForMinus;
   CreateRulesForMultiply;
   CreateRulesForDivide;
+  CreateRulesForFalse;
+  CreateRulesForTrue;
   CreateRulesForEOF;
 end;
 
@@ -449,6 +478,15 @@ begin
 
 end;
 
+
+procedure TCompiler.literal(const CanAssign: boolean);
+begin
+  case  FTokens.Previous.Kind of
+    tkFalse : FChunks.AddFALSE;
+    tknil   : FChunks.AddNil;
+    tkTrue  : FChunks.AddTrue;
+  end;
+end;
 
 function TCompiler.match(const Expected : TTokenKind) : boolean;
 begin

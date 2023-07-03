@@ -40,7 +40,7 @@ type
  TValueIterator = record
  private
    FIndex : integer;
-   FTValues : TValues;
+   FValues : TValues;
    FCurrent : pValue;
    FPrevious : pValue;
  public
@@ -64,15 +64,15 @@ implementation
 
 function TValueIterator.Count : integer;
   begin
-    result := FTValues.Count;
+    result := FValues.Count;
   end;
 
   function TValueIterator.MoveFirst : pValue;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
+    if not FValues.Count > 0 then exit;
     FIndex := 0;
-    FCurrent := FTValues.Item(FIndex);
+    FCurrent := FValues.Item(FIndex);
     FPrevious := nil;
     result := FCurrent;
   end;
@@ -80,9 +80,9 @@ function TValueIterator.Count : integer;
   function TValueIterator.MoveLast  : pValue;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
-    FIndex := FTValues.Count-1;
-    FCurrent := FTValues.Item(FIndex);
+    if not FValues.Count > 0 then exit;
+    FIndex := FValues.Count-1;
+    FCurrent := FValues.Item(FIndex);
     FPrevious := PeekPrev;
     result := FCurrent;
   end;
@@ -90,7 +90,7 @@ function TValueIterator.Count : integer;
   function TValueIterator.MoveNext  : pValue;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
+    if not FValues.Count > 0 then exit;
 
     if FIndex = -1 then
     begin
@@ -101,10 +101,10 @@ function TValueIterator.Count : integer;
     end;
 
     inc(FIndex);
-    if FIndex < FTValues.Count then
+    if FIndex < FValues.Count then
     begin
       FPrevious := FCurrent;
-      FCurrent := FTValues.Item(FIndex);
+      FCurrent := FValues.Item(FIndex);
       result := FCurrent;
     end;
   end;
@@ -112,11 +112,11 @@ function TValueIterator.Count : integer;
   function TValueIterator.MovePrev  : pValue;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
+    if not FValues.Count > 0 then exit;
     if FIndex > 0 then
     begin
       dec(FIndex);
-      FCurrent := FTValues.Item(FIndex);
+      FCurrent := FValues.Item(FIndex);
       FPrevious := PeekPrev;
       result := FCurrent;
     end;
@@ -127,12 +127,12 @@ function TValueIterator.Count : integer;
     i : integer;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
+    if not FValues.Count > 0 then exit;
     i := FIndex;
     inc(i);
-    if i < FTValues.Count-1 then
+    if i < FValues.Count-1 then
     begin
-      result := FTValues.Item(i);
+      result := FValues.Item(i);
     end;
   end;
 
@@ -141,12 +141,12 @@ function TValueIterator.Count : integer;
     i : integer;
   begin
     result := nil;
-    if not FTValues.Count > 0 then exit;
+    if not FValues.Count > 0 then exit;
     i := FIndex;
     if i > 0 then
     begin
       dec(i);
-      result := FTValues.Item(i);
+      result := FValues.Item(i);
     end;
   end;
 
@@ -168,7 +168,7 @@ function TValueIterator.Count : integer;
 
   procedure TValueIterator.init(const TValues : TValues);
   begin
-    FTValues := TValues;
+    FValues := TValues;
     FIndex := -1;
     FCurrent := nil;
     FPrevious := nil;
