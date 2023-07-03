@@ -25,6 +25,7 @@ type
     procedure NotEqual;
     procedure DoTrue;
     procedure DoFalse;
+    procedure DoNil;
     procedure HandleRunTimeError;
   public
     function Result : TByteCode;
@@ -66,6 +67,10 @@ begin
            value := FInstructionPointer.Constant(constantIndex);
            Bytecode.Value := Value^;
            FStack.Push(ByteCode);
+      end;
+
+      OP_Nil  : begin
+        DoNil;
       end;
 
       OP_TRUE : begin
@@ -291,6 +296,15 @@ var
 begin
   ByteCode.Operation := OP_FALSE;
   ByteCode.Value.Boolean := false;
+  FStack.Push(ByteCode);
+end;
+
+procedure TVirtualMachine.DoNil;
+var
+  ByteCode : TByteCode;
+begin
+  ByteCode.Operation := OP_NULL;
+  ByteCode.Value.Null := true;
   FStack.Push(ByteCode);
 end;
 

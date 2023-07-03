@@ -515,6 +515,10 @@ begin
    tvNumber : begin
      result := floatToStr(GetNumber);
    end;
+
+   tvNull  : begin
+     result := 'nil';
+   end;
    end;
 end;
 

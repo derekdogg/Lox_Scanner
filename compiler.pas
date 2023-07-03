@@ -52,6 +52,7 @@ type
     procedure CreateRulesForTrue;
     procedure CreateRulesForFalse;
     procedure CreateRulesForNil;
+    procedure CreateRulesForBang;
     procedure CreateRulesForLessThan;
     procedure CreateRulesForLessThanEqual;
     procedure CreateRulesForGreaterThanEqual;
@@ -159,7 +160,7 @@ begin
   parsePrecedence(PREC_UNARY);
   case TokenKind of
     tkMinus : FChunks.AddNEGATE;
-
+    tkBang  : FChunks.ADDNOT;
   end;
 
 
@@ -223,6 +224,14 @@ begin
 end;
 
 
+procedure TCompiler.CreateRulesForBang;
+begin
+  // [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE}
+  FParseRules[tkBang].Prefix := unary;
+  FParseRules[tkBang].Infix := nil;
+  FParseRules[tkBang].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForClose_bracket;
 begin
   // [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
@@ -241,7 +250,10 @@ end;
 
 procedure TCompiler.CreateRulesForNil;
 begin
-
+   //[TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
+  FParseRules[tkNil].Prefix := literal;
+  FParseRules[tkNil].Infix := nil;
+  FParseRules[tkNil].Precedence := PREC_NONE;
 end;
 
 procedure TCompiler.CreateRulesForNotEqual;
@@ -381,6 +393,8 @@ begin
   CreateRulesForDivide;
   CreateRulesForFalse;
   CreateRulesForTrue;
+  CreateRulesForNil;
+  CreateRulesForBang;
   CreateRulesForEOF;
 end;
 
