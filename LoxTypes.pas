@@ -511,13 +511,23 @@ type field from it. *)
   end;
 
   function NewLoxObject : pLoxObject;
-  function NewLoxString : pLoxString;
+  function NewLoxString(Const char : pChar) : pLoxString;
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
+
+  function StringValue(const char : pchar) : TValue;
+
+
+
 
 implementation
 
 uses sysUtils;
+
+function StringValue(const char : pchar) : TValue;
+begin
+  result.LoxObject := LoxObjectFrom(NewLoxString(char));
+end;
 
 
 function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
@@ -539,10 +549,11 @@ begin
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
 
-function NewLoxString : pLoxString;
+function NewLoxString(Const char : pChar) : pLoxString;
 begin
   new(Result);
   result.init;
+  result.Chars := Char;
 end;
 
 procedure TLoxObject.Init;
