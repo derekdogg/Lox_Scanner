@@ -40,6 +40,7 @@ type
 //    procedure emitConstant(value : TValue);
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
+    procedure Strings(const canAssign: Boolean);
     function  match(const Expected : TTokenKind) : boolean;
     //------------------rules---------------------------------------------------
     procedure CreateRuleForOpen_bracket;
@@ -53,6 +54,8 @@ type
     procedure CreateRulesForFalse;
     procedure CreateRulesForNil;
     procedure CreateRulesForBang;
+    procedure CreateRulesForPlus;
+    procedure CreateRulesForMinus;
     procedure CreateRulesForLessThan;
     procedure CreateRulesForLessThanEqual;
     procedure CreateRulesForGreaterThanEqual;
@@ -64,8 +67,7 @@ type
     procedure init;
     procedure Error(Const msg : String);
     function argumentList: Byte;
-    procedure CreateRulesForPlus;
-    procedure CreateRulesForMinus;
+
     function advance : boolean;
     procedure EmitBytes(const Byte1,Byte2 : Byte);
     procedure Number(const canAssign : boolean);
@@ -563,9 +565,14 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
 } *)
 
 
+procedure TCompiler.Strings(const canAssign: Boolean);
+begin
+
+end;
+
 procedure TCompiler.EmitBytes(const Byte1,Byte2 : Byte);
 begin
-   //emitByte(
+    
 end;
 
 

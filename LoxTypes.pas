@@ -407,6 +407,7 @@ const
 
 Type
   TObjectKind = (
+
     //> Methods and Initializers obj-type-bound-method
     OBJ_BOUND_METHOD,
     //< Methods and Initializers obj-type-bound-method
@@ -436,7 +437,39 @@ Type
     Kind     : TObjectKind;
     IsMarked : Boolean;
     Next     : pLoxObject;
+
+    procedure Init;
   end;
+
+  // Laid out in memory like
+  // [TLoxObject][Length][chars]
+  // so if you get a pointer (pLoxObject) to TLoxString address then increment it you will sit on the chars in memory)
+
+  //from book pp561.
+(*Given an ObjString*, you can safely cast it to Obj* and then access the
+type field from it. *)
+
+  pLoxString = ^TLoxString;
+  TLoxString = record
+  private
+    FObj    : TLoxObject;
+    Flength : integer;
+    Fchars  : PChar;
+    Fhash   : LongWord;
+    function getChars: PChar;
+    function getHash: LongWord;
+    procedure setChars(const Value: PChar);
+    procedure setHash(const Value: LongWord);
+  public
+    Property Obj    : TLoxObject read FObj;
+    Property Chars  : PChar read getChars write setChars;
+    Property Hash   : LongWord read getHash write setHash;
+    procedure Init;
+  end;
+
+
+
+
 
   TKind = (tvNumber,tvBoolean, tvNull, tvObject);
   TNumber = Double;
@@ -477,11 +510,73 @@ Type
     Value     : TValue; //value associated with operation
   end;
 
-
-
+  function NewLoxObject : pLoxObject;
+  function NewLoxString : pLoxString;
+  function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
+  function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
 
 implementation
+
 uses sysUtils;
+
+
+function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
+begin
+   assert(Assigned(pString));
+   result := @pString^;
+end;
+
+function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
+begin
+  assert(Assigned(pObject));
+  assert(pObject.Kind = OBJ_STRING);
+  result :=  pLoxString(pObject);
+end;
+
+function NewLoxObject : pLoxObject;
+begin
+  new(Result);
+  fillchar(result^,sizeof(TLoxObject),#0);
+end;
+
+function NewLoxString : pLoxString;
+begin
+  new(Result);
+  result.init;
+end;
+
+procedure TLoxObject.Init;
+begin
+  fillchar(Self,sizeof(Self),#0);
+end;
+
+function TLoxString.getChars: PChar;
+begin
+  result := FChars;
+end;
+
+function TLoxString.getHash: LongWord;
+begin
+  result := FHash;
+end;
+
+procedure TLoxString.setChars(const Value: PChar);
+begin
+  FChars := Value;
+  FLength := Length(Value);
+end;
+
+procedure TLoxString.setHash(const Value: LongWord);
+begin
+  FHash := Value;
+end;
+
+procedure TLoxString.Init;
+begin
+  fillchar(Self,sizeof(Self),#0);
+end;
+
+
 
 procedure TValue.setNull(const value : Boolean);
 begin
@@ -609,6 +704,11 @@ const
 *)
 
 { TToken }
+
+
+{ TLoxObject }
+
+
 
 
 end.

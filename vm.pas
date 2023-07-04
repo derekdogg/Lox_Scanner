@@ -235,7 +235,7 @@ end;
 
 Function TVirtualMachine.isFalsey(value : TValue) : Boolean;
 begin
-   result := (Value.Kind = tvNull) OR ((Value.Kind = tvBoolean) and not(Value.Boolean));
+   result := (Value.Kind = tvNull) OR ((Value.Kind = tvBoolean) and Value.Boolean = false);
 end;
 
 {  C code...

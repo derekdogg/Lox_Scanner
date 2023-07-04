@@ -39,6 +39,7 @@ var
 implementation
 
 uses
+  typinfo,
   loxtypes,
   charIterator,
   LineIterator,
@@ -285,24 +286,50 @@ end;
 procedure TForm1.Button5Click(Sender: TObject);
 var
   val : TValue;
+  LoxObject : TLoxObject;
+  LoxString : TLoxString;
+  Kind : TObjectKind;
 
+  pObject : PLoxObject;
+  pString : PLoxString;
+
+  pOther, pFoo :  PLoxString;
+
+
+  chars : PChar;
 begin
-  val.Boolean := true;
+  //different ways to work with TLoxObject,TLoxString.
+  try
+  LoxObject.Init;
+  LoxString.Init;
+  pString := NewLoxString;
+  pObject := LoxObjectFrom(pString);
+  pObject.Kind := OBJ_UPVALUE;  //setting this on the upstream object should reflect back to pString
 
-(*
-  x := a.LoxObject;
+
+  //casting
+  pObject := PLoxObject(pString);
+  pOther := pLoxString(pObject);
 
 
-  n := a.Number;
-  b := a.Boolean;
-  (*a.Number := -1;
-  n := a.Number;
+  //chars
+  pString.Chars := 'Derek';
 
-  b := a.Boolean;
 
-  Memo3.lines.add(floattostr(n));
-  Memo3.lines.add(booltostr(b));  *)
-  //dispose(p);
+  //this should raise an assertion error because it's kind is not a OBJ_STRING (because after down cast? it has it's value set to OBJ_UPVALUE)
+  try
+    pFoo := LoxStringFrom(pObject);
+  except
+    memo3.lines.add('failed which is good');
+  end;
+
+  pObject.Kind := OBJ_STRING;
+  pFoo := LoxStringFrom(pObject);
+  
+  finally
+  //dispose(pObject);
+    dispose(pString);
+  end;
 end;
 
 end.
