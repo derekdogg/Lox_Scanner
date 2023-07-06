@@ -579,14 +579,29 @@ begin
 end;
 
 procedure TLoxString.hashString;
+const
+  cHashPrime = 2166136261;
+  cMultiplier = 16777619;
+
+  (*Note : The specific value (above) was selected because it is a large prime number,
+    and using a prime number as the initial hash value helps achieve better distribution of hash values.
+    For more info See : Fowler-Noll-Vo (FNV) hash algorithm
+
+    The selection of 16777619 as the multiplication constant is based on empirical testing and analysis
+    to provide a good distribution of hash values.
+    It is a prime number that, when used in multiplication, helps to spread out the bits of the hash value and reduce collisions.
+
+
+  *)
+
 var
   i: Integer;
 begin
-  FHash := 2166136261;
+  FHash := cHashPrime;
   for i := 0 to Flength - 1 do
   begin
     Fhash := Fhash xor Byte(FChars[i]);
-    Fhash := Fhash * 16777619;
+    Fhash := Fhash * cMultiplier;
   end;
 end;
 
