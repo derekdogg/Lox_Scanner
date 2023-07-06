@@ -579,29 +579,28 @@ begin
 end;
 
 procedure TLoxString.hashString;
-const
-  cHashPrime = 2166136261;
-  cMultiplier = 16777619;
+  (*
+    algorithm fnv-1 is
+    hash := FNV_offset_basis
 
-  (*Note : The specific value (above) was selected because it is a large prime number,
-    and using a prime number as the initial hash value helps achieve better distribution of hash values.
-    For more info See : Fowler-Noll-Vo (FNV) hash algorithm
+    for each byte_of_data to be hashed do
+        hash := hash x FNV_prime
+        hash := hash XOR byte_of_data
 
-    The selection of 16777619 as the multiplication constant is based on empirical testing and analysis
-    to provide a good distribution of hash values.
-    It is a prime number that, when used in multiplication, helps to spread out the bits of the hash value and reduce collisions.
-
-
+    return hash
   *)
-
+const
+  FNV_offset_basis = 2166136261;
+  FNV_prime = 16777619;
 var
   i: Integer;
+
 begin
-  FHash := cHashPrime;
+  FHash := FNV_offset_basis;
   for i := 0 to Flength - 1 do
   begin
-    Fhash := Fhash xor Byte(FChars[i]);
-    Fhash := Fhash * cMultiplier;
+    FHash := FHash * FNV_prime;
+    FHash := FHash XOR ord(FChars[i]);
   end;
 end;
 
