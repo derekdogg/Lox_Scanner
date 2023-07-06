@@ -458,12 +458,12 @@ type field from it. *)
     Fhash   : LongWord;
     function getChars: PChar;
     function getHash: LongWord;
+    procedure hashString;
     procedure setChars(const Value: PChar);
-    procedure setHash(const Value: LongWord);
   public
     Property Obj    : TLoxObject read FObj;
     Property Chars  : PChar read getChars write setChars;
-    Property Hash   : LongWord read getHash write setHash;
+    Property Hash   : LongWord read getHash;
     procedure Init;
   end;
 
@@ -575,12 +575,21 @@ procedure TLoxString.setChars(const Value: PChar);
 begin
   FChars := Value;
   FLength := Length(Value);
+  hashString;
 end;
 
-procedure TLoxString.setHash(const Value: LongWord);
+procedure TLoxString.hashString;
+var
+  i: Integer;
 begin
-  FHash := Value;
+  FHash := 2166136261;
+  for i := 0 to Flength - 1 do
+  begin
+    Fhash := Fhash xor Byte(FChars[i]);
+    Fhash := Fhash * 16777619;
+  end;
 end;
+
 
 procedure TLoxString.Init;
 begin

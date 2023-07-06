@@ -302,7 +302,7 @@ begin
   try
   LoxObject.Init;
   LoxString.Init;
-  pString := NewLoxString;
+  pString := NewLoxString('Derek');
   pObject := LoxObjectFrom(pString);
   pObject.Kind := OBJ_UPVALUE;  //setting this on the upstream object should reflect back to pString
 
@@ -325,7 +325,7 @@ begin
 
   pObject.Kind := OBJ_STRING;
   pFoo := LoxStringFrom(pObject);
-  
+  Memo3.Lines.add('Hash : ' + inttostr(pFoo.hash));
   finally
   //dispose(pObject);
     dispose(pString);
