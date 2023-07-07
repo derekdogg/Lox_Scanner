@@ -59,8 +59,8 @@ type
     procedure CreateRulesForLessThan;
     procedure CreateRulesForLessThanEqual;
     procedure CreateRulesForGreaterThanEqual;
-
     procedure CreateRulesForGreaterThan;
+    procedure CreateRulesForString;
     procedure CreateRulesForEOF;
     procedure CreateRules;
     //--------------------------------------------------------------------------
@@ -345,10 +345,20 @@ end;
 
 
 
+
+
 destructor TCompiler.destroy;
 begin
   FChunks.Finalize;
   inherited;
+end;
+
+procedure TCompiler.CreateRulesForString;
+begin
+   //[TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
+  FParseRules[tkQuotes].Prefix := strings;
+  FParseRules[tkQuotes].Infix := binary;
+  FParseRules[tkQuotes].Precedence := PREC_NONE;
 end;
 
 procedure TCompiler.CreateRulesForMinus;
@@ -397,6 +407,7 @@ begin
   CreateRulesForTrue;
   CreateRulesForNil;
   CreateRulesForBang;
+  CreateRulesForString;
   CreateRulesForEOF;
 end;
 
@@ -566,8 +577,19 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
 
 
 procedure TCompiler.Strings(const canAssign: Boolean);
+var
+  Value : TValue;
+  Token : pToken;
+  Text  : String;
 begin
-
+   Token := FTokens.previous;
+   Text :=  FScanner.ln.items[Token.Line].text;
+   text := copy(text,token.Start+1,token.length-2);
+   Value := StringValue(pchar(Text));
+   FChunks.AddConstant(Value);
+  // FChunks.AddConstant(StringValue(Copy(
+  // emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
+  //                                parser.previous.length - 2))); *)
 end;
 
 procedure TCompiler.EmitBytes(const Byte1,Byte2 : Byte);

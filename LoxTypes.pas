@@ -514,7 +514,6 @@ type field from it. *)
   function NewLoxString(Const char : pChar) : pLoxString;
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
-
   function StringValue(const char : pchar) : TValue;
 
 
@@ -608,6 +607,7 @@ end;
 procedure TLoxString.Init;
 begin
   fillchar(Self,sizeof(Self),#0);
+  FObj.Kind := OBJ_STRING;
 end;
 
 

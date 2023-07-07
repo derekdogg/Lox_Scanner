@@ -286,51 +286,18 @@ end;
 procedure TForm1.Button5Click(Sender: TObject);
 var
   val : TValue;
-  LoxObject : TLoxObject;
-  LoxString : TLoxString;
-  Kind : TObjectKind;
-
-  pObject : PLoxObject;
-  pString : PLoxString;
-
-  pOther, pFoo :  PLoxString;
-
-
-  chars : PChar;
+  str : String;
+  chunks : TChunks;
+  LoxStr : pLoxString;
 begin
-  //different ways to work with TLoxObject,TLoxString.
-  try
-  LoxObject.Init;
-  LoxString.Init;
-  pString := NewLoxString('derek');
-  Memo3.Lines.add('Hash : ' + inttostr(pString.hash));
-  pObject := LoxObjectFrom(pString);
-  pObject.Kind := OBJ_UPVALUE;  //setting this on the upstream object should reflect back to pString
+  Chunks.Init;
+  Str := 'Fred';
+  Val := StringValue(Pchar(Str));
+  Chunks.AddConstant(Val);
 
-
-  //casting
-  pObject := PLoxObject(pString);
-  pOther := pLoxString(pObject);
-
-
-  //chars
-  pString.Chars := 'Derek';
-
-
-  //this should raise an assertion error because it's kind is not a OBJ_STRING (because after down cast? it has it's value set to OBJ_UPVALUE)
-  try
-    pFoo := LoxStringFrom(pObject);
-  except
-    memo3.lines.add('failed which is good');
-  end;
-
-  pObject.Kind := OBJ_STRING;
-  pFoo := LoxStringFrom(pObject);
-  Memo3.Lines.add('Hash : ' + inttostr(pFoo.hash));
-  finally
-  //dispose(pObject);
-    dispose(pString);
-  end;
+  LoxStr := pLoxString(Val.LoxObject);
+  Dispose(LoxStr);
+  Chunks.Finalize;
 end;
 
 end.
