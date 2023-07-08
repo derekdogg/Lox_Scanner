@@ -5,6 +5,9 @@
 
 ![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/5a03c78b-1e90-42c4-b795-5fb2f1cd62c5)
 
+![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/227c88f3-c1d7-415f-b30c-74fa8398250e)
+
+
 
 This is a work in progress. Currently working through strings.
 
