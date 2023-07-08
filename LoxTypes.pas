@@ -494,7 +494,11 @@ type field from it. *)
     function getNull: boolean;
 
     function GetString : String;
+    function getIsNumber: Boolean;
+    function getIsString: Boolean;
   public
+    property IsNumber   : Boolean read getIsNumber;
+    property IsString   : Boolean read getIsString;
     property Kind       : TLoxKind read FKind write FKind;
     property Number     : TNumber read getNumber write SetNumber;
     property Boolean    : Boolean read getBoolean write setBoolean;
@@ -688,7 +692,17 @@ begin
 
 end;
 
-function TValue.getNull: boolean;
+function TValue.getIsNumber: Boolean;
+begin
+  result := FKind = lxNumber;
+end;
+
+function TValue.getIsString: Boolean;
+begin
+  result := (fKind = lxObject) and (getObject.Kind = OBJ_STRING);
+end;
+
+Function TValue.getNull: boolean;
 begin
   result := fKind = lxNull;
 end;

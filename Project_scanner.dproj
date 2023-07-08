@@ -34,7 +34,6 @@
     <DCCReference Include="ByteCodesArray.pas" />
     <DCCReference Include="Chunk.pas" />
     <DCCReference Include="compiler.pas" />
-    <DCCReference Include="DoubleArray.pas" />
     <DCCReference Include="Exceptions.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Scanner_Project.pas">
@@ -42,6 +41,7 @@
     </DCCReference>
     <DCCReference Include="Stacks.pas" />
     <DCCReference Include="TokenArray.pas" />
+    <DCCReference Include="ValueArray.pas" />
     <DCCReference Include="vm.pas" />
   </ItemGroup>
 </Project>

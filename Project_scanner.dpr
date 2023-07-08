@@ -6,7 +6,7 @@ uses
   Chunk in 'Chunk.pas',
   LoxTypes in 'LoxTypes.pas',
   ByteArray in 'ByteArray.pas',
-  DoubleArray in 'DoubleArray.pas',
+  ValueArray in 'ValueArray.pas',
   Stacks in 'Stacks.pas',
   Exceptions in 'Exceptions.pas',
   vm in 'vm.pas',

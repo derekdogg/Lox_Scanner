@@ -293,11 +293,10 @@ var
 begin
   Chunks.Init;
   Str := 'Fred';
-  Val := StringValue(Pchar(Str));
+  Val := StringValue(Str);
   Chunks.AddConstant(Val);
 
   LoxStr := pLoxString(Val.LoxObject);
-  dispose(LoxStr);
   Chunks.Finalize;
 end;
 

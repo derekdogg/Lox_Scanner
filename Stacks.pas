@@ -5,7 +5,7 @@ uses
   LOXTypes,
   IntegerArray,
   ByteArray,
-  DoubleArray,
+  ValueArray,
   ByteCodesArray;
 type
 

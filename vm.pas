@@ -142,9 +142,22 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    result.Value.Number := L.Value.Number + R.Value.Number;
-    FStack.Push(Result);
 
+    if (L.Value.IsNumber) and (R.Value.IsNumber) then
+    begin
+      result.Value.Number := L.Value.Number + R.Value.Number;
+      FStack.Push(Result);
+      exit;
+    end;
+
+    if (L.Value.IsString) and (R.Value.IsString) then
+    begin
+      //What goes here?
+      Result.Value := StringValue(L.Value.ToString + R.Value.ToString);
+      FStack.Push(Result);
+
+      //I'm aware this causes a leak, but that's the next step implementing a garbage collector. I think.
+    end;
   except
      HandleRunTimeError;
   end;
