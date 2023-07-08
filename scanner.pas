@@ -17,6 +17,7 @@ type
     function MakeStringToken : TToken;
     function MakeEOFToken : TToken;
     function MakeBangEqualToken : TToken;
+    function MakeCommentToken : TToken;
     function MakeGreaterThanOrEqualToToken : TToken;
     function MakeLessThanOrEqualToken : TToken;
     function MakeEqualEqualToken : TToken;
@@ -192,8 +193,7 @@ begin
     //result.text := result.text + ln.chars.current;
     inc(idx);
   end;
-          
-          
+
   if Match(Quotes) then
   begin
      //result.text := result.text + ln.chars.current;
@@ -418,6 +418,14 @@ begin
 end;
 
 
+function TScanner.MakeCommentToken: TToken;
+begin
+  result.Kind := tkComment;
+  result.Start := ln.Chars.Index;
+  result.Length := ln.Chars.TextLength-result.start+1;
+  ln.Chars.Last;
+end;
+
 function TScanner.MakeToken : TToken;
   var
     Token : TToken;
@@ -466,7 +474,12 @@ function TScanner.MakeToken : TToken;
         end;
 
         ord(slash) : begin
-           Token := MakeSingleToken(tkSlash);
+           if MatchChar(ln.chars.PeekNext,slash) then
+           begin
+             Token := MakeCommentToken;
+           end
+           else
+             Token := MakeSingleToken(tkSlash);
         end;
 
         ord(underscore) : begin

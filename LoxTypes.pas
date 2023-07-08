@@ -198,6 +198,7 @@ TTokenKind = (
   tkInteger,
   tkunderscore,
   tkThis,
+  tkComment,
   tkEOF);
 
  const
@@ -247,6 +248,7 @@ TTokenKind = (
   'Integer',
   'underscore',
   'this',
+  'Comment',
   'EOF');
 
 
