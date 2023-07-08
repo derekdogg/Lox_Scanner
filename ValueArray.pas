@@ -1,4 +1,4 @@
-unit DoubleArray;
+unit ValueArray;
 
 interface
 
@@ -210,10 +210,10 @@ begin
   if not isfull then exit;
   GrowCapacity;
   AllocateArray(pCopyItems,FCapacity);
-  Move(FItems^, pCopyItems^, FPrevCapacity);  //copy existing memory into new memory;
-  FreeMem(FItems);                           //free the old memory
-  FItems := nil;                             //make the old memory nil
-  FItems := pCopyItems;                      // set the old memory to the new memory;
+  Move(FItems^, pCopyItems^, FPrevCapacity);  // copy existing memory into new memory;
+  FreeMem(FItems);                            // free the old memory
+  FItems := nil;                              // make the old memory nil
+  FItems := pCopyItems;                       // set the old memory to the new memory;
 
   inc(FResizeCount); //<-- used for debug checking.
 end;
@@ -245,7 +245,26 @@ begin
 end;
 
 procedure TValues.finalize;
+var
+  Values : TValueIterator;
+  Value  : pValue;
+  i : integer;
 begin
+  Values.Init(Self);
+  Value := Values.MoveLast;
+  while Value <> nil do
+  begin
+    if value.Kind = lxObject then
+    begin
+      case Value.LoxObject.Kind of
+        OBJ_STRING : begin
+          dispose(pLoxString(Value.LoxObject));
+        end;
+      end;
+    end;
+    Value := Values.MovePrev;
+  end;
+
   if assigned(FItems) then
   begin
     freeMem(FItems);

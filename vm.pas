@@ -65,7 +65,7 @@ begin
 
            if FInstructionPointer.Next = nil then raise exception.create('Expected constant value following constant operation');
            constantIndex := FInstructionPointer.Current^;
-           value := FInstructionPointer.Constant(constantIndex);
+           value := FInstructionPointer.value(constantIndex);
            Bytecode.Value := Value^;
            FStack.Push(ByteCode);
       end;
@@ -235,7 +235,7 @@ end;
 
 Function TVirtualMachine.isFalsey(value : TValue) : Boolean;
 begin
-   result := (Value.Kind = tvNull) OR ((Value.Kind = tvBoolean) and Value.Boolean = false);
+   result := (Value.Kind = lxNull) OR ((Value.Kind = lxBoolean) and Value.Boolean = false);
 end;
 
 {  C code...
@@ -270,7 +270,9 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
     Result.Operation := OP_CONSTANT;
-    if r.Value.number = l.value.number then
+
+
+    if r.Value.ToString = l.value.ToString then
     begin
       result.value.Boolean := true;
     end
@@ -278,6 +280,9 @@ begin
     begin
       result.value.Boolean := false;
     end;
+
+
+
     FStack.Push(Result);
   except
      HandleRunTimeError;

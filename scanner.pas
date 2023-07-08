@@ -199,7 +199,7 @@ begin
      //result.text := result.text + ln.chars.current;
      result.kind := tkQuotes;
      result.start := start;
-     result.length := idx+1;
+     result.length := (idx+1)-result.Start+1;
 
      exit;  //<=== exit here
   end;

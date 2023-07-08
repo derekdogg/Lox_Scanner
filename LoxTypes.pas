@@ -454,31 +454,32 @@ type field from it. *)
   private
     FObj    : TLoxObject;
     Flength : integer;
-    Fchars  : PChar;
+    Fchars  : String;
     Fhash   : LongWord;
-    function getChars: PChar;
+    function getChars: string;
     function getHash: LongWord;
     procedure hashString;
-    procedure setChars(const Value: PChar);
+    procedure setChars(const Value: String);
   public
     Property Obj    : TLoxObject read FObj;
-    Property Chars  : PChar read getChars write setChars;
+    Property Chars  : string read getChars write setChars;
     Property Hash   : LongWord read getHash;
     procedure Init;
+ 
   end;
 
 
 
 
 
-  TKind = (tvNumber,tvBoolean, tvNull, tvObject);
+  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject);
   TNumber = Double;
 
   pValue = ^TValue;
   TEightBytes = array[0..7] of byte;
   TValue = record
   private
-    FKind  : TKind;
+    FKind  : TLoxKind;
     FValue : TEightBytes;
     function getNumber  : TNumber;
     procedure SetNumber(const value : TNumber);
@@ -494,7 +495,7 @@ type field from it. *)
 
     function GetString : String;
   public
-    property Kind       : TKind read FKind write FKind;
+    property Kind       : TLoxKind read FKind write FKind;
     property Number     : TNumber read getNumber write SetNumber;
     property Boolean    : Boolean read getBoolean write setBoolean;
     property Bytes      : TEightBytes read FValue;
@@ -511,10 +512,10 @@ type field from it. *)
   end;
 
   function NewLoxObject : pLoxObject;
-  function NewLoxString(Const char : pChar) : pLoxString;
+  function NewLoxString(Const str : string) : pLoxString;
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
-  function StringValue(const char : pchar) : TValue;
+  function StringValue(const str : string) : TValue;
 
 
 
@@ -523,9 +524,9 @@ implementation
 
 uses sysUtils;
 
-function StringValue(const char : pchar) : TValue;
+function StringValue(const str : string) : TValue;
 begin
-  result.LoxObject := LoxObjectFrom(NewLoxString(char));
+  result.LoxObject := LoxObjectFrom(NewLoxString(str));
 end;
 
 
@@ -548,11 +549,18 @@ begin
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
 
-function NewLoxString(Const char : pChar) : pLoxString;
+(*
+function StrPCopy(const Source: AnsiString; Dest: PAnsiChar): PAnsiChar;
+begin
+  Move(PAnsiChar(Source)^, Dest^, Length(Source) + 1); // +1 for the 0 char
+  Result := Dest;
+end;  *)
+
+function NewLoxString(Const Str : String) : pLoxString;
 begin
   new(Result);
   result.init;
-  result.Chars := Char;
+  result.Chars := Copy(str,1,length(str));
 end;
 
 procedure TLoxObject.Init;
@@ -560,7 +568,7 @@ begin
   fillchar(Self,sizeof(Self),#0);
 end;
 
-function TLoxString.getChars: PChar;
+function TLoxString.getChars: String;
 begin
   result := FChars;
 end;
@@ -570,7 +578,7 @@ begin
   result := FHash;
 end;
 
-procedure TLoxString.setChars(const Value: PChar);
+procedure TLoxString.setChars(const Value: String);
 begin
   FChars := Value;
   FLength := Length(Value);
@@ -614,47 +622,56 @@ end;
 
 procedure TValue.setNull(const value : Boolean);
 begin
-  FKind := tvNull;
+  FKind := lxNull;
   fillchar(FValue,sizeof(FValue),#0);
 end;
 
 procedure TValue.setObject(const value : pLoxObject);
 begin
-  FKind := tvObject;
+  FKind := lxObject;
   Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
 function TValue.getObject : pLoxObject;
 begin
   result := nil;
-  if FKind = tvObject then
+  if FKind = lxObject then
     Move(FValue[0], Result, SizeOf(Result));
 end;
 
 function TValue.GetString: String;
+var
+  Obj : pLoxObject;
 begin
   case FKind of
-   tvObject : begin
-     result := '';
+   lxObject : begin
+       Obj := GetObject;
+       case Obj.Kind of
+         OBJ_STRING : begin
+           result := pLoxString(obj).Chars;
+         end;
+       end;
    end;
-   tvBoolean : begin
+
+
+   lxBoolean : begin
      result := BoolToStr(getBoolean,true);
    end;
 
-   tvNumber : begin
+   lxNumber : begin
      result := floatToStr(GetNumber);
    end;
 
-   tvNull  : begin
+   lxNull  : begin
      result := 'nil';
    end;
-   end;
+  end;
 end;
 
 function TValue.getBoolean : Boolean;
 begin
   result := false;
-  if FKind = tvObject then
+  if FKind = lxObject then
   begin
     result := getNumber <=0;
     exit;
@@ -664,8 +681,8 @@ end;
 
 procedure TValue.setBoolean(const value : Boolean);
 begin
-  assert(FKind <> tvObject); //this is not cool to set the bytes of an existing pointer?
-  FKind := tvBoolean;
+  assert(FKind <> lxObject); //this is not cool to set the bytes of an existing pointer?
+  FKind := lxBoolean;
   FillChar(FValue,Sizeof(FValue),#0);
   Move(value, FValue[0], SizeOf(Value))
 
@@ -673,14 +690,14 @@ end;
 
 function TValue.getNull: boolean;
 begin
-  result := fKind = tvNull;
+  result := fKind = lxNull;
 end;
 
 function TValue.getNumber : TNumber;
 var
   l : Longint;
 begin
-  if FKind = tvObject then
+  if FKind = lxObject then
   begin
     Move(FValue[0], l, SizeOf(l));
     result := l;
@@ -691,7 +708,7 @@ end;
 
 procedure TValue.SetNumber(const value : TNumber);
 begin
-   Fkind := tvNumber;
+   Fkind := lxNumber;
    Move(value,FValue[0], SizeOf(Value))
 end;
 

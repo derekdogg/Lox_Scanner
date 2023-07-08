@@ -4,7 +4,7 @@ interface
 
 uses
   Loxtypes,
-  DoubleArray,
+  ValueArray,
   IntegerArray,
   ByteArray;
 
@@ -78,7 +78,7 @@ type
   public
     function ByteCount : integer;
     function ConstantCount : integer;
-    function Constant(const Index : byte) : pValue;
+    function value(const Index : byte) : pValue;
     function ByteAt(const Index : integer) : pByte;
     function Index : integer;
     function Current : pByte;
@@ -329,7 +329,7 @@ begin
   result := FBytes.Count;
 end;
 
-function TInstructionPointer.Constant(const Index : byte) : pValue;
+function TInstructionPointer.value(const Index : byte) : pValue;
 begin
   assert((index >= 0) and (index < FConstants.count));
   result := FConstants.Item(Index);

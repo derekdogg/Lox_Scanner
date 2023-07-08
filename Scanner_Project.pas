@@ -45,7 +45,7 @@ uses
   LineIterator,
   scanner,
   IntegerArray,
-  DoubleArray,
+  ValueArray,
   Stacks,
   chunk,
   TokenArray,
@@ -125,8 +125,8 @@ begin
           if Iter.Next <> nil then
           begin
             constantIndex := Iter.Current^;
-            value := Iter.Constant(constantIndex);
-            ByteCode := ByteCode + '=' + floattostr(value.Number);
+            value := Iter.Value(constantIndex);
+            ByteCode := ByteCode + '=' + value.ToString;
           end;
         end;
 
@@ -260,8 +260,9 @@ begin
        if Iter.Next <> nil then
        begin
          constantIndex := Iter.Current^;
-         value := Iter.Constant(constantIndex)^;
-         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + floattostr(value.Number));
+         value := Iter.Value(constantIndex)^;
+
+         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + value.ToString);
        end;
     end;
   end;
@@ -296,7 +297,7 @@ begin
   Chunks.AddConstant(Val);
 
   LoxStr := pLoxString(Val.LoxObject);
-  Dispose(LoxStr);
+  dispose(LoxStr);
   Chunks.Finalize;
 end;
 
