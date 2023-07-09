@@ -684,7 +684,7 @@ begin
    end;
 
    lxNull  : begin
-     result := 'nil';
+     result := 'null';
    end;
   end;
 end;

@@ -158,8 +158,6 @@ begin
       //What goes here?
       L.Value.Str := L.Value.ToString + R.Value.ToString;
       FStack.Push(L);
-
-      //memory leaking... 
     end;
   except
      HandleRunTimeError;
@@ -170,29 +168,21 @@ procedure TVirtualMachine.subtract;
 var
   L,R : TByteCode;
 begin
-
   Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
-
   try
-
     R := FStack.Pop;
     L := FStack.Pop;
-
-
     if (L.Value.IsNumber) and (R.Value.IsNumber) then
     begin
-
       L.Value.number := L.Value.Number - R.Value.Number;
-
       FStack.Push(L);
       exit;
     end;
 
     if (L.Value.IsStringObject) and (R.Value.IsStringObject) then
     begin
-      //What goes here?
       L.Value.Str := StringReplace(l.Value.tostring,r.value.tostring, '', [rfReplaceAll]);
       FStack.Push(L);
     end;
@@ -203,7 +193,10 @@ end;
 
 procedure TVirtualMachine.Multiply;
 var
-  L,R,Result : TByteCode;
+  L,R : TByteCode;
+  i : integer;
+  s : string;
+
 begin
   Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   Assert(FStack.Peek(1).Operation = OP_CONSTANT);
@@ -213,9 +206,25 @@ begin
   try
     R := FStack.Pop;
     L := FStack.Pop;
-    Result.Operation := OP_CONSTANT;
-    result.Value.Number := L.Value.Number * R.Value.Number;
-    FStack.Push(Result);
+
+    if (L.Value.IsNumber) and (R.Value.IsNumber) then
+    begin
+
+      L.Value.Number := L.Value.Number * R.Value.Number;
+      FStack.Push(L);
+      exit;
+    end;
+
+     if (L.Value.IsStringObject) and (R.Value.IsNumber) then
+     begin
+       s := '';
+       for i := 0 to round(R.Value.Number-1) do
+       begin
+         s := s + L.Value.Str
+       end;
+       L.Value.Str := s;
+       FStack.Push(L);
+     end;
   except
      HandleRunTimeError; //<== place holders for now
   end;
