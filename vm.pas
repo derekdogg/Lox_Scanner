@@ -225,6 +225,19 @@ begin
        L.Value.Str := s;
        FStack.Push(L);
      end;
+
+     if (R.Value.IsStringObject) and (L.Value.IsNumber) then
+     begin
+       s := '';
+       for i := 0 to round(L.Value.Number-1) do
+       begin
+         s := s + R.Value.Str
+       end;
+       R.Value.Str := s;
+       FStack.Push(R);
+     end;
+
+
   except
      HandleRunTimeError; //<== place holders for now
   end;
