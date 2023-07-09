@@ -102,12 +102,8 @@ begin
     end;
 
     index := (index + 1) mod (slotcount - 1);
-    if index = startIndex-1 then
-    begin
-       showmessage('back to og');
-       exit; //we checked every slot.
-    end;
-  until (i = nil);
+     
+  until (i = nil) or (index = startIndex-1);   //<--- index = startindex -1 indicates that the loop went back to 0 then to the position before where we 1st started, and did not find the key
 end;
 
 
