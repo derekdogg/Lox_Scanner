@@ -70,6 +70,9 @@ begin
   key := NewLoxString(s);
   Entry := Entries.FindEntry(Key);
 
+  s := 'fred';
+  key := NewLoxString(s);
+  Entry := Entries.FindEntry(Key);
 
   Entries.Finalize;
 end;

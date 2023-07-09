@@ -91,7 +91,7 @@ begin
       exit;
     end;
 
-    index := (index + 1) mod capacity;
+    index := (index + 1) mod (slotcount);
 
   until False;  // super scary conversion of c code..   for (;;) on pp604
 end;
