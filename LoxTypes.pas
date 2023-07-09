@@ -3,6 +3,7 @@ unit LoxTypes;
 interface
 
 
+
 const
 //  cMaxTokens = 10000;
   cMaxLines = 1000;
@@ -457,7 +458,7 @@ type field from it. *)
     FObj    : TLoxObject;
     Flength : integer;
     Fchars  : String;
-    Fhash   : LongWord;
+    Fhash   : UInt64;
     function getChars: string;
     function getHash: LongWord;
     procedure hashString;
@@ -603,17 +604,17 @@ procedure TLoxString.hashString;
     return hash
   *)
 const
-  FNV_offset_basis = 2166136261;
-  FNV_prime = 16777619;
+  FNV_offset_basis  =  $811C9DC5;
+  FNV_prime         = $1000193;
 var
   i: Integer;
 
 begin
   FHash := FNV_offset_basis;
-  for i := 0 to Flength - 1 do
+  for i := 1 to Flength - 1 do
   begin
     FHash := FHash * FNV_prime;
-    FHash := FHash XOR ord(FChars[i]);
+    FHash := FHash XOR byte(FChars[i]);
   end;
 end;
 

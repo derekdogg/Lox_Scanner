@@ -18,6 +18,8 @@
     <Version>7.0</Version>
     <DCC_Define>DEBUG</DCC_Define>
     <DCC_Optimize>False</DCC_Optimize>
+    <DCC_RangeChecking>True</DCC_RangeChecking>
+    <DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>

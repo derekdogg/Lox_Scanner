@@ -6,7 +6,7 @@ uses
   LOXTypes;
 
 type
-  TInterpretResult = (INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
+  TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
   //to do : add in Negate next;
 
@@ -44,7 +44,7 @@ uses
 { TVirtualMachine }
 function TVirtualMachine.Result: TByteCode;
 begin
-  assert(FStack.Count = 1);
+  assert(FStack.Count = 1, 'stack is empty');
   result := FStack.Pop;
 end;
 
@@ -55,6 +55,8 @@ var
   Value : pValue;
 
 begin
+  Result := INTERPRET_NONE;
+  if FInstructionPointer.ByteCount = 0 then exit;
   while FInstructionPointer.Next <> nil do
   begin
     ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
@@ -121,6 +123,7 @@ begin
       end;
     end;
   end;
+  Result := INTERPRET_OK;
 end;
 
 
@@ -133,10 +136,10 @@ procedure TVirtualMachine.Add;
 var
   L,R,Result : TByteCode;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
   //we assume here we're sitting on an OP_ADDITION in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_ADD));
+  Assert(FInstructionPointer.Current^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;

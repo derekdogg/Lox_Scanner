@@ -61,7 +61,9 @@ type
     procedure CreateRulesForGreaterThanEqual;
     procedure CreateRulesForGreaterThan;
     procedure CreateRulesForString;
+    procedure CreateRulesForComment;
     procedure CreateRulesForEOF;
+  
     procedure CreateRules;
     //--------------------------------------------------------------------------
     procedure init;
@@ -242,6 +244,13 @@ begin
   FParseRules[tkclose_bracket].Precedence := PREC_NONE;
 end;
 
+procedure TCompiler.CreateRulesForComment;
+begin
+  FParseRules[tkComment].Prefix := literal;
+  FParseRules[tkComment].Infix := nil;
+  FParseRules[tkComment].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForDivide;
 begin
 //  [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
@@ -407,7 +416,9 @@ begin
   CreateRulesForTrue;
   CreateRulesForNil;
   CreateRulesForBang;
+  CreateRulesForComment;
   CreateRulesForString;
+
   CreateRulesForEOF;
 end;
 

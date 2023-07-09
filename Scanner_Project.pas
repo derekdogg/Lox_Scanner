@@ -65,7 +65,7 @@ var
   ln : String;
   Compiler : TCompiler;
   Tokens : TTokenIterator;
-  Iter :  TInstructionPointer;
+  InstructionPointer :  TInstructionPointer;
   constantIndex : byte;
   value : pValue; //represents a constant
   ByteCode : string;
@@ -113,19 +113,19 @@ begin
    try
      Compiler.expression; //???
 
-     Iter.Init(Compiler.Chunks);
-     Memo3.Lines.add('Bytes : ' + inttostr(Iter.ByteCount));
-     Memo3.Lines.add('Constants : ' + inttostr(Iter.ConstantCount));
+     InstructionPointer.Init(Compiler.Chunks);
+     Memo3.Lines.add('Bytes : ' + inttostr(InstructionPointer.ByteCount));
+     Memo3.Lines.add('Constants : ' + inttostr(InstructionPointer.ConstantCount));
 
-     While Iter.Next <> nil do
+     While InstructionPointer.Next <> nil do
      begin
-        ByteCode := TOP_Code_name[TOpCodes(Iter.Current^)];
-        if (Iter.Current^ = byte(OP_CONSTANT)) then
+        ByteCode := TOP_Code_name[TOpCodes(InstructionPointer.Current^)];
+        if (InstructionPointer.Current^ = byte(OP_CONSTANT)) then
         begin
-          if Iter.Next <> nil then
+          if InstructionPointer.Next <> nil then
           begin
-            constantIndex := Iter.Current^;
-            value := Iter.Value(constantIndex);
+            constantIndex := InstructionPointer.Current^;
+            value := InstructionPointer.Value(constantIndex);
             ByteCode := ByteCode + '=' + value.ToString;
           end;
         end;
@@ -142,10 +142,10 @@ begin
    Compiler := TCompiler.Create(Scanner);
    try
      Compiler.expression;
-     Iter.Init(Compiler.Chunks);
-     VM.Init(Iter);
-     VM.Run;
-     Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
+     instructionPointer.Init(Compiler.Chunks);
+     VM.Init(InstructionPointer);
+     if VM.Run = INTERPRET_OK then 
+       Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
      Compiler.Free;
