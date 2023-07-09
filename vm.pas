@@ -237,6 +237,7 @@ begin
        FStack.Push(R);
      end;
 
+     //code duplication
 
   except
      HandleRunTimeError; //<== place holders for now
@@ -255,8 +256,14 @@ begin
     R := FStack.Pop;
     Assert(R.Operation = OP_CONSTANT); //??
 
-    R.Value.Number := - R.Value.Number;
-    FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+    if (R.Value.IsNumber) then
+    begin
+      R.Value.Number := - R.Value.Number;
+      FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+    end;
+
+
+
   except
      HandleRunTimeError;
   end;
@@ -265,7 +272,7 @@ end;
 
 procedure TVirtualMachine.Divide;
 var
-  L,R,Result : TByteCode;
+  L,R : TByteCode;
 begin
   Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   Assert(FStack.Peek(1).Operation = OP_CONSTANT);
@@ -276,9 +283,8 @@ begin
     R := FStack.Pop;
     Assert(R.Value.Number <> 0); //divide by zero exceptions.
     L := FStack.Pop;
-    Result.Operation := OP_CONSTANT;
-    result.Value.Number := L.Value.Number / R.Value.Number;
-    FStack.Push(Result);
+    L.Value.Number := L.Value.Number / R.Value.Number;
+    FStack.Push(L);
   except
      HandleRunTimeError;
   end;
@@ -303,6 +309,7 @@ begin
   try
     result.Value.Boolean := isFalsey(FStack.pop.value);
     FStack.Push(Result);
+
    except
      HandleRunTimeError;
   end;
@@ -310,7 +317,7 @@ end;
 
 procedure TVirtualMachine.Equal;
 var
-  L,R,Result : TByteCode;
+  L,R : TByteCode;
 begin
    //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
    //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
@@ -320,21 +327,8 @@ begin
   try
     R := FStack.Pop;
     L := FStack.Pop;
-    Result.Operation := OP_CONSTANT;
-
-
-    if r.Value.ToString = l.value.ToString then
-    begin
-      result.value.Boolean := true;
-    end
-    else
-    begin
-      result.value.Boolean := false;
-    end;
-
-
-
-    FStack.Push(Result);
+    L.Value.Boolean := r.Value.ToString = l.value.ToString;
+    FStack.Push(L);
   except
      HandleRunTimeError;
   end;
