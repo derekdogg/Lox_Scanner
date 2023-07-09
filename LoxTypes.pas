@@ -609,7 +609,7 @@ procedure TLoxString.hashString;
   *)
 const
   FNV_offset_basis  =  $811C9DC5;
-  FNV_prime         = $1000193;
+  FNV_prime         =  $1000193;
   
 var
   i: Integer;

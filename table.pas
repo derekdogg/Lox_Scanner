@@ -60,6 +60,8 @@ typedef struct {
  *)
 
 implementation
+uses
+ dialogs;
 
 
 function TEntries.SlotCount : integer;
@@ -73,27 +75,39 @@ begin
 end;
 
 
+//this function does 2 things, it checks for the key, and or whether a key is nil.
+
+
+//[0,1,2,3,4,5,6,7,8,9,10]
+
 function TEntries.FindEntry(const key: pLoxString): PEntry;
 var
-  index: UInt64;
+  startIndex : integer;
+  index: integer;
   i : PEntry;
 
 begin
   result := nil;
-  index := key.hash mod (slotcount);
+  index := key.hash and (slotcount -1);
+  startIndex := index;
   repeat
     assert(inbounds(Index),'index for Hash to seek exceeds dictionary limits');
 
     i := Item(Index);
+
     if assigned(i) and ((i.key = key) or (i.key = nil)) then
     begin
       result := i;
-      exit;
+      //exit;
     end;
 
-    index := (index + 1) mod (slotcount);
-
-  until False;  // super scary conversion of c code..   for (;;) on pp604
+    index := (index + 1) mod (slotcount - 1);
+    if index = startIndex-1 then
+    begin
+       showmessage('back to og');
+       exit; //we checked every slot.
+    end;
+  until (i = nil);
 end;
 
 
