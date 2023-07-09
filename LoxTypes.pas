@@ -495,20 +495,24 @@ type field from it. *)
 
     procedure setNull(const value : Boolean);
     function getNull: boolean;
-
+    procedure SetString(Const value : String);
     function GetString : String;
     function getIsNumber: Boolean;
-    function getIsString: Boolean;
+    function getIsStringObject: Boolean;
+    function getIsObject : Boolean;
+
   public
-    property IsNumber   : Boolean read getIsNumber;
-    property IsString   : Boolean read getIsString;
-    property Kind       : TLoxKind read FKind write FKind;
-    property Number     : TNumber read getNumber write SetNumber;
-    property Boolean    : Boolean read getBoolean write setBoolean;
-    property Bytes      : TEightBytes read FValue;
-    property LoxObject  : pLoxObject read getObject write setObject;
-    property ToString   : string read getString;
-    property Null       : boolean read getNull write setNull;
+    property IsObject       : Boolean read getisobject;
+    property IsStringObject : Boolean read getIsStringObject;
+    property IsNumber       : Boolean read getIsNumber;
+    property Kind           : TLoxKind read FKind write FKind;
+    property Number         : TNumber read getNumber write SetNumber;
+    property Boolean        : Boolean read getBoolean write setBoolean;
+    property Str            : String read getString write setString;
+    property Bytes          : TEightBytes read FValue;
+    property LoxObject      : pLoxObject read getObject write setObject;
+    property ToString       : string read getString;
+    property Null           : boolean read getNull write setNull;
   end;
 
 
@@ -639,6 +643,16 @@ begin
   Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
+procedure TValue.SetString(const value: String);
+var
+  Obj : pLoxObject;
+begin
+  Assert(getIsStringObject = true, 'Value is not a string object');
+  Obj := GetObject;
+  if Obj <> nil then
+    pLoxString(Obj).Chars := Value;
+end;
+
 function TValue.getObject : pLoxObject;
 begin
   result := nil;
@@ -700,9 +714,14 @@ begin
   result := FKind = lxNumber;
 end;
 
-function TValue.getIsString: Boolean;
+function TValue.getIsObject: Boolean;
 begin
-  result := (fKind = lxObject) and (getObject.Kind = OBJ_STRING);
+   result := (fKind = lxObject)
+end;
+
+function TValue.getIsStringObject: Boolean;
+begin
+  result := getisobject and (getObject.Kind = OBJ_STRING);
 end;
 
 Function TValue.getNull: boolean;
