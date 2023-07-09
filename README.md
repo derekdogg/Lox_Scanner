@@ -7,9 +7,11 @@
 
 ![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/227c88f3-c1d7-415f-b30c-74fa8398250e)
 
+![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/927a9b1d-f625-478a-80cb-8c21d4d75dfa)
 
 
-This is a work in progress. Currently working through strings.
+
+This is a work in progress. Currently working through strings, addition, subtraction, and multiplication.
 
 By the way, if you want to get involved feel free to do so. I know there's probably loads of things which need attention, tweaking or improving. Happy to collab. 
 
