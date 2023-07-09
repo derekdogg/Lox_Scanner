@@ -42,6 +42,7 @@
       <Form>Form1</Form>
     </DCCReference>
     <DCCReference Include="Stacks.pas" />
+    <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="ValueArray.pas" />
     <DCCReference Include="vm.pas" />

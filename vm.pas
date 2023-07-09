@@ -183,7 +183,7 @@ begin
 
     if (L.Value.IsStringObject) and (R.Value.IsStringObject) then
     begin
-      L.Value.Str := StringReplace(l.Value.tostring,r.value.tostring, '', [rfReplaceAll]);
+      L.Value.Str := StringReplace(l.Value.tostring,r.value.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
       FStack.Push(L);
     end;
   except

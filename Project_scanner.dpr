@@ -12,7 +12,8 @@ uses
   vm in 'vm.pas',
   TokenArray in 'TokenArray.pas',
   compiler in 'compiler.pas',
-  ByteCodesArray in 'ByteCodesArray.pas';
+  ByteCodesArray in 'ByteCodesArray.pas',
+  table in 'table.pas';
 
 {$R *.res}
 
