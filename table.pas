@@ -15,8 +15,9 @@ type
 
   TEntries = record
   const
-    NUM_SLOTS = 10;
+    NUM_SLOTS = 1000; //1000 string hash up front? :) 
     INCREMENT_CAPACITY_BY = 2;
+    TABLE_MAX_LOAD = 0.75;
   private
     FResizeCount   : integer;
     FIndex         : integer;
@@ -24,10 +25,13 @@ type
     FPrevcapacity  : integer;
     FCapacity      : integer;
     FItems         : pointer;
+    function ItemSize : integer;
+    function InBounds(const Index : integer) : boolean;
     procedure AllocateArray(var p : pointer; const size : integer);
     Procedure GrowArray;
     procedure GrowCapacity;
   public
+    function FindEntry(const key: pLoxString): PEntry;
     function SlotCount : integer;
     function Capacity : integer;
     function IsFull : boolean;
@@ -58,9 +62,6 @@ typedef struct {
 implementation
 
 
-
-
-
 function TEntries.SlotCount : integer;
 begin
   result := FCapacity div Sizeof(TEntry);
@@ -70,6 +71,31 @@ function TEntries.Capacity : integer;
 begin
   result := FCapacity;
 end;
+
+
+function TEntries.FindEntry(const key: pLoxString): PEntry;
+var
+  index: UInt64;
+  i : PEntry;
+
+begin
+  result := nil;
+  index := key.hash mod (slotcount);
+  repeat
+    assert(inbounds(Index),'index for Hash to seek exceeds dictionary limits');
+
+    i := Item(Index);
+    if assigned(i) and ((i.key = key) or (i.key = nil)) then
+    begin
+      result := i;
+      exit;
+    end;
+
+    index := (index + 1) mod capacity;
+
+  until False;  // super scary conversion of c code..   for (;;) on pp604
+end;
+
 
 
 procedure TEntries.AllocateArray(var p : pointer; const size : integer);
@@ -112,11 +138,23 @@ begin
   inc(FCount);
 end;
 
+
+function  TEntries.ItemSize : integer;
+begin
+  result := Sizeof(TEntry);
+end;
+
+
+function TEntries.InBounds(const Index : integer) : boolean;
+begin
+   result := Index * ItemSize <= FCapacity;
+end;
+
 function TEntries.Item(const index: integer): pEntry;
 begin
-  assert(FCapacity > 0);
-  assert(FItems <> nil);
-  assert((FIndex * sizeof(TEntry)) <= FCapacity);
+  assert(FCapacity > 0, 'capacity = 0');
+  assert(FItems <> nil, 'Items are nil');
+  assert(InBounds(Index), 'Index is > capacity of array');
   result := @FItems^;
   inc(result,index);
 end;

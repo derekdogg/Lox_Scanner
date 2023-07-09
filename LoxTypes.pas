@@ -460,13 +460,13 @@ type field from it. *)
     Fchars  : String;
     Fhash   : UInt64;
     function getChars: string;
-    function getHash: LongWord;
+    function getHash: UInt64;
     procedure hashString;
     procedure setChars(const Value: String);
   public
     Property Obj    : TLoxObject read FObj;
     Property Chars  : string read getChars write setChars;
-    Property Hash   : LongWord read getHash;
+    Property Hash   : Uint64 read getHash;
     procedure Init;
  
   end;
@@ -584,7 +584,7 @@ begin
   result := FChars;
 end;
 
-function TLoxString.getHash: LongWord;
+function TLoxString.getHash: UInt64;
 begin
   result := FHash;
 end;
@@ -610,6 +610,7 @@ procedure TLoxString.hashString;
 const
   FNV_offset_basis  =  $811C9DC5;
   FNV_prime         = $1000193;
+  
 var
   i: Integer;
 
@@ -617,8 +618,7 @@ begin
   FHash := FNV_offset_basis;
   for i := 1 to Flength - 1 do
   begin
-    FHash := FHash * FNV_prime;
-    FHash := FHash XOR byte(FChars[i]);
+    FHash := ((FHash XOR byte(FChars[i]))* FNV_prime) and $FFFFFFFF;
   end;
 end;
 

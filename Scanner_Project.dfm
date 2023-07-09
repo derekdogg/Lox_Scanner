@@ -41,41 +41,6 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 2
   end
-  object Button1: TButton
-    Left = 544
-    Top = 8
-    Width = 192
-    Height = 25
-    Caption = 'Dynamic Array Testing'
-    TabOrder = 3
-    OnClick = Button1Click
-  end
-  object Button2: TButton
-    Left = 432
-    Top = 8
-    Width = 106
-    Height = 25
-    Caption = 'Stack Testing'
-    TabOrder = 4
-  end
-  object Button3: TButton
-    Left = 336
-    Top = 8
-    Width = 90
-    Height = 25
-    Caption = 'Chunk Testing'
-    TabOrder = 5
-    OnClick = Button3Click
-  end
-  object Button5: TButton
-    Left = 255
-    Top = 8
-    Width = 75
-    Height = 25
-    Caption = 'Number val'
-    TabOrder = 6
-    OnClick = Button5Click
-  end
   object Memo3: TMemo
     Left = 367
     Top = 271
@@ -84,6 +49,23 @@ object Form1: TForm1
     Lines.Strings = (
       'Memo3')
     ScrollBars = ssVertical
-    TabOrder = 7
+    TabOrder = 3
+  end
+  object Button1: TButton
+    Left = 344
+    Top = 384
+    Width = 75
+    Height = 25
+    Caption = 'Button1'
+    TabOrder = 4
+  end
+  object BtnHash: TButton
+    Left = 272
+    Top = 8
+    Width = 121
+    Height = 25
+    Caption = 'Hash testing'
+    TabOrder = 5
+    OnClick = BtnHashClick
   end
 end

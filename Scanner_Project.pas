@@ -12,16 +12,11 @@ type
     BtnScan: TButton;
     Memo1: TMemo;
     Memo2: TMemo;
-    Button1: TButton;
-    Button2: TButton;
-    Button3: TButton;
-    Button5: TButton;
     Memo3: TMemo;
+    Button1: TButton;
+    BtnHash: TButton;
     procedure BtnScanClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
-    procedure Button5Click(Sender: TObject);
+    procedure BtnHashClick(Sender: TObject);
   private
     { Private declarations }
     prevbuffer,buffer : pointer;
@@ -49,11 +44,35 @@ uses
   Stacks,
   chunk,
   TokenArray,
-  compiler, vm, ByteCodesArray;
+  compiler,
+  vm,
+  ByteCodesArray,
+  Table;
 
 {$R *.dfm}
 
 
+
+procedure TForm1.BtnHashClick(Sender: TObject);
+var
+  Entries : TEntries;
+  Entry : PEntry;
+  key   : pLoxString;
+  s     : string;
+begin
+  Entries.Init;
+  s := 'abcdefg';
+  key := NewLoxString(s);
+  Entry := Entries.FindEntry(Key);
+
+
+  s := 'fred';
+  key := NewLoxString(s);
+  Entry := Entries.FindEntry(Key);
+
+
+  Entries.Finalize;
+end;
 
 procedure TForm1.BtnScanClick(Sender: TObject);
 var
@@ -159,145 +178,5 @@ begin
 
 end;
 
-procedure TForm1.Button1Click(Sender: TObject);
-var
-  A,B,C : TByteCode;
-  res : pByteCode;
-  ByteCodes : TByteCodes;
-  p     : pByteCode;
-  i     : integer;
-  idx   : integer;
-
-begin
-  try
-    FillChar(A,Sizeof(A),#0);
-    FillChar(B,Sizeof(A),#0);
-    FillChar(C,Sizeof(A),#0);
-
-    A.Operation := OP_CONSTANT;
-    B.Operation := OP_ADD;
-    C.Operation := OP_NIL;
-
-    memo1.Lines.clear;
-    p := nil;
-    ByteCodes.Init;
-
-    Memo1.lines.add(format('Initial Capacity : %d : ',[ByteCodes.Capacity]));
-    Memo1.lines.add(format('Initial slots : %d : ',[ByteCodes.slotcount]));
-
-
-      Memo1.lines.add(format('Capacity : %d : ',[ByteCodes.Capacity]));
-      Memo1.lines.add(format('Free Space before adding item : %d : %d ',[i,ByteCodes.FreeSlots]));
-      ByteCodes.Add(A);
-      ByteCodes.Remove;
-      ByteCodes.Add(B);
-      ByteCodes.Remove;
-      ByteCodes.Add(C);
-      ByteCodes.Remove;
-      ByteCodes.Remove;
-      ByteCodes.Remove;
-      ByteCodes.Remove;
-      ByteCodes.Remove;
-      ByteCodes.Add(A);
-      ByteCodes.Add(A);
-      ByteCodes.Add(A);
-
-
-
-
-      //Integers.Add(i/2);
-
-    //  Memo1.lines.add(format('Capacity : %d : ',[Chunk.Capacity]));
-    //  Memo1.lines.add(format('Free Space after adding item :%d : %d',[i,Chunk.FreeSpace]));
-    Res := ByteCodes.GetItem(0);
-    Memo1.lines.add('Count : ' + inttostr(ByteCodes.Count));
-    Memo1.lines.add('Op : ' + inttostr(Ord(res.Operation)));
-
-  finally
-    ByteCodes.Finalize;
-  end;
-end;
-
-
-procedure TForm1.Button3Click(Sender: TObject);
-var
-  Chunk : TChunks;
-  Iter :  TInstructionPointer;
-  constantIndex : byte;
-  value : TValue; //represents a constant
-  DIter : TValueIterator;
-  ByteCode : TByteCode;
-begin
-  try
-    Chunk.Init;
-  //Chunk.AddReturn;
-    Value.Number := 12.12;
-    Chunk.AddConstant(Value);  //2 byte
-    Chunk.AddADD;
-    Value.Number := 45;
-    Chunk.AddConstant(value);  //2 byte
-    Chunk.AddReturn;           //1 byte
-    Chunk.AddCLOSE_UPVALUE;    //1 byte
-
-
- (* DIter.Init(Chunk.Constants);
-  While DIter.MoveNext <> nil do
-  begin
-     Memo1.Lines.Add('Current : ' + floatToStr(DIter.Current^));
-  end;
-  exit;*)
-
-  Iter.Init(Chunk);
-  Memo1.Lines.add('Bytes : ' + inttostr(Iter.ByteCount));
-  Memo1.Lines.add('Constants : ' + inttostr(Iter.ConstantCount));
-
-  While Iter.Next <> nil do
-  begin
-    Memo1.Lines.Add('Current : ' + TOP_Code_name[TOpCodes(Iter.Current^)]);
-    if (Iter.Current^ = byte(OP_CONSTANT)) then
-    begin
-       Memo1.Lines.Add('Constant added');
-       if Iter.Next <> nil then
-       begin
-         constantIndex := Iter.Current^;
-         value := Iter.Value(constantIndex)^;
-
-         Memo1.Lines.Add(cTab + cTab +'Constant value : ' + value.ToString);
-       end;
-    end;
-  end;
-
-
-
-  finally
-    Chunk.Finalize;
-  end;
-
-end;
-
-procedure TForm1.Button4Click(Sender: TObject);
-var
-  Tokens : TTokens;
-  Token  : TToken;
-begin
-
-end;
-
-
-procedure TForm1.Button5Click(Sender: TObject);
-var
-  val : TValue;
-  str : String;
-  chunks : TChunks;
-  LoxStr : pLoxString;
-begin
-  Chunks.Init;
-  Str := 'Fred';
-  Val := StringValue(Str);
-  Chunks.AddConstant(Val);
-
-  LoxStr := pLoxString(Val.LoxObject);
-  Chunks.Finalize;
-end;
 
 end.
