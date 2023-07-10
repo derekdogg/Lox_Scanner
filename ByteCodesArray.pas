@@ -147,7 +147,7 @@ function TByteCodes.getItem(const index: integer): pByteCode;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
-  assert(InBounds(FIndex));
+  assert(InBounds(Index));
   result := @FItems^;
   inc(result,index);
 end;

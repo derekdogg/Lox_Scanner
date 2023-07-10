@@ -138,7 +138,7 @@ function TTokens.getItem(const index: integer): pToken;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
-  assert(InBounds(FIndex));
+  assert(InBounds(Index));
   result := @FItems^;
   inc(result,index);
 end;

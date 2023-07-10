@@ -51,21 +51,13 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 3
   end
-  object Button1: TButton
-    Left = 344
-    Top = 384
-    Width = 75
-    Height = 25
-    Caption = 'Button1'
-    TabOrder = 4
-  end
   object BtnHash: TButton
-    Left = 272
+    Left = 440
     Top = 8
     Width = 121
     Height = 25
     Caption = 'Hash testing'
-    TabOrder = 5
+    TabOrder = 4
     OnClick = BtnHashClick
   end
 end

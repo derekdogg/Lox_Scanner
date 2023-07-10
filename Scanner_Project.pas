@@ -13,7 +13,6 @@ type
     Memo1: TMemo;
     Memo2: TMemo;
     Memo3: TMemo;
-    Button1: TButton;
     BtnHash: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
@@ -55,26 +54,88 @@ uses
 
 procedure TForm1.BtnHashClick(Sender: TObject);
 var
-  Entries : TEntries;
-  Entry : PEntry;
-  key   : pLoxString;
+  Entries : TLoxStrings;
+
+  value1 : pLoxString;
+  value2 : pLoxString;
+  value3 : pLoxString;
+  value4 : pLoxString;
+  value5 : pLoxString;
+  value6 : pLoxString;
+  value7 : pLoxString;
+  value8 : pLoxString;
+  value9 : pLoxString;
+  value10 : pLoxString;
+  value11 : pLoxString;
+  value12 : pLoxString;
+
   s     : string;
+  idx   : integer;
+  l     : TList;
+
+  Items :  PLoxStringItems;
+
+  target : pLoxString;
+
+  strings :  TloxStringIterator;
 begin
   Entries.Init;
-  s := 'abcdefg';
-  key := NewLoxString(s);
-  Entry := Entries.FindEntry(Key);
+
+  value1 := NewLoxString('abcde');
+  value2 := NewLoxString('bedfg');
+  value3 := NewLoxString('csdff');
+  value4 := NewLoxString('dsssdf');
+  value5 := NewLoxString('esffd');
+  value6 := NewLoxString('fsdfsdf');
+  value7 := NewLoxString('gsdfsdf');
+  value8 := NewLoxString('hsdfsdf');
+  value9 := NewLoxString('isdfsdf');
+  value10 := NewLoxString('jsfdsdf');
+  value11 := NewLoxString('ksdfsdf');
+  value12 := NewLoxString('lsdfsdf');
+
+  Entries.Add(value1);
+  Entries.Add(value2);
+  Entries.Add(value3);
+  Entries.Add(value4);
+  Entries.Add(value5);
+  Entries.Add(value6);
+  Entries.Add(value7);
+  Entries.Add(value8);
+  Entries.Add(value9);
+  Entries.Add(value10);
+  Entries.Add(value11);
+  Entries.Add(value12);
 
 
-  s := 'fred';
-  key := NewLoxString(s);
-  Entry := Entries.FindEntry(Key);
 
-  s := 'fred';
-  key := NewLoxString(s);
-  Entry := Entries.FindEntry(Key);
+  target := Entries.FindEntry(value1);
 
-  Entries.Finalize;
+  target := Entries.FindEntry(value10);
+
+
+  strings.init(Entries);
+
+  (*while Strings.MoveNext <> nil do //note traditional iterator here won't work.
+  begin
+    memo3.Lines.add(Strings.Current.chars);
+  end; *)
+
+
+  Entries.Finalize; //this is just freeing the range of pointers, not the actual pointers themselves.
+  dispose(value1);
+  dispose(value2);
+  dispose(value3);
+  dispose(value4);
+  dispose(value5);
+  dispose(value6);
+  dispose(value7);
+  dispose(value8);
+  dispose(value9);
+  dispose(value10);
+  dispose(value11);
+  dispose(value12);
+
 end;
 
 procedure TForm1.BtnScanClick(Sender: TObject);
