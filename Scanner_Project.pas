@@ -56,6 +56,7 @@ procedure TForm1.BtnHashClick(Sender: TObject);
 var
   Entries : TLoxStrings;
 
+  value0 : pLoxString;
   value1 : pLoxString;
   value2 : pLoxString;
   value3 : pLoxString;
@@ -71,50 +72,61 @@ var
 
   s     : string;
   idx   : integer;
-  l     : TList;
+ 
 
   Items :  PLoxStringItems;
 
   target : pLoxString;
 
-  strings :  TloxStringIterator;
+  //strings :  TloxStringIterator;
 begin
+
+
   Entries.Init;
 
-  value1 := NewLoxString('abcde');
-  value2 := NewLoxString('bedfg');
-  value3 := NewLoxString('csdff');
-  value4 := NewLoxString('dsssdf');
-  value5 := NewLoxString('esffd');
-  value6 := NewLoxString('fsdfsdf');
-  value7 := NewLoxString('gsdfsdf');
-  value8 := NewLoxString('hsdfsdf');
-  value9 := NewLoxString('isdfsdf');
-  value10 := NewLoxString('jsfdsdf');
-  value11 := NewLoxString('ksdfsdf');
-  value12 := NewLoxString('lsdfsdf');
+  //4 slots
+  value0 := NewLoxString('abcde');
+  value1 := NewLoxString('bedfg');
+  value2 := NewLoxString('csdff');
+  value3 := NewLoxString('dsssdf');
 
+  //8 slots
+  value4 := NewLoxString('esffd');
+  value5 := NewLoxString('fsdfsdf');
+  value6 := NewLoxString('gsdfsdf');
+  value7 := NewLoxString('hsdfsdf');
+
+  value8 := NewLoxString('isdfsdf');
+  value9 := NewLoxString('jsfdsdf');
+  value10 := NewLoxString('ksdfsdf');
+  value11 := NewLoxString('lsdfsdf');
+
+  //4 slots
+  Entries.Add(value0);
   Entries.Add(value1);
   Entries.Add(value2);
   Entries.Add(value3);
+
+  //resize to 8
   Entries.Add(value4);
   Entries.Add(value5);
   Entries.Add(value6);
   Entries.Add(value7);
+
+  //resize to 16 slots
   Entries.Add(value8);
   Entries.Add(value9);
   Entries.Add(value10);
   Entries.Add(value11);
-  Entries.Add(value12);
 
 
 
-  target := Entries.FindEntry(value1);
+  target := Entries.Find(value1);
 
-  target := Entries.FindEntry(value10);
+  target := Entries.Find(value10);
 
 
-  strings.init(Entries);
+  //strings.init(Entries);
 
   (*while Strings.MoveNext <> nil do //note traditional iterator here won't work.
   begin
@@ -123,6 +135,7 @@ begin
 
 
   Entries.Finalize; //this is just freeing the range of pointers, not the actual pointers themselves.
+  dispose(value0);
   dispose(value1);
   dispose(value2);
   dispose(value3);
@@ -134,7 +147,7 @@ begin
   dispose(value9);
   dispose(value10);
   dispose(value11);
-  dispose(value12);
+
 
 end;
 
