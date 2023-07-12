@@ -1,8 +1,9 @@
 unit vm;
 
 interface
+
 uses
-  Chunk,Stacks,
+  classes,Chunk,Stacks,
   LOXTypes;
 
 type
@@ -14,11 +15,13 @@ type
   private
     FInstructionPointer     : TInstructionPointer; //pointer to instructions
     FStack  : TByteCodeStack; //byte code stack
+    FResults : TStrings;
     Procedure Add;
     Procedure subtract;
     Procedure Divide;
     Procedure Multiply;
     Procedure Negate;
+    procedure Print;
     procedure Equal;
     procedure Greater;
     procedure Less;
@@ -31,7 +34,7 @@ type
   public
     function Result : TByteCode;
     function Run : TInterpretResult;
-    procedure init(const IP : TInstructionPointer);
+    procedure init(const IP : TInstructionPointer; const results : TStrings);
     procedure finalize;
   end;
 
@@ -120,6 +123,10 @@ begin
 
       OP_NEGATE : begin
         Negate;
+      end;
+
+      OP_PRINT  : begin
+          Print;
       end;
     end;
   end;
@@ -242,6 +249,14 @@ begin
   except
      HandleRunTimeError; //<== place holders for now
   end;
+end;
+
+procedure TVirtualMachine.Print;
+begin
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+  //we assume here we're sitting on an OP_NEGATE in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
+  FResults.Add('PRINT:' + FStack.Pop.Value.ToString);
 end;
 
 procedure TVirtualMachine.Negate;
@@ -410,8 +425,10 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.init(const IP : TInstructionPointer);
+procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings);
 begin
+  assert(Assigned(results),'No way to display results as no string storage passed in');
+  FResults := results;
   FInstructionPointer := IP;
   FStack.Init;
 end;

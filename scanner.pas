@@ -473,6 +473,10 @@ function TScanner.MakeToken : TToken;
           Token := MakeSingleToken(tkdot);
         end;
 
+        ord(semiColon) : begin
+           Token := MakeSingleToken(tkSemiColon);
+        end;
+
         ord(slash) : begin
            if MatchChar(ln.chars.PeekNext,slash) then
            begin

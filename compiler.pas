@@ -41,6 +41,7 @@ type
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
     procedure Strings(const canAssign: Boolean);
+    function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
     //------------------rules---------------------------------------------------
     procedure CreateRuleForOpen_bracket;
@@ -62,6 +63,9 @@ type
     procedure CreateRulesForGreaterThan;
     procedure CreateRulesForString;
     procedure CreateRulesForComment;
+    procedure CreateRulesForSemiColon;
+    procedure CreateRulesForPrint;
+
     procedure CreateRulesForEOF;
   
     procedure CreateRules;
@@ -78,12 +82,18 @@ type
     procedure call(const canAssign : boolean);
     procedure literal(const CanAssign : boolean);
     procedure grouping(const canAssign : boolean);
+    procedure printStatement;
+    procedure ExpressionStatement;
+    Procedure statement;
+    procedure declaration;
     procedure parsePrecedence(precedence : TPrecedence);
     function getRule(TokenKind : TTokenKind) : TParseRule;
     procedure consume(const TokenKind : TTokenKind; const Message : String);
   public
     function Chunks : TChunks;
     procedure expression;
+
+    procedure DoCompile;
     constructor Create(Const Scanner : TScanner);
     destructor destroy;override;
   end;
@@ -126,7 +136,14 @@ var
   infixRule : TParseFn;
   canAssign : boolean;
 begin
-  if not advance then exit;
+  if not advance then
+  begin
+    //error('Advance Called when no further tokens' + TTokenName[FTokens.current.kind]);
+    exit;
+  end;
+
+
+
 
   prefixRule := getRule(FTokens.Previous.kind).prefix;
   if (@prefixRule = nil) then
@@ -184,18 +201,6 @@ begin
   parsePrecedence(PREC_ASSIGNMENT);
 end;
 
-
-(*
-  //> Compiling Expressions consume
-static void consume(TokenType type, const char* message) {
-  if (parser.current.type == type) {
-    advance();
-    return;
-  }
-
-  errorAtCurrent(message);
-}
-*)
 procedure TCompiler.consume(const TokenKind : TTokenKind; const Message : String);
 begin
   if FTokens.Current.Kind = TokenKind then
@@ -213,11 +218,19 @@ begin
   FScanner := Scanner;
 
   FTokens.Init(Scanner.Tokens);
-  FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
+  //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
   FillChar(FParseRules,sizeof(FParseRules),#0);
   CreateRules;
 end;
 
+
+procedure TCompiler.CreateRulesForClose_Bracket;
+begin
+  //[TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE}
+  FParseRules[tkclose_bracket].Prefix := nil;
+  FParseRules[tkclose_bracket].Infix := nil;
+  FParseRules[tkClose_bracket].Precedence := PREC_NONE;
+end;
 
 procedure TCompiler.CreateRuleForOpen_bracket;
 begin
@@ -234,14 +247,6 @@ begin
   FParseRules[tkBang].Prefix := unary;
   FParseRules[tkBang].Infix := nil;
   FParseRules[tkBang].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForClose_bracket;
-begin
-  // [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
-  FParseRules[tkclose_bracket].Prefix := nil;
-  FParseRules[tkclose_bracket].Infix := nil;
-  FParseRules[tkclose_bracket].Precedence := PREC_NONE;
 end;
 
 procedure TCompiler.CreateRulesForComment;
@@ -351,15 +356,21 @@ begin
 end;
 
 
-
-
-
-
-
-destructor TCompiler.destroy;
+procedure TCompiler.CreateRulesForPrint;
 begin
-  FChunks.Finalize;
-  inherited;
+// [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE}
+  FParseRules[tkPrint].Prefix := nil;
+  FParseRules[tkPrint].Infix := nil;
+  FParseRules[tkPrint].Precedence := PREC_NONE;
+end;
+
+
+procedure TCompiler.CreateRulesForSemiColon;
+begin
+  //[TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE}
+  FParseRules[tkSemiColon].Prefix := nil;
+  FParseRules[tkSemiColon].Infix := nil;
+  FParseRules[tkSemiColon].Precedence := PREC_NONE;
 end;
 
 procedure TCompiler.CreateRulesForString;
@@ -418,10 +429,39 @@ begin
   CreateRulesForBang;
   CreateRulesForComment;
   CreateRulesForString;
-
+  CreateRulesForSemiColon;
+  CreateRulesForPrint;
   CreateRulesForEOF;
 end;
 
+procedure TCompiler.printStatement;
+begin
+  expression;
+  consume(tkSemiColon, 'Expect ";" after value.');
+  FChunks.ADDPRINT;
+end;
+
+procedure TCompiler.ExpressionStatement;
+begin
+  Expression;
+ // Consume(tkSemiColon, 'Expect ";" after value.');
+  FChunks.ADDPOP;
+end;
+
+
+procedure TCompiler.statement;
+begin
+  if (match(tkPRINT)) then
+  begin
+    printStatement
+  end
+  else
+  begin
+    expression;
+//    FTokens.MoveLast;
+  end;
+
+End;
 
 procedure TCompiler.Error(const msg: String);
 begin
@@ -454,39 +494,6 @@ static void error(const char* message) {
  *)
 end;
 
-
-(*function TCompiler.NumberVal(num: Integer): TValue;
-begin
-  Result := NumToValue(num);
-end;
-
-function TCompiler.NumToValue(num: Double): TValue;
-var
-  value: TValue;
-begin
-  Move(num, value, SizeOf(Double));
-  Result := value;
-end;    *)
-
-(*
-static void number(bool canAssign) {
-//< Global Variables number
-  double value = strtod(parser.previous.start, NULL);
-/* Compiling Expressions number < Types of Values const-number-val
-  emitConstant(value);
-*/
-//> Types of Values const-number-val
-  emitConstant(NUMBER_VAL(value));
-//< Types of Values const-number-val
-} *)
-
-(*procedure TCompiler.emitConstant(value : TValue);
-begin {
-  emitBytes(OP_CONSTANT, makeConstant(value));
-}
-  FChunks.AddConstant(Value);
-end; *)
-
 procedure TCompiler.Number(const canAssign : boolean);
 var
   token : pToken;
@@ -516,7 +523,6 @@ begin
 
 end;
 
-
 procedure TCompiler.literal(const CanAssign: boolean);
 begin
   case  FTokens.Previous.Kind of
@@ -526,12 +532,17 @@ begin
   end;
 end;
 
+
+function TCompiler.checkKind(Kind : TTokenKind) : boolean;
+begin
+  result := FTokens.Current.Kind = Kind;
+end;
+
 function TCompiler.match(const Expected : TTokenKind) : boolean;
 begin
-  result := (FTokens.Current.Kind = Expected);
+  result := CheckKind(Expected);
   if not result then exit;
-
-  result := advance;
+  advance;
 end;
 
 
@@ -555,36 +566,6 @@ begin
   consume(tkclose_Bracket, 'Expect '')'' after arguments.');
   Result := argCount;
 end;
-
-(*
-static uint8_t argumentList() {
-  uint8_t argCount = 0;
-  if (!check(TOKEN_RIGHT_PAREN)) {
-    do {
-      expression();
-//> arg-limit
-      if (argCount == 255) {
-        error("Can't have more than 255 arguments.");
-      }
-//< arg-limit
-      argCount++;
-    } while (match(TOKEN_COMMA));
-  }
-  consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-  return argCount;
-}   *)
-
-
-(*
-static void emitByte(uint8_t byte) {
-  writeChunk(currentChunk(), byte, parser.previous.line);
-}
-//< Compiling Expressions emit-byte
-//> Compiling Expressions emit-bytes
-static void emitBytes(uint8_t byte1, uint8_t byte2) {
-  emitByte(byte1);
-  emitByte(byte2);
-} *)
 
 
 procedure TCompiler.Strings(const canAssign: Boolean);
@@ -620,6 +601,15 @@ end;
 function TCompiler.Chunks: TChunks;
 begin
   result := FChunks;
+end;
+
+procedure TCompiler.DoCompile;
+begin
+  advance;
+  while not Match(tkEOF) do
+  begin
+    Declaration;
+  end;
 end;
 
 (*//< Global Variables binary
@@ -669,6 +659,18 @@ begin
     default: return; // Unreachable.
   }
 
+end;
+
+
+procedure TCompiler.declaration;
+begin
+   statement;
+end;
+
+destructor TCompiler.destroy;
+begin
+  FChunks.Finalize;
+  inherited;
 end;
 
 

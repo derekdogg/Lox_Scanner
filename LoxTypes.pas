@@ -200,6 +200,7 @@ TTokenKind = (
   tkunderscore,
   tkThis,
   tkComment,
+  tkSemicolon,
   tkEOF);
 
  const
@@ -250,6 +251,7 @@ TTokenKind = (
   'underscore',
   'this',
   'Comment',
+  'Semicolon',
   'EOF');
 
 

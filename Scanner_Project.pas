@@ -120,6 +120,12 @@ begin
   Entries.Add(value11);
 
 
+  //key violations
+  try
+    Entries.Add(value11);
+  except on E:Exception do
+    memo3.lines.add(E.message);
+  end;
 
   target := Entries.Find(value1);
 
@@ -201,14 +207,14 @@ begin
      Memo2.lines.Add(cCr);
   end;
   Memo2.Lines.EndUpdate;
-
+   
 
   //try compiler to see what happens;
    Memo3.Lines.Clear;
    Compiler := TCompiler.Create(Scanner);
    try
-     Compiler.expression; //???
-
+     //Compiler.expression; //???
+     Compiler.DoCompile;
      InstructionPointer.Init(Compiler.Chunks);
      Memo3.Lines.add('Bytes : ' + inttostr(InstructionPointer.ByteCount));
      Memo3.Lines.add('Constants : ' + inttostr(InstructionPointer.ConstantCount));
@@ -231,17 +237,18 @@ begin
    finally
      Compiler.Free;
    end;
-
+   
 
    //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
    // is giving 4 currently - however, byte code is legit.
    Compiler := TCompiler.Create(Scanner);
    try
-     Compiler.expression;
+     Compiler.DoCompile;
      instructionPointer.Init(Compiler.Chunks);
-     VM.Init(InstructionPointer);
-     if VM.Run = INTERPRET_OK then 
-       Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
+     VM.Init(InstructionPointer,Memo3.Lines);
+     VM.Run;
+     // = INTERPRET_OK then
+     //  Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
      Compiler.Free;
