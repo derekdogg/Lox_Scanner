@@ -3,7 +3,7 @@ unit vm;
 interface
 
 uses
-  classes,Chunk,Stacks,
+  sysutils,classes,Chunk,Stacks,
   LOXTypes;
 
 type
@@ -29,7 +29,7 @@ type
     procedure DoTrue;
     procedure DoFalse;
     procedure DoNil;
-    procedure HandleRunTimeError;
+    procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : TValue) : Boolean;
   public
     function Result : TByteCode;
@@ -41,7 +41,7 @@ type
 
 implementation
 uses
-  sysutils;
+  dialogs;
 
 
 { TVirtualMachine }
@@ -134,9 +134,9 @@ begin
 end;
 
 
-procedure TVirtualMachine.HandleRunTimeError;
+procedure TVirtualMachine.HandleRunTimeError(const E : Exception);
 begin
-
+  showmessage(E.message);
 end;
 
 procedure TVirtualMachine.Add;
@@ -166,8 +166,8 @@ begin
       L.Value.Str := L.Value.ToString + R.Value.ToString;
       FStack.Push(L);
     end;
-  except
-     HandleRunTimeError;
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -175,12 +175,13 @@ procedure TVirtualMachine.subtract;
 var
   L,R : TByteCode;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+  Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Stack 0 Current operation is not Constant');
+  Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Stack 1 Current operation is not Constant');
   Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
   try
     R := FStack.Pop;
     L := FStack.Pop;
+
     if (L.Value.IsNumber) and (R.Value.IsNumber) then
     begin
       L.Value.number := L.Value.Number - R.Value.Number;
@@ -193,8 +194,8 @@ begin
       L.Value.Str := StringReplace(l.Value.tostring,r.value.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
       FStack.Push(L);
     end;
-  except
-     HandleRunTimeError;
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -246,15 +247,13 @@ begin
 
      //code duplication
 
-  except
-     HandleRunTimeError; //<== place holders for now
+ except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
 procedure TVirtualMachine.Print;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  //we assume here we're sitting on an OP_NEGATE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
   FResults.Add('PRINT:' + FStack.Pop.Value.ToString);
 end;
@@ -279,8 +278,8 @@ begin
 
 
 
-  except
-     HandleRunTimeError;
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -300,8 +299,8 @@ begin
     L := FStack.Pop;
     L.Value.Number := L.Value.Number / R.Value.Number;
     FStack.Push(L);
-  except
-     HandleRunTimeError;
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -320,32 +319,34 @@ var
 begin
   //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
-  Assert(FInstructionPointer.Current^ = byte(OP_NOT));
+  Assert(FInstructionPointer.Current^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
     result.Value.Boolean := isFalsey(FStack.pop.value);
     FStack.Push(Result);
 
-   except
-     HandleRunTimeError;
+   except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
 procedure TVirtualMachine.Equal;
 var
-  L,R : TByteCode;
+  L,R, Result : TByteCode;
 begin
    //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
    //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_EQUAL));
+  Assert(FInstructionPointer.Current^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
     L := FStack.Pop;
-    L.Value.Boolean := r.Value.ToString = l.value.ToString;
-    FStack.Push(L);
-  except
-     HandleRunTimeError;
+
+    Result.Value.Boolean := r.Value.ToString = l.value.ToString;
+    FStack.Push(result);
+
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -398,8 +399,8 @@ begin
     else
       result.value.Boolean := false;
     FStack.Push(Result);
-  except
-     HandleRunTimeError;
+  except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 
@@ -420,8 +421,8 @@ begin
     else
       result.value.Boolean := false;
     FStack.Push(Result);
-  except
-     HandleRunTimeError;
+ except on E:exception do
+     HandleRunTimeError(e);
   end;
 end;
 

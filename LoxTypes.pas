@@ -704,11 +704,10 @@ end;
 
 procedure TValue.setBoolean(const value : Boolean);
 begin
-  assert(FKind <> lxObject); //this is not cool to set the bytes of an existing pointer?
+  assert(FKind <> lxObject,'value is an object, and you are trying to set it to false'); //this is not cool to set the bytes of an existing pointer?
   FKind := lxBoolean;
   FillChar(FValue,Sizeof(FValue),#0);
   Move(value, FValue[0], SizeOf(Value))
-
 end;
 
 function TValue.getIsNumber: Boolean;

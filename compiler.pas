@@ -33,6 +33,7 @@ type
 
   TCompiler = class
   private
+    FScopeDepth : integer;
     FChunks : TChunks;
     FParseRules : TParseRules;
     FTokens : TTokenIterator;
@@ -86,6 +87,10 @@ type
     procedure ExpressionStatement;
     Procedure statement;
     procedure declaration;
+    procedure varDeclaration();
+    function identifierConstant(const name : pToken) : byte;
+    function parseVariable(const errorMessage : string) : byte;
+    procedure defineVariable(const global : byte);
     procedure parsePrecedence(precedence : TPrecedence);
     function getRule(TokenKind : TTokenKind) : TParseRule;
     procedure consume(const TokenKind : TTokenKind; const Message : String);
@@ -221,6 +226,8 @@ begin
   //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
   FillChar(FParseRules,sizeof(FParseRules),#0);
   CreateRules;
+
+  FScopeDepth := 0;
 end;
 
 
@@ -449,6 +456,53 @@ begin
 end;
 
 
+
+
+function TCompiler.identifierConstant(const name : pToken) : byte;
+begin
+
+end;
+ {
+  return makeConstant(OBJ_VAL(copyString(name->start,
+                                         name->length)));
+}
+
+
+procedure TCompiler.defineVariable(const global : byte);
+begin
+
+
+end; {
+  emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+
+function TCompiler.parseVariable(const errorMessage : string) : byte;
+begin
+  consume(tkIdentifier, errorMessage);
+  result := identifierConstant(FTokens.previous);
+end;
+
+procedure TCompiler.varDeclaration();
+var
+  global : Byte;
+begin
+  global := parseVariable('Expect variable name.');
+
+  if (match(tkequal)) then
+  begin
+    expression();
+  end
+  else
+  begin
+    FChunks.ADDNil; //emitByte(OP_NIL);
+  end;
+  consume(tkSemiColon,'Expect ";" after variable declaration.');
+
+  defineVariable(global);
+end;
+
+
 procedure TCompiler.statement;
 begin
   if (match(tkPRINT)) then
@@ -456,11 +510,15 @@ begin
     printStatement
   end
   else
+  if (match(tkVar)) then
+  begin
+    varDeclaration;
+  end
+  else
   begin
     expression;
 //    FTokens.MoveLast;
   end;
-
 End;
 
 procedure TCompiler.Error(const msg: String);
@@ -586,7 +644,7 @@ end;
 
 procedure TCompiler.EmitBytes(const Byte1,Byte2 : Byte);
 begin
-    
+
 end;
 
 
