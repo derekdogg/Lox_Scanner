@@ -9,6 +9,7 @@
 
 ![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/927a9b1d-f625-478a-80cb-8c21d4d75dfa)
 
+![image](https://github.com/derekdogg/Lox_Scanner/assets/135413966/48913cfc-264b-4b05-93e6-a32f98586e1d)
 
 
 This is a work in progress. Currently working through strings, addition, subtraction, and multiplication.
