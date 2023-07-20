@@ -6,6 +6,7 @@ uses
   sysutils,LOXTypes;
 
 type
+ 
 
   TByteCodes = record
   const
@@ -119,7 +120,7 @@ function TByteCodes.Remove : pByteCode;
 begin
   result := nil;
   if FCount = 0 then exit;
-  result := getItem(FCount);
+  result := getItem(FCount-1);
   dec(FIndex);
   dec(FCount);
 end;

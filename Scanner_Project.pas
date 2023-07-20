@@ -14,8 +14,10 @@ type
     Memo2: TMemo;
     Memo3: TMemo;
     BtnHash: TButton;
+    Button1: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     prevbuffer,buffer : pointer;
@@ -54,106 +56,35 @@ uses
 
 procedure TForm1.BtnHashClick(Sender: TObject);
 var
-  Entries : TLoxStrings;
+  Entries : TValuePairs;
 
-  value0 : pLoxString;
-  value1 : pLoxString;
-  value2 : pLoxString;
-  value3 : pLoxString;
-  value4 : pLoxString;
-  value5 : pLoxString;
-  value6 : pLoxString;
-  value7 : pLoxString;
-  value8 : pLoxString;
-  value9 : pLoxString;
-  value10 : pLoxString;
-  value11 : pLoxString;
-  value12 : pLoxString;
+  value0 : pNameValue;
+  value1 : pNameValue;
+  value2 : pNameValue;
 
   s     : string;
   idx   : integer;
- 
 
-  Items :  PLoxStringItems;
-
-  target : pLoxString;
 
   //strings :  TloxStringIterator;
 begin
+  value1 := nil;
+  Value0 := nil;
+//  value0 := NewValuePair(NewLoxString('a'),NewLoxString('bob'));
+//  value1 := NewValuePair(NewLoxString('b'),NewLoxString('fred'));
+//  value2 := NewValuePair(NewLoxString('c'),NewLoxString('Joe'));
+
 
 
   Entries.Init;
-
-  //4 slots
-  value0 := NewLoxString('abcde');
-  value1 := NewLoxString('bedfg');
-  value2 := NewLoxString('csdff');
-  value3 := NewLoxString('dsssdf');
-
-  //8 slots
-  value4 := NewLoxString('esffd');
-  value5 := NewLoxString('fsdfsdf');
-  value6 := NewLoxString('gsdfsdf');
-  value7 := NewLoxString('hsdfsdf');
-
-  value8 := NewLoxString('isdfsdf');
-  value9 := NewLoxString('jsfdsdf');
-  value10 := NewLoxString('ksdfsdf');
-  value11 := NewLoxString('lsdfsdf');
-
-  //4 slots
-  Entries.Add(value0);
-  Entries.Add(value1);
-  Entries.Add(value2);
-  Entries.Add(value3);
-
-  //resize to 8
-  Entries.Add(value4);
-  Entries.Add(value5);
-  Entries.Add(value6);
-  Entries.Add(value7);
-
-  //resize to 16 slots
-  Entries.Add(value8);
-  Entries.Add(value9);
-  Entries.Add(value10);
-  Entries.Add(value11);
+  Entries.Add(Value0);
 
 
-  //key violations
-  try
-    Entries.Add(value11);
-  except on E:Exception do
-    memo3.lines.add(E.message);
-  end;
-
-  target := Entries.Find(value1);
-
-  target := Entries.Find(value10);
+  value1 := Entries.Find('a');
 
 
-  //strings.init(Entries);
 
-  (*while Strings.MoveNext <> nil do //note traditional iterator here won't work.
-  begin
-    memo3.Lines.add(Strings.Current.chars);
-  end; *)
-
-
-  Entries.Finalize; //this is just freeing the range of pointers, not the actual pointers themselves.
-  dispose(value0);
-  dispose(value1);
-  dispose(value2);
-  dispose(value3);
-  dispose(value4);
-  dispose(value5);
-  dispose(value6);
-  dispose(value7);
-  dispose(value8);
-  dispose(value9);
-  dispose(value10);
-  dispose(value11);
-
+  Entries.Finalize;
 
 end;
 
@@ -198,7 +129,7 @@ begin
 
      Memo2.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
 
-     Memo2.Lines.Add(cTab + TTokenName[token.kind] + '=' + text);
+     Memo2.Lines.Add(cTab + 'Token Kind : ' + TTokenName[token.kind] + ' is equal to ' + text);
      Memo2.Lines.Add(cTab + 'Line : ' + inttostr(Token.Line));
      Memo2.Lines.Add(cTab + 'Length : ' + inttostr(Token.Length));
      Memo2.Lines.Add(cTab + 'Starts at : ' + inttostr(Token.Start));
@@ -211,6 +142,7 @@ begin
 
   //try compiler to see what happens;
    Memo3.Lines.Clear;
+   i := 0;
    Compiler := TCompiler.Create(Scanner);
    try
      //Compiler.expression; //???
@@ -222,6 +154,7 @@ begin
      While InstructionPointer.Next <> nil do
      begin
         ByteCode := TOP_Code_name[TOpCodes(InstructionPointer.Current^)];
+
         if (InstructionPointer.Current^ = byte(OP_CONSTANT)) then
         begin
           if InstructionPointer.Next <> nil then
@@ -232,13 +165,37 @@ begin
           end;
         end;
 
-        Memo3.Lines.Add(ByteCode);
+        if (instructionPointer.Current^ = byte(OP_DEFINE_GLOBAL)) then
+        begin
+          if InstructionPointer.Next <> nil then
+          begin
+            constantIndex := InstructionPointer.Current^;
+            value := InstructionPointer.Value(constantIndex);
+            ByteCode := ByteCode + '=' + value.ToString;
+          end;
+        end;
+
+        if (instructionPointer.Current^ = byte(OP_GET_GLOBAL)) then
+        begin
+          //this should be the index of the 
+          if InstructionPointer.Next <> nil then
+          begin
+            constantIndex := InstructionPointer.Current^;
+            value := InstructionPointer.Value(constantIndex);
+            ByteCode := ByteCode + '=' + value.ToString;
+          end;
+        end;
+
+
+
+        Memo3.Lines.Add(inttostr(i) + ':' + ByteCode);
+        inc(i);
      end;
    finally
      Compiler.Free;
    end;
-
-
+   
+   Memo3.lines.add('-------------------------------');
    //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
    // is giving 4 currently - however, byte code is legit.
    Compiler := TCompiler.Create(Scanner);
@@ -262,5 +219,25 @@ begin
 
 end;
 
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  stack : TByteCodeStack;
+  a,b,c,d : TByteCode;
+begin
+  stack.init;
+
+  a.value.number := 10;
+  b.value.Number := 20;
+
+  Stack.Push(a);
+  Stack.Push(b);
+
+  c := Stack.Pop;
+  d := Stack.Pop;
+
+  stack.finalize;
+
+end;
 
 end.

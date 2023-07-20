@@ -27,7 +27,7 @@ type
     FItems    : TBytes;
     pStackTop : pByte;
   public
-    procedure Push(const Item : byte);
+    procedure Push(const Item : TOpCodes);
     function  Pop : Byte;
     procedure Init;
     procedure Finalize;
@@ -48,17 +48,18 @@ type
   TByteCodeStack = record
   private
     FCount    : Integer;
-    FIndex    : Integer;
     FItems    : TByteCodes;
-    pStackTop : pByteCode;
+
   public
     Function Count : Integer;
+    function Top : pByteCode;
     Function Peek : pByteCode; overload;
-    Function Peek(const index : integer) : pByteCode; overload;
+    Function Peek(const distance : integer) : pByteCode; overload;
     procedure Push(const Item : TByteCode);
     function  Pop : TByteCode;
     procedure Init;
     procedure Finalize;
+
   end;
 
 
@@ -118,7 +119,7 @@ begin
   result := pStackTop^;
 end;
 
-procedure TByteStack.Push(const Item: byte);
+procedure TByteStack.Push(const Item: TOpCodes);
 begin
   inc(FIndex);
   FItems.Add(Item);
@@ -140,44 +141,52 @@ end;
 procedure TByteCodeStack.Init;
 begin
   FCount := 0;
-  FIndex := 0;
   FItems.Init;
-  pStackTop := FItems.GetItem(0);
 end;
 
-function TByteCodeStack.Peek(const index: integer): pByteCode;
+function TByteCodeStack.Peek(const distance: integer): pByteCode;
 begin
-  result := FItems.GetItem(Index);
+  //return vm.stackTop[-1 - distance];
+  result := FItems.GetItem(FCount-1 -distance);
 end;
 
 function TByteCodeStack.Peek: pByteCode;
 begin
-  result := pStackTop;
+  result := Peek(0);
 end;
 
 function TByteCodeStack.Pop: TByteCode;
 var
- removed : PByteCode;
+  removed : PByteCode;
 begin
-  
-  if FIndex = 0 then raise exception.create('Nothing to pop');
+
+  if FCount = 0 then raise exception.create('Nothing to pop');
+  result := Peek(0)^;
 
   if FItems.Remove = nil then raise exception.create('Failure to remove items from stack');
   Dec(FCount);
-  dec(FIndex);
-  dec(pStackTop);
-  result := pStackTop^;
 end;
            // 3 count compare to 1 count;
 procedure TByteCodeStack.Push(const Item: TByteCode);
 begin
+
   inc(FCount);
-  inc(FIndex);
   FItems.Add(Item); //<==== the indexes get out of synch because the stack index and the array index are wildly different.
-  inc(pStackTop);
 end;
 
 
 
 
+
+
+
+
+
+
+function TByteCodeStack.Top: pByteCode;
+begin
+  result := peek(0);
+end;
+
 end.
+

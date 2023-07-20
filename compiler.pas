@@ -66,6 +66,7 @@ type
     procedure CreateRulesForComment;
     procedure CreateRulesForSemiColon;
     procedure CreateRulesForPrint;
+    procedure CreateRulesForIdentifier;
 
     procedure CreateRulesForEOF;
   
@@ -75,6 +76,8 @@ type
     procedure Error(Const msg : String);
     function argumentList: Byte;
 
+    procedure NamedVariable(const Token : pToken);
+    Procedure variable(const canAssign : boolean);
     function advance : boolean;
     procedure EmitBytes(const Byte1,Byte2 : Byte);
     procedure Number(const canAssign : boolean);
@@ -87,10 +90,10 @@ type
     procedure ExpressionStatement;
     Procedure statement;
     procedure declaration;
-    procedure varDeclaration();
-    function identifierConstant(const name : pToken) : byte;
+    procedure varDeclaration;
+    function identifierConstant(const token : pToken) : byte;
     function parseVariable(const errorMessage : string) : byte;
-    procedure defineVariable(const global : byte);
+    procedure defineVariable(const constantidx : byte);
     procedure parsePrecedence(precedence : TPrecedence);
     function getRule(TokenKind : TTokenKind) : TParseRule;
     procedure consume(const TokenKind : TTokenKind; const Message : String);
@@ -177,6 +180,8 @@ begin
      error('Invalid assignment target.');
   end;
 end;
+
+
 
 procedure TCompiler.Unary(const canAssign: boolean);
 var
@@ -337,6 +342,14 @@ begin
   FParseRules[tkGreaterThanEqual].Precedence := PREC_COMPARISON;
 end;
 
+procedure TCompiler.CreateRulesForIdentifier;
+begin
+//   [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE}
+  FParseRules[tkIdentifier].Prefix := variable;
+  FParseRules[tkIdentifier].Infix := nil;
+  FParseRules[tkIdentifier].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForLessThan;
 begin
   // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
@@ -438,6 +451,7 @@ begin
   CreateRulesForString;
   CreateRulesForSemiColon;
   CreateRulesForPrint;
+  CreateRulesForIdentifier;
   CreateRulesForEOF;
 end;
 
@@ -451,43 +465,67 @@ end;
 procedure TCompiler.ExpressionStatement;
 begin
   Expression;
- // Consume(tkSemiColon, 'Expect ";" after value.');
+  Consume(tkSemiColon, 'Expect ";" after value.');
   FChunks.ADDPOP;
 end;
 
 
 
 
-function TCompiler.identifierConstant(const name : pToken) : byte;
-begin
 
-end;
  {
   return makeConstant(OBJ_VAL(copyString(name->start,
                                          name->length)));
 }
 
 
-procedure TCompiler.defineVariable(const global : byte);
+procedure TCompiler.NamedVariable(const Token : pToken);
+var
+  global : byte;
 begin
+  global := identifierConstant(Token);
+  FChunks.AddGET_GLOBAL(global);
+end;
+
+Procedure TCompiler.variable(const canAssign : boolean);
+begin
+  namedVariable(FTokens.previous);
+end;
 
 
+procedure TCompiler.defineVariable(const constantIdx : byte);
+begin
+  FChunks.AddDEFINE_GLOBAL(constantidx);
 end; {
   emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
 
+function TCompiler.identifierConstant(const token : pToken) : byte;
+var
+  value : TValue;
+  text : string;
+begin
+  assert(token <> nil,'Name is nil, cannot add identified constant');
+  text := FScanner.ln.items[Token.Line].text;
+  text := copy(text,token.Start,token.length);
+  Value := StringValue(text);
+  result := FChunks.MakeConstant(Value);
+end;
+
+
 function TCompiler.parseVariable(const errorMessage : string) : byte;
 begin
   consume(tkIdentifier, errorMessage);
-  result := identifierConstant(FTokens.previous);
+  result := identifierConstant(FTokens.previous); //index of the variable name in the constant table
 end;
 
-procedure TCompiler.varDeclaration();
+procedure TCompiler.varDeclaration;
 var
-  global : Byte;
+  constantIdx : Byte;
 begin
-  global := parseVariable('Expect variable name.');
+
+  constantIdx := parseVariable('Expect variable name.');
 
   if (match(tkequal)) then
   begin
@@ -495,11 +533,11 @@ begin
   end
   else
   begin
-    FChunks.ADDNil; //emitByte(OP_NIL);
+    FChunks.ADDNil;
   end;
   consume(tkSemiColon,'Expect ";" after variable declaration.');
 
-  defineVariable(global);
+  defineVariable(constantidx);
 end;
 
 
@@ -567,7 +605,7 @@ begin
 
   Value.Number := strToFloat(text);
 
-  FChunks.AddConstant(Value);
+  FChunks.EmitConstant(Value);
 end;
 
 procedure TCompiler.grouping(const canAssign : boolean);
@@ -635,8 +673,8 @@ begin
    Token := FTokens.previous;
    Text :=  FScanner.ln.items[Token.Line].text;
    text := copy(text,token.Start+1,token.length-2);
-   Value := StringValue(pchar(Text));
-   FChunks.AddConstant(Value);
+   Value := StringValue(Text);
+   FChunks.EmitConstant(Value);
   // FChunks.AddConstant(StringValue(Copy(
   // emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
   //                                parser.previous.length - 2))); *)

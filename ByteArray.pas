@@ -1,8 +1,12 @@
 unit ByteArray;
 
 interface
+uses
+  LoxTypes;
 
 type
+
+
 
 
 
@@ -28,7 +32,10 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : byte) : integer;
+    function Add(const value : TOpCodes) : integer;
+    function AddByte(const value : Byte) : integer;
+    function AddOperand(const Value : TOpCodes; const Operand : Byte) : integer;
+    function AddConstant(const Value : TOpCodes; const ConstantIndex : Byte) : integer;
     function  Item(const index : integer) : pByte;
     constructor init(const Count : integer);
     procedure finalize; //<-- no destructor allowed, seems weird.
@@ -37,6 +44,18 @@ type
 
 implementation
 
+
+function TBytes.AddByte(const value : Byte) : integer;
+var
+  pIndex : pByte;
+begin
+  result := FCount;
+  GrowArray;
+  pIndex  := Item(FCount);
+  pIndex^ := value;
+  inc(FIndex);
+  inc(FCount);
+end;
 
 function TBytes.Index : integer;
 begin
@@ -84,16 +103,22 @@ begin
 end;
 
 
-function TBytes.Add(const value : Byte) : integer;
-var
-  pIndex : pByte;
+function TBytes.AddConstant(const Value : TOpCodes; const ConstantIndex : Byte) : integer;
 begin
-  result := FCount;
-  GrowArray;
-  pIndex  := Item(FCount);
-  pIndex^ := value;
-  inc(FIndex);
-  inc(FCount);
+  assert(Value = OP_CONSTANT, 'value is not a constant');
+  Add(Value);
+  Add(TOpCodes(ConstantIndex));
+end;
+
+function TBytes.AddOperand(const Value : TOpCodes; const Operand : Byte) : integer;
+begin
+  Add(Value);
+  Add(TOpCodes(Operand));
+end;
+
+function TBytes.Add(const value : TOpCodes) : integer;
+begin
+  addByte(byte(Value)); 
 end;
 
 function TBytes.Item(const index: integer): pByte;

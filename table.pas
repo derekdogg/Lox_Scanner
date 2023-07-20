@@ -7,18 +7,25 @@ uses
   LOXTypes;
 
 
-Const MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array PLoxStringItems.
+Const MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
 
 type
 
-  PLoxStringItems = ^TLoxStringItems;
+  pNameValue = ^TNameValue;
+  TNameValue = record
+     name   : pLoxString;
+     value  : TValue;
+  end;
 
-  TLoxStringItems = array[0..MAX_CAPACITY - 1] of PloxString;
 
 
-  TLoxStrings = record
+  pNameValueItems = ^TValuePairItems;
+  TValuePairItems = array[0..MAX_CAPACITY - 1] of pNameValue;
+
+
+  TValuePairs = record
   const
-   // MAX_CAPACITY   = cMaxTokens;
+    // MAX_CAPACITY   = cMaxTokens;
     NUM_SLOTS      = 4;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
     GROWTH_FACTOR  = 2;  //<== 4,8,16,32,64,128 etc
   private
@@ -26,19 +33,19 @@ type
     FCount         : integer;
     FPrevcapacity  : integer;
     FCapacity      : integer;
-    FItems         : PLoxStringItems;
-    procedure CopyItems(const old,new : pLoxStringItems);
-    procedure AllocateArray(var Items : PLoxStringItems; const size : integer);
+    FItems         : pNameValueItems;
+    procedure CopyItems(const old,new : pNameValueItems);
+    procedure AllocateArray(var Items : pNameValueItems; const size : integer);
     procedure GrowArray;
     procedure growCapacity;
-    function findNewIndex(const loxString : pLoxString; const items : PLoxStringItems): Integer;
-    function getItem(const index: integer; const items : PLoxStringItems): pLoxString;
-    function DoFindEntry(const loxString : pLoxString; const items : PLoxStringItems): pLoxString;
-    function  DoAdd(const value : ploxString; const items : PLoxStringItems) : integer;
-    procedure InsertItem(const index : integer; value : pLoxString; const Items : PLoxStringItems);
-    function FindNewKeyAndAddValue(const value : ploxString; const items : PLoxStringItems) : boolean;
+    function findNewIndex(const name  : string; const items : pNameValueItems): Integer;
+    function getItem(const index: integer; const items : pNameValueItems): pNameValue;
+    function DoFindEntry(const name   : string; const items : pNameValueItems): pNameValue;
+    function  DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
+    procedure InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
+    function FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValueItems) : boolean;
   public
-    function Find(const loxString : pLoxString) : pLoxString;
+    function Find(const name  : string) : pNameValue;
     function ItemSize : integer;
     function InBounds(const index : integer; const capacity : Integer) : boolean;
     function SlotCount : integer;
@@ -47,76 +54,85 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : ploxString) : integer;
+    function Add(const value : pNameValue) : boolean;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
  (*
 
- TloxStringIterator = record
+ TValuePairIterator = record
  private
    FIndex : integer;
-   FLoxStrings : TLoxStrings;
-   FCurrent : pLoxString;
-   FPrevious : pLoxString;
+   FValuePairs : TValuePairs;
+   FCurrent : pNameValue;
+   FPrevious : pNameValue;
  public
    function Index : integer;
-   function Current : pLoxString;
-   function Previous : pLoxString;
+   function Current : pNameValue;
+   function Previous : pNameValue;
 
    function Count : integer;
-   function MoveFirst : pLoxString;
-   function MoveNext  : pLoxString;
-   function peekNext : pLoxString;
-   function MovePrev  : pLoxString;
-   function PeekPrev : pLoxString;
-   function MoveLast  : pLoxString;
-   procedure init(const Tokens : TLoxStrings);
+   function MoveFirst : pNameValue;
+   function MoveNext  : pNameValue;
+   function peekNext : pNameValue;
+   function MovePrev  : pNameValue;
+   function PeekPrev : pNameValue;
+   function MoveLast  : pNameValue;
+   procedure init(const Tokens : TValuePairs);
  end;  *)
 
+
+  function NewValuePair(name : pLoxString; value : TValue) : pNameValue;
 
 
 implementation
 
-function  TLoxStrings.ItemSize : integer;
+function NewValuePair(name : pLoxString; value : TValue) : pNameValue;
 begin
-  result := Sizeof(ploxString);
+  new(result);
+  result.name := name;
+  result.Value := Value;
+end;
+
+function  TValuePairs.ItemSize : integer;
+begin
+  result := Sizeof(pNameValue);
 end;
 
 
-function TLoxStrings.SlotCount : integer;
+function TValuePairs.SlotCount : integer;
 begin
   result := FCapacity div ItemSize;
 end;
 
-function TLoxStrings.IsFull : boolean;
+function TValuePairs.IsFull : boolean;
 begin
   result := (FCount * ItemSize) = FCapacity
 end;
 
-function TLoxStrings.Capacity : integer;
+function TValuePairs.Capacity : integer;
 begin
   result := FCapacity;
 end;
 
 
-procedure TLoxStrings.AllocateArray(var Items : PLoxStringItems; const size : integer);
+procedure TValuePairs.AllocateArray(var Items : pNameValueItems; const size : integer);
 begin
   assert(Items = nil);
   getMem(Items,size);
   fillchar(Items^,size,#0);
 end;
 
-function TLoxStrings.Count: integer;
+function TValuePairs.Count: integer;
 begin
   result := FCount;
 end;
 
-procedure TLoxStrings.CopyItems(const old,new : pLoxStringItems);
+procedure TValuePairs.CopyItems(const old,new : pNameValueItems);
 var
   i : integer;
-  str : pLoxString;
+  str : pNameValue;
 
 begin
   assert(assigned(new),'new items is nil');
@@ -132,9 +148,9 @@ begin
   end;
 end;
 
-procedure  TLoxStrings.GrowArray;
+procedure  TValuePairs.GrowArray;
 var
-  pCopyItems : pLoxStringItems;
+  pCopyItems : pNameValueItems;
 begin
   pCopyItems := nil;
   GrowCapacity;
@@ -152,22 +168,26 @@ begin
 end;
 
 // [0,1,2,3,4,5,6,7,8,9]
-function TLoxStrings.Find(const loxString : pLoxString) : pLoxString;
+function TValuePairs.Find(const name : string) : pNameValue;
 begin
-  result := DoFindEntry(loxString,FItems);
+  result := DoFindEntry(name,FItems);
 end;
 
 
-function TLoxStrings.DoFindEntry(const loxString : pLoxString; const items : PLoxStringItems): pLoxString;
+function TValuePairs.DoFindEntry(const name : string; const items : pNameValueItems): pNameValue;
 var
   index     : integer;
-  prospect  : pLoxString;
+  prospect  : pNameValue;
+  Hash      : Uint64;
   HashIndex : integer;
 
 begin
+
   result := nil;
+
+  Hash := GetHashString(name); //get the hash for debug before exit purposes; (i.e. to check it is a good hash).
   if FCount = 0 then exit; //empty so no clashes
-  HashIndex := LoxString.hash and (slotcount -1);
+  HashIndex :=  Hash and (slotcount -1);
   assert(inbounds(HashIndex,FCapacity),'index for Hash to seek exceeds dictionary limits');
 
   //forwards from ideal index
@@ -179,7 +199,7 @@ begin
   begin
     prospect := GetItem(index,items);
 
-    if assigned(prospect) and ((prospect.chars = LoxString.chars)) then
+    if assigned(prospect) and ((prospect.name.hash = hash)) then
     begin
       result := prospect;
       //exit;
@@ -195,7 +215,7 @@ begin
     begin
       prospect := GetItem(index,items);
 
-      if assigned(prospect) and ((prospect.chars = LoxString.chars)) then
+      if assigned(prospect) and ((prospect.name.hash = hash)) then
       begin
         result := prospect;
         //exit;
@@ -206,16 +226,16 @@ begin
 
 end;
 
-(*function TLoxStrings.FindEntry(const value : String): pLoxString;
+(*function TValuePairs.FindEntry(const value : String): pNameValue;
 var
   startIndex  : integer;
   index       : integer;
- // loxstring   : pLoxString;
-  hashstr     : pLoxString;
-  prospect    : pLoxString;
+ // ValuePair   : pNameValue;
+  hashstr     : pNameValue;
+  prospect    : pNameValue;
 begin
   result := nil;
-  hashstr := NewLoxString(value);
+  hashstr := NewValuePair(value);
   index := hashstr.hash and (slotcount -1);
   startIndex := index;
   repeat
@@ -237,15 +257,17 @@ begin
 end;  *)
 
 
-function TLoxStrings.FindNewIndex(const loxString : pLoxString; const items : PLoxStringItems): Integer;
+function TValuePairs.FindNewIndex(const name  : string; const items : pNameValueItems): Integer;
 var
   index     : integer;
-  prospect  : pLoxString;
+  prospect  : pNameValue;
   HashIndex : integer;
-
+  Hash      : Uint64;
 begin
+  assert(assigned(items),' items is nil');
   result := -1;
-  HashIndex := LoxString.hash and (slotcount -1);
+  Hash := GetHashString(name);
+  HashIndex := Hash and (slotcount -1);
   assert(inbounds(HashIndex,FCapacity),'index for Hash to seek exceeds dictionary limits');
 
   //forwards from ideal index
@@ -279,15 +301,18 @@ begin
   end;
 end;
 
-function TLoxStrings.Add(const value : ploxString) : integer;
+function TValuePairs.Add(const value : pNameValue) : boolean;
 var
-  pItem : pLoxString;
+  pItem : pNameValue;
 begin
-  
-  pItem := nil;
-  result := -1;
+  assert(assigned(Value),'value is nil');
+  assert(assigned(Value.name), 'name is nil');
+  //assert(assigned(Value.value),'value is nil');
 
-  pItem := DoFindEntry(value,FItems);
+  pItem := nil;
+  result := false;
+
+  pItem := DoFindEntry(value.name.chars,FItems);
   Assert(pItem = nil, 'Key violation');
 
   if isfull then GrowArray;
@@ -295,37 +320,47 @@ begin
   result := DoAdd(value,FItems);
 end;
 
-procedure TLoxStrings.InsertItem(const index : integer; value : pLoxString; const Items : PLoxStringItems);
+procedure TValuePairs.InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
 begin
+  assert(assigned(Value),'value is nil');
+  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.value),'value is nil');
   assert(InBounds(Index,FCapacity));
   Items[Index] := Value;
 end;
 
-function TLoxStrings.FindNewKeyAndAddValue(const value : ploxString; const items : PLoxStringItems) : boolean;
+function TValuePairs.FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValueItems) : boolean;
 var
   newIdx : integer;
 
 begin
+  assert(assigned(Value),'value is nil');
+  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.value),'value is nil');
   result := False;
-  newIdx := FindNewIndex(Value,items);
+  newIdx := FindNewIndex(Value.name.chars,items);
   assert(newIdx <> -1,'new index is -1'); //this should not fail
   insertItem(NewIdx,value,Items);
   result := true;
 end;
 
-function TLoxStrings.DoAdd(const value : ploxString; const items : PLoxStringItems) : integer;
+function TValuePairs.DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
 begin
-  Assert(FindNewKeyAndAddValue(value,Items) = true, 'Could not find a new key for insertion');
+  assert(assigned(Value),'value is nil');
+  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.value),'value is nil');
+  result := FindNewKeyAndAddValue(value,Items);
+  Assert(result = true, 'Could not find a new key for insertion');
   inc(FCount);
 end;
 
 
-function TLoxStrings.InBounds(const index : integer; const capacity : Integer) : boolean;
+function TValuePairs.InBounds(const index : integer; const capacity : Integer) : boolean;
 begin
    result := Index * ItemSize <= capacity;
 end;
 
-function TLoxStrings.getItem(const index: integer; const items : PLoxStringItems): pLoxString;
+function TValuePairs.getItem(const index: integer; const items : pNameValueItems): pNameValue;
 begin
   assert(FCapacity > 0);
   assert(Items <> nil);
@@ -334,12 +369,12 @@ begin
 //  inc(result,index); *)
 end;
 
-function TLoxStrings.ResizeCount: integer;
+function TValuePairs.ResizeCount: integer;
 begin
   result := FResizeCount;
 end;
 
-procedure TLoxStrings.finalize;
+procedure TValuePairs.finalize;
 begin
   if assigned(FItems) then
   begin
@@ -348,7 +383,7 @@ begin
   end;
 end;
 
-function TLoxStrings.FreeSlots: integer;
+function TValuePairs.FreeSlots: integer;
 begin
   result := 0;
   if FCapacity = 0 then exit;
@@ -357,7 +392,7 @@ end;
 
 
 
-procedure TLoxStrings.growCapacity;
+procedure TValuePairs.growCapacity;
 begin
   FPrevCapacity := FCapacity;
   FCapacity := FCapacity  * GROWTH_FACTOR;
@@ -365,47 +400,47 @@ begin
   assert(FCapacity < MAX_CAPACITY,'Max size reached')
 end;
 
-Constructor TLoxStrings.init;
+Constructor TValuePairs.init;
 begin
   FresizeCount := 0;
   FItems := nil;
   Fcount := 0;
-  Fcapacity := NUM_SLOTS * sizeof(pLoxString);
+  Fcapacity := NUM_SLOTS * sizeof(pNameValue);
   Fprevcapacity := Fcapacity;
 
   AllocateArray(FItems,Fcapacity);
 end;
 
 
-  (*function TloxStringIterator.Count : integer;
+  (*function TValuePairIterator.Count : integer;
   begin
-    result := FLoxStrings.Count;
+    result := FValuePairs.Count;
   end;
 
-  function TloxStringIterator.MoveFirst : pLoxString;
+  function TValuePairIterator.MoveFirst : pNameValue;
   begin
     result := nil;
-    if not FLoxStrings.Count > 0 then exit;
+    if not FValuePairs.Count > 0 then exit;
     FIndex := 0;
-    FCurrent := FLoxStrings.GetItem(FIndex);
+    FCurrent := FValuePairs.GetItem(FIndex);
     FPrevious := nil;
     result := FCurrent;
   end;
 
-  function TloxStringIterator.MoveLast  : pLoxString;
+  function TValuePairIterator.MoveLast  : pNameValue;
   begin
     result := nil;
-    if not FLoxStrings.Count > 0 then exit;
-    FIndex := FLoxStrings.Count-1;
-    FCurrent := FLoxStrings.GetItem(FIndex);
+    if not FValuePairs.Count > 0 then exit;
+    FIndex := FValuePairs.Count-1;
+    FCurrent := FValuePairs.GetItem(FIndex);
     FPrevious := PeekPrev;
     result := FCurrent;
   end;
 
-  function TloxStringIterator.MoveNext  : pLoxString;
+  function TValuePairIterator.MoveNext  : pNameValue;
   begin
     result := nil;
-    if not FLoxStrings.Count > 0 then exit;
+    if not FValuePairs.Count > 0 then exit;
 
     if FIndex = -1 then
     begin
@@ -415,42 +450,42 @@ end;
     end;
 
     inc(FIndex);
-    if FIndex < FLoxStrings.Count then
+    if FIndex < FValuePairs.Count then
     begin
       FPrevious := FCurrent;
-      FCurrent := FLoxStrings.GetItem(FIndex);
+      FCurrent := FValuePairs.GetItem(FIndex);
       result := FCurrent;
     end;
   end;
 
-  function TloxStringIterator.MovePrev  : pLoxString;
+  function TValuePairIterator.MovePrev  : pNameValue;
   begin
     result := nil;
-    if not FLoxStrings.Count > 0 then exit;
+    if not FValuePairs.Count > 0 then exit;
     if FIndex > 0 then
     begin
       dec(FIndex);
-      FCurrent := FLoxStrings.GetItem(FIndex);
+      FCurrent := FValuePairs.GetItem(FIndex);
       FPrevious := PeekPrev;
       result := FCurrent;
     end;
   end;
 
 
-  function TloxStringIterator.peekNext : pLoxString;
+  function TValuePairIterator.peekNext : pNameValue;
   var
     i : integer;
   begin
     result := nil;
     i := FIndex;
     inc(i);
-    if i < FLoxStrings.Count then
+    if i < FValuePairs.Count then
     begin
-      result := FLoxStrings.GetItem(i);
+      result := FValuePairs.GetItem(i);
     end;
   end;
 
-  function TloxStringIterator.PeekPrev : pLoxString;
+  function TValuePairIterator.PeekPrev : pNameValue;
   var
     i : integer;
   begin
@@ -459,29 +494,29 @@ end;
     dec(i);
     if i >= 0 then
     begin
-      result := FLoxStrings.GetItem(i);
+      result := FValuePairs.GetItem(i);
     end;
   end;
 
 
-    function TloxStringIterator.Previous : pLoxString;
+    function TValuePairIterator.Previous : pNameValue;
     begin
        result := FPrevious;
     end;
 
-   function TloxStringIterator.Current : pLoxString;
+   function TValuePairIterator.Current : pNameValue;
    begin
      result := FCurrent;
    end;
 
-    function TloxStringIterator.Index : integer;
+    function TValuePairIterator.Index : integer;
     begin
       result := FIndex;
     end;
 
-  procedure TloxStringIterator.init(const Tokens : TLoxStrings);
+  procedure TValuePairIterator.init(const Tokens : TValuePairs);
   begin
-    FLoxStrings := Tokens;
+    FValuePairs := Tokens;
     FIndex := -1;
     FCurrent := nil;
     FPrevious := nil;

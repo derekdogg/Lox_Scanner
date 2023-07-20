@@ -60,4 +60,13 @@ object Form1: TForm1
     TabOrder = 4
     OnClick = BtnHashClick
   end
+  object Button1: TButton
+    Left = 286
+    Top = 8
+    Width = 75
+    Height = 25
+    Caption = 'Button1'
+    TabOrder = 5
+    OnClick = Button1Click
+  end
 end

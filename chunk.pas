@@ -23,16 +23,19 @@ type
     // FLine      : TIntegers;
   public
     function Constants : TValues;
-    function AddConstant(const Value: TValue) : Integer;
+    Procedure emitBytes(const byte1, byte2 : byte);
+    procedure EmitByte(const value : byte);
+    function MakeConstant(const value : TValue) : integer;
+    function EmitConstant(const Value: TValue) : Integer; //rename to check all instances
     function AddReturn : integer;
     Function AddNIL : Integer;
     Function AddTRUE : Integer;
     Function AddFALSE : Integer;
     Function AddPOP : Integer;
-    Function AddGET_LOCAL : Integer;
+   // Function AddGET_LOCAL : Integer;
     Function AddSET_LOCAL : Integer;
-    Function AddGET_GLOBAL : Integer;
-    Function AddDEFINE_GLOBAL : Integer;
+    Function AddGET_GLOBAL(const index  : Integer) : integer;
+    function AddDEFINE_GLOBAL(const index : integer): Integer;
     Function AddSET_GLOBAL : Integer;
     Function AddGET_UPVALUE : Integer;
     Function AddSET_UPVALUE : Integer;
@@ -99,51 +102,107 @@ uses
 //add the opcode constant to the opcodes, add a constant to the constants, then add the index of the contant to the opcodes.
 function TChunks.AddADD: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_ADD));
+  result := FOPCodes.Add(OP_ADD);
 end;
 
 function TChunks.AddCALL: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_CALL));
+  result := FOPCodes.Add(OP_CALL);
 end;
 
 function TChunks.AddCLASS: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_CLASS));
+  result := FOPCodes.Add(OP_CLASS);
 end;
 
 function TChunks.AddCLOSE_UPVALUE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_CLOSE_UPVALUE));
+  result := FOPCodes.Add(OP_CLOSE_UPVALUE);
 end;
 
 function TChunks.AddCLOSURE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_CLOSURE));
+  result := FOPCodes.Add(OP_CLOSURE);
+end;
+
+
+procedure TChunks.EmitByte(const value : byte);
+begin
+  //writeChunk(currentChunk(), byte, parser.previous.line);
+  FOpCodes.AddByte(value);
+end;
+
+Procedure TChunks.emitBytes(const byte1, byte2 : byte);
+begin
+  emitByte(byte1);
+  emitByte(byte2);
+end;
+
+(*procedure TChunks.EmitConstant(const value : TValue);
+begin
+  emitBytes(OP_CONSTANT, makeConstant(value));
+end; *)
+
+(*
+//> add-constant
+int addConstant(Chunk* chunk, Value value) {
+//> Garbage Collection add-constant-push
+  push(value);
+//< Garbage Collection add-constant-push
+  writeValueArray(&chunk->constants, value);
+//> Garbage Collection add-constant-pop
+  pop();
+//< Garbage Collection add-constant-pop
+  return chunk->constants.count - 1;
+
+
+function TChunks.makeConstant(Value : TValue) : Byte{
+  int constant = addConstant(currentChunk(), value);
+  if (constant > UINT8_MAX) {
+    error("Too many constants in one chunk.");
+    return 0;
+  }
+
+  return (uint8_t)constant;
+}
+
+*)
+
+
+function TChunks.MakeConstant(const value : TValue) : integer;
+begin
+  result := FConstants.Add(Value);
+  inc(FConstantCount);
 end;
 
 //add constant opcode followed by index of constant in constants array
-function TChunks.AddConstant(const Value: TValue) : Integer;
+function TChunks.EmitConstant(const Value: TValue) : Integer;
 begin
   if FConstantCount = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
   inc(FConstantCount);
-  result := FOpCodes.Add(ord(OP_CONSTANT));
-  FOpCodes.Add(FConstants.Add(Value));
+  result := FOpCodes.AddConstant(OP_CONSTANT,MakeConstant(Value));
 end;
 
-function TChunks.AddDEFINE_GLOBAL: Integer;
+function TChunks.AddDEFINE_GLOBAL(const index : integer) : Integer; //index of the global constant
 begin
-  result := FOPCodes.Add(ord(OP_DEFINE_GLOBAL));
+  assert(index < FConstantCount, 'index for get global is out of range');
+  result := FOPCodes.AddOperand(OP_DEFINE_GLOBAL,index);
+end;
+
+function TChunks.AddGET_GLOBAL(const Index : integer) : Integer;
+begin
+  assert(index < FConstantCount, 'index for get global is out of range');
+  result := FOPCodes.AddOperand(OP_GET_GLOBAL, index);
 end;
 
 function TChunks.AddDIVIDE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_DIVIDE));
+  result := FOPCodes.Add(OP_DIVIDE);
 end;
 
 function TChunks.AddEQUAL: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_EQUAL));
+  result := FOPCodes.Add(OP_EQUAL);
 end;
 
 function TChunks.AddNotEQUAL: Integer;
@@ -154,37 +213,34 @@ end;
 
 function TChunks.AddFALSE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_FALSE));
+  result := FOPCodes.Add(OP_FALSE);
 end;
 
-function TChunks.AddGET_GLOBAL: Integer;
-begin
-  result := FOPCodes.Add(ord(OP_GET_GLOBAL));
-end;
 
-function TChunks.AddGET_LOCAL: Integer;
+
+(*function TChunks.AddGET_LOCAL: Integer;
 begin
   result := FOPCodes.Add(ord(OP_GET_LOCAL));
-end;
+end; *)
 
 function TChunks.AddGET_PROPERTY: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_GET_PROPERTY));
+  result := FOPCodes.Add(OP_GET_PROPERTY);
 end;
 
 function TChunks.AddGET_SUPER: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_GET_SUPER));
+  result := FOPCodes.Add(OP_GET_SUPER);
 end;
 
 function TChunks.AddGET_UPVALUE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_GET_UPVALUE));
+  result := FOPCodes.Add(OP_GET_UPVALUE);
 end;
 
 function TChunks.AddGREATER: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_GREATER));
+  result := FOPCodes.Add(OP_GREATER);
 end;
 
 function TChunks.AddGREATERTHANEQUAL: Integer;
@@ -195,27 +251,27 @@ end;
 
 function TChunks.AddINHERIT: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_INHERIT));
+  result := FOPCodes.Add(OP_INHERIT);
 end;
 
 function TChunks.AddINVOKE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_INVOKE));
+  result := FOPCodes.Add( OP_INVOKE);
 end;
 
 function TChunks.AddJUMP: Integer;
 begin
- result := FOPCodes.Add(ord(OP_JUMP));
+ result := FOPCodes.Add(OP_JUMP);
 end;
 
 function TChunks.AddJUMP_IF_FALSE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_JUMP_IF_FALSE));
+  result := FOPCodes.Add(OP_JUMP_IF_FALSE);
 end;
 
 function TChunks.AddLESS: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_LESS));
+  result := FOPCodes.Add(OP_LESS);
 end;
 
 function TChunks.AddLESSTHANEQUAL: integer;
@@ -226,82 +282,82 @@ end;
 
 function TChunks.AddLOOP: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_LOOP));
+  result := FOPCodes.Add(OP_LOOP);
 end;
 
 function TChunks.AddMETHOD: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_METHOD));
+  result := FOPCodes.Add(OP_METHOD);
 end;
 
 function TChunks.AddMULTIPLY: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_MULTIPLY));
+  result := FOPCodes.Add(OP_MULTIPLY);
 end;
 
 function TChunks.AddNEGATE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_NEGATE));
+  result := FOPCodes.Add(OP_NEGATE);
 end;
 
 function TChunks.AddNIL: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_NIL));
+  result := FOPCodes.Add(OP_NIL);
 end;
 
 function TChunks.AddNOT: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_NOT));
+  result := FOPCodes.Add(OP_NOT);
 end;
 
 function TChunks.AddPOP: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_POP));
+  result := FOPCodes.Add(OP_POP);
 end;
 
 function TChunks.AddPRINT: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_PRINT));
+  result := FOPCodes.Add(OP_PRINT);
 end;
 
 function TChunks.AddReturn : integer;
 begin
-  result := FOPCodes.Add(ord(OP_RETURN));
+  result := FOPCodes.Add(OP_RETURN);
 end;
 
 function TChunks.AddSET_GLOBAL: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_SET_GLOBAL));
+  result := FOPCodes.Add(OP_SET_GLOBAL);
 end;
 
 function TChunks.AddSET_LOCAL: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_SET_LOCAL));
+  result := FOPCodes.Add(OP_SET_LOCAL);
 end;
 
 function TChunks.AddSET_PROPERTY: Integer;
 begin
-   result := FOPCodes.Add(ord(OP_SET_PROPERTY));
+   result := FOPCodes.Add(OP_SET_PROPERTY);
 end;
 
 function TChunks.AddSET_UPVALUE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_SET_UPVALUE));
+  result := FOPCodes.Add(OP_SET_UPVALUE);
 end;
 
 function TChunks.AddSUBTRACT: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_SUBTRACT));
+  result := FOPCodes.Add(OP_SUBTRACT);
 end;
 
 function TChunks.AddSUPER_INVOKE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_SUPER_INVOKE));
+  result := FOPCodes.Add(OP_SUPER_INVOKE);
 end;
 
 function TChunks.AddTRUE: Integer;
 begin
-  result := FOPCodes.Add(ord(OP_TRUE));
+  result := FOPCodes.Add(OP_TRUE);
 end;
 
 function TChunks.Constants: TValues;
@@ -331,7 +387,8 @@ end;
 
 function TInstructionPointer.value(const Index : byte) : pValue;
 begin
-  assert((index >= 0) and (index < FConstants.count));
+  assert(index >= 0, 'Index for value is < 0');
+  assert(index < FConstants.count, 'index is > than FConstants Count');
   result := FConstants.Item(Index);
 end;
 

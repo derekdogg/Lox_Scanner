@@ -4,7 +4,7 @@ interface
 
 uses
   sysutils,classes,Chunk,Stacks,
-  LOXTypes;
+  LOXTypes, Table;
 
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
@@ -13,8 +13,9 @@ type
 
   TVirtualMachine = record
   private
-    FInstructionPointer     : TInstructionPointer; //pointer to instructions
+    FInstructionPointer  : TInstructionPointer; //pointer to instructions
     FStack  : TByteCodeStack; //byte code stack
+    FGlobals : TValuePairs;
     FResults : TStrings;
     Procedure Add;
     Procedure subtract;
@@ -29,6 +30,8 @@ type
     procedure DoTrue;
     procedure DoFalse;
     procedure DoNil;
+    procedure DoGlobal;
+    procedure DoGetGlobal;
     procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : TValue) : Boolean;
   public
@@ -51,28 +54,49 @@ begin
   result := FStack.Pop;
 end;
 
+
+
 function TVirtualMachine.Run : TInterpretResult;
 var
   ByteCode : TByteCode;
   constantIndex : integer;
   Value : pValue;
-
+  Name  : pValue;
+  v : TValue;
+  stackCount : integer;
 begin
   Result := INTERPRET_NONE;
   if FInstructionPointer.ByteCount = 0 then exit;
   while FInstructionPointer.Next <> nil do
   begin
+
     ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
 
     Case ByteCode.Operation of
 
       OP_CONSTANT : begin
-
            if FInstructionPointer.Next = nil then raise exception.create('Expected constant value following constant operation');
            constantIndex := FInstructionPointer.Current^;
            value := FInstructionPointer.value(constantIndex);
            Bytecode.Value := Value^;
            FStack.Push(ByteCode);
+      end;
+
+
+      OP_DEFINE_GLOBAL: begin
+          DoGlobal;
+          { ObjString* name = READ_STRING();
+        tableSet(&vm.globals, name, peek(0));
+        pop();
+        break; }
+
+      end;
+
+
+      OP_GET_GLOBAL:
+      begin
+        doGetGlobal;
+
       end;
 
       OP_Nil  : begin
@@ -129,6 +153,7 @@ begin
           Print;
       end;
     end;
+    StackCount := FStack.Count;
   end;
   Result := INTERPRET_OK;
 end;
@@ -142,15 +167,19 @@ end;
 procedure TVirtualMachine.Add;
 var
   L,R : TByteCode;
+  A,B : TByteCode;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
+  //Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
+  //Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
   //we assume here we're sitting on an OP_ADDITION in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
     L := FStack.Pop;
+   // A := FStack.Pop;
+//    B := FStack.Pop;
+
     L.Operation := OP_CONSTANT;
 
     if (L.Value.IsNumber) and (R.Value.IsNumber) then
@@ -350,10 +379,6 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.finalize;
-begin
-  FStack.Finalize;
-end;
 
 procedure TVirtualMachine.DoTrue;
 var
@@ -381,6 +406,76 @@ begin
   ByteCode.Operation := OP_NULL;
   ByteCode.Value.Null := true;
   FStack.Push(ByteCode);
+end;
+
+
+(*
+        ObjString* name = READ_STRING();
+        Value value;
+        if (!tableGet(&vm.globals, name, &value)) {
+          runtimeError("Undefined variable '%s'.", name->chars);
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        push(value);
+        break; *)
+procedure TVirtualMachine.DoGetGlobal;
+var
+   ConstantIndex : integer;
+   Name   : pValue;
+   NameValue : pNameValue;
+   ByteCode : TByteCode;
+begin
+  assert(FInstructionPointer.Current^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+  if FInstructionPointer.Next <> nil then
+  begin
+     constantIndex := FInstructionPointer.Current^;
+     name := FInstructionPointer.Value(constantIndex);
+     NameValue := FGlobals.Find(name.tostring);
+     Assert(NameValue <> nil, 'expected value does not exist in globals');
+
+     //ByteCode.Operation := OP_Get_GLOBAL;
+     ByteCode.Value := NameValue.Value;
+     FStack.push(ByteCode);
+  end;
+  //FInstructionPointer.Next;
+end;
+
+
+(*
+
+  if InstructionPointer.Next <> nil then
+          begin
+            constantIndex := InstructionPointer.Current^;
+            value := InstructionPointer.Value(constantIndex);
+            ByteCode := ByteCode + '=' + value.ToString;
+          end;
+
+*)
+
+procedure TVirtualMachine.DoGlobal;
+var
+   ConstantIndex : integer;
+   Name   : TValue;
+   value  : TValue;
+   NameValue : pNameValue;
+   bcode : pByteCode;
+   
+begin
+  assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+  if FInstructionPointer.Next <> nil then
+  begin
+     constantIndex := FInstructionPointer.Current^;
+     name := FInstructionPointer.Value(constantIndex)^;
+     value := FStack.Peek(0).Value;
+     assert(name.IsStringObject, 'name is not a string object');
+
+
+     NameValue := NewValuePair(NewLoxString(Name.ToString),value);
+     assert(FGlobals.Add(NameValue) = true, 'failed to add to hash table');
+
+     bCode := FStack.Top;
+     FStack.pop;
+  end;
 end;
 
 procedure TVirtualMachine.Greater;
@@ -432,6 +527,14 @@ begin
   FResults := results;
   FInstructionPointer := IP;
   FStack.Init;
+  FGlobals.Init;
+end;
+
+
+procedure TVirtualMachine.finalize;
+begin
+  FStack.Finalize;
+  FGlobals.Finalize;
 end;
 
 

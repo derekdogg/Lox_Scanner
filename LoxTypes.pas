@@ -470,7 +470,6 @@ type field from it. *)
     Property Chars  : string read getChars write setChars;
     Property Hash   : Uint64 read getHash;
     procedure Init;
- 
   end;
 
 
@@ -529,7 +528,7 @@ type field from it. *)
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
   function StringValue(const str : string) : TValue;
-
+  function GetHashString(const value : string) : UInt64;
 
 
 
@@ -598,7 +597,8 @@ begin
   hashString;
 end;
 
-procedure TLoxString.hashString;
+
+function GetHashString(const value : string) : UInt64;
   (*
     algorithm fnv-1 is
     hash := FNV_offset_basis
@@ -612,16 +612,22 @@ procedure TLoxString.hashString;
 const
   FNV_offset_basis  =  $811C9DC5;
   FNV_prime         =  $1000193;
-  
+
 var
   i: Integer;
 
 begin
-  FHash := FNV_offset_basis;
-  for i := 1 to Flength - 1 do
+  result := FNV_offset_basis;
+  for i := 1 to length(value) do
   begin
-    FHash := ((FHash XOR byte(FChars[i]))* FNV_prime) and $FFFFFFFF;
+    result := ((result XOR ord(value[i]))* FNV_prime);// and $FFFFFFFF;
   end;
+end;
+
+
+procedure TLoxString.hashString;
+begin
+  FHash :=  getHashString(FChars)
 end;
 
 
