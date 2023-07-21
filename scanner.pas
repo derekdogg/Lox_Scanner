@@ -678,8 +678,7 @@ end;
   begin
     if ln.LineRecordIsNull(LineRecord) then exit;
     ln.chars.Init(LineRecord.text);
-    if ln.chars.HasNext then
-    begin
+
       while ln.chars.Next <> cNull do
       begin
         Token := MakeToken;
@@ -697,7 +696,7 @@ end;
           inc(TokenCount);
         end;
       end;
-    end;
+
   end;
 
 function TScanner.Match(const ascii : TAscii) : boolean;

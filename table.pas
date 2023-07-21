@@ -137,7 +137,7 @@ var
 begin
   assert(assigned(new),'new items is nil');
   assert(assigned(old),'old items is nil');
-   
+
   for i := 0 to FCount-1 do
   begin
     str := old[i];
@@ -313,7 +313,7 @@ begin
   result := false;
 
   pItem := DoFindEntry(value.name.chars,FItems);
-  Assert(pItem = nil, 'Key violation');
+  Assert(pItem = nil, 'Key violation, inserting the same Key into the hash table');
 
   if isfull then GrowArray;
 
@@ -389,8 +389,6 @@ begin
   if FCapacity = 0 then exit;
   result := (FCapacity - (FCount * ItemSize)) div ItemSize;
 end;
-
-
 
 procedure TValuePairs.growCapacity;
 begin

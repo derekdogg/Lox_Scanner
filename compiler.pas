@@ -76,7 +76,7 @@ type
     procedure Error(Const msg : String);
     function argumentList: Byte;
 
-    procedure NamedVariable(const Token : pToken);
+    procedure NamedVariable(const Token : pToken; const CanAssign : Boolean);
     Procedure variable(const canAssign : boolean);
     function advance : boolean;
     procedure EmitBytes(const Byte1,Byte2 : Byte);
@@ -479,17 +479,25 @@ end;
 }
 
 
-procedure TCompiler.NamedVariable(const Token : pToken);
+procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
   global : byte;
 begin
   global := identifierConstant(Token);
-  FChunks.AddGET_GLOBAL(global);
+  if canAssign and (match(tkEqual)) then
+  begin
+     expression();
+     FChunks.AddSET_GLOBAL(global);
+   end
+   else
+   begin
+     FChunks.AddGET_GLOBAL(global);
+   end;
 end;
 
-Procedure TCompiler.variable(const canAssign : boolean);
+Procedure TCompiler.variable(const CanAssign : boolean);
 begin
-  namedVariable(FTokens.previous);
+  namedVariable(FTokens.previous, CanAssign);
 end;
 
 
@@ -554,7 +562,7 @@ begin
   end
   else
   begin
-    expression;
+    expressionStatement;
 //    FTokens.MoveLast;
   end;
 End;

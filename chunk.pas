@@ -36,7 +36,7 @@ type
     Function AddSET_LOCAL : Integer;
     Function AddGET_GLOBAL(const index  : Integer) : integer;
     function AddDEFINE_GLOBAL(const index : integer): Integer;
-    Function AddSET_GLOBAL : Integer;
+    Function AddSET_GLOBAL(const index : integer):  Integer;
     Function AddGET_UPVALUE : Integer;
     Function AddSET_UPVALUE : Integer;
     Function AddGET_PROPERTY : Integer;
@@ -195,6 +195,12 @@ begin
   result := FOPCodes.AddOperand(OP_GET_GLOBAL, index);
 end;
 
+function TChunks.AddSET_GLOBAL(const Index : integer): Integer;
+begin
+  assert(index < FConstantCount, 'index for set global is out of range');
+  result := FOPCodes.Addoperand(OP_SET_GLOBAL,index);
+end;
+
 function TChunks.AddDIVIDE: Integer;
 begin
   result := FOPCodes.Add(OP_DIVIDE);
@@ -325,10 +331,7 @@ begin
   result := FOPCodes.Add(OP_RETURN);
 end;
 
-function TChunks.AddSET_GLOBAL: Integer;
-begin
-  result := FOPCodes.Add(OP_SET_GLOBAL);
-end;
+
 
 function TChunks.AddSET_LOCAL: Integer;
 begin

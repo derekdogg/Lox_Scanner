@@ -13,7 +13,8 @@ uses
   TokenArray in 'TokenArray.pas',
   compiler in 'compiler.pas',
   ByteCodesArray in 'ByteCodesArray.pas',
-  table in 'table.pas';
+  table in 'table.pas',
+  ValueList in 'ValueList.pas';
 
 {$R *.res}
 

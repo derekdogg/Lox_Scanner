@@ -15,6 +15,7 @@ type
     Memo3: TMemo;
     BtnHash: TButton;
     Button1: TButton;
+    chkRun: TCheckBox;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -70,11 +71,7 @@ var
 begin
   value1 := nil;
   Value0 := nil;
-//  value0 := NewValuePair(NewLoxString('a'),NewLoxString('bob'));
-//  value1 := NewValuePair(NewLoxString('b'),NewLoxString('fred'));
-//  value2 := NewValuePair(NewLoxString('c'),NewLoxString('Joe'));
-
-
+   
 
   Entries.Init;
   Entries.Add(Value0);
@@ -139,6 +136,7 @@ begin
   end;
   Memo2.Lines.EndUpdate;
 
+  if not chkRun.Checked then exit;
 
   //try compiler to see what happens;
    Memo3.Lines.Clear;

@@ -69,4 +69,12 @@ object Form1: TForm1
     TabOrder = 5
     OnClick = Button1Click
   end
+  object chkRun: TCheckBox
+    Left = 89
+    Top = 16
+    Width = 97
+    Height = 17
+    Caption = 'run'
+    TabOrder = 6
+  end
 end

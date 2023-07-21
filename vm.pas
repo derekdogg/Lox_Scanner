@@ -32,6 +32,8 @@ type
     procedure DoNil;
     procedure DoGlobal;
     procedure DoGetGlobal;
+    procedure DoSetGlobal;
+    procedure DoPOP;
     procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : TValue) : Boolean;
   public
@@ -91,6 +93,18 @@ begin
         break; }
 
       end;
+
+      OP_POP : Begin
+          DoPOP;
+      end;
+
+      
+      OP_SET_GLOBAL:
+      begin
+        DoSetGlobal;
+
+      end;
+
 
 
       OP_GET_GLOBAL:
@@ -409,6 +423,7 @@ begin
 end;
 
 
+
 (*
         ObjString* name = READ_STRING();
         Value value;
@@ -441,6 +456,37 @@ begin
 end;
 
 
+procedure TVirtualMachine.DoSetGlobal;
+var
+   ConstantIndex : integer;
+   Name   : TValue;
+   value  : TValue;
+   NameValue : pNameValue;
+   bcode : pByteCode;
+begin
+  assert(FInstructionPointer.Current^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
+        (*
+        ObjString* name = READ_STRING();
+        if (tableSet(&vm.globals, name, peek(0))) {
+          tableDelete(&vm.globals, name);
+          runtimeError("Undefined variable '%s'.", name->chars);
+          return INTERPRET_RUNTIME_ERROR;
+      *)
+  if FInstructionPointer.Next <> nil then
+  begin
+     constantIndex := FInstructionPointer.Current^;
+     name := FInstructionPointer.Value(constantIndex)^;
+     value := FStack.Peek(0).Value;
+     assert(name.IsStringObject, 'name is not a string object');
+     NameValue := FGlobals.Find(name.tostring);
+     assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
+     NameValue.Value := Value;
+  end;
+
+end;
+
+
+
 (*
 
   if InstructionPointer.Next <> nil then
@@ -451,6 +497,11 @@ end;
           end;
 
 *)
+
+procedure TVirtualMachine.DoPOP;
+begin
+   FStack.pop;
+end;
 
 procedure TVirtualMachine.DoGlobal;
 var
@@ -469,11 +520,13 @@ begin
      value := FStack.Peek(0).Value;
      assert(name.IsStringObject, 'name is not a string object');
 
+     if FGlobals.Find(Name.ToString) <> nil then exit; //already exists
+
 
      NameValue := NewValuePair(NewLoxString(Name.ToString),value);
      assert(FGlobals.Add(NameValue) = true, 'failed to add to hash table');
 
-     bCode := FStack.Top;
+     //bCode := FStack.Top;
      FStack.pop;
   end;
 end;
