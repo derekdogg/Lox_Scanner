@@ -55,7 +55,7 @@ type
     function FreeSlots : integer;
     function Count : integer;
     function Add(const value : pNameValue) : boolean;
-    function NewValuePair(name : pValue; value : pValue) : pNameValue;
+    function AddNameValue(name : pValue; value : pValue) : pNameValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
@@ -88,7 +88,7 @@ type
 
 implementation
 
-function TValuePairs.NewValuePair(name : pValue; value : pValue) : pNameValue;
+function TValuePairs.AddNameValue(name : pValue; value : pValue) : pNameValue;
 begin
   assert(assigned(Name),  'Name is nil');
   assert(assigned(value), 'value is nil');
