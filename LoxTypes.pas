@@ -605,6 +605,7 @@ begin
     dispose(LoxString);
   end;
   dispose(Value);
+  value := nil;
 end;
 
 

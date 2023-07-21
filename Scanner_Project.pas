@@ -227,14 +227,28 @@ var
   bool : pValue;
   ValueStack : TValueStack;
   pop : pValue;
-  
+
+
+  v : pNameValue;
 begin
+  new(v);
+
+
+
+
+
+
   ValueStack.init;
   values.Init(true);
 
   str := NewString('Fred');
   num := NewNumber(1.5);
   bool := NewBool(true);
+
+
+  v.name := str;
+  v.value := num;
+
   Values.Add(Str);
   Values.Add(Num);
   Values.Add(Bool);
@@ -255,7 +269,7 @@ begin
 
   ValueStack.Finalize;
   Values.Finalize;
-
+  dispose(v);
 end;
 
 end.

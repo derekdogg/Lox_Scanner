@@ -38,6 +38,7 @@ type
     procedure DoPOP;
     procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : pValue) : Boolean;
+    procedure AddGlobal(const name : pValue ; const Value : pValue);
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
@@ -178,6 +179,45 @@ end;
 procedure TVirtualMachine.HandleRunTimeError(const E : Exception);
 begin
   showmessage(E.message);
+end;
+
+
+procedure TVirtualMachine.Greater;
+var
+  L,R,Result : pValue;
+begin
+  //we assume here we're sitting on an OP_EQUAL in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+
+    Result := NewBool(l.Number > r.Number);
+    FStack.Push(result);
+    FStackResults.Add(Result);
+  except on E:exception do
+     HandleRunTimeError(e);
+  end;
+end;
+
+
+procedure TVirtualMachine.Less;
+var
+  L,R, Result : pValue;
+begin
+  //we assume here we're sitting on an OP_EQUAL in the IP
+  Assert(FInstructionPointer.Current^ = byte(OP_LESS));
+  //this also means we assume the correct values are sitting in Stack...
+  try
+    R := FStack.Pop;
+    L := FStack.Pop;
+    Result := NewBool(l.Number < r.Number);
+    FStack.Push(Result);
+    FStackResults.Add(Result);
+ except on E:exception do
+     HandleRunTimeError(e);
+  end;
 end;
 
 procedure TVirtualMachine.Add;
@@ -353,7 +393,11 @@ end;
 
 Function TVirtualMachine.isFalsey(value : pValue) : Boolean;
 begin
-   result := (Value.Kind = lxNull) OR ((Value.Kind = lxBoolean) and Value.Boolean = false);
+   result :=
+    (Value.Kind = lxNull) OR
+    ((Value.Kind = lxBoolean) and (Value.Boolean = false)) OR
+    ((Value.Kind = lxNumber) and (Value.Number <= 0)) OR
+    ((Value.isStringObject) and (lowercase(Value.ToString) = 'false'));
 end;
 
 {  C code...
@@ -499,18 +543,26 @@ end;
 
 procedure TVirtualMachine.DoPOP;
 begin
-   FStack.pop;
+  FStack.pop;
 end;
+
+
+procedure TVirtualMachine.AddGlobal(const name : pValue ; const Value : pValue);
+begin
+  assert(assigned(FGlobals.NewValuePair(Name,value)), 'failed to add to hash table');
+end;
+
 
 procedure TVirtualMachine.DoGlobal;
 var
    ConstantIndex : integer;
    Name   : pValue;
    value  : pValue;
-   NameValue : pNameValue;
+   //NameValue : pNameValue;
 //   bcode : pByteCode;
-   
+
 begin
+
   assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   if FInstructionPointer.Next <> nil then
   begin
@@ -518,55 +570,13 @@ begin
      name := FInstructionPointer.Value(constantIndex);
      value := FStack.Peek(0);
      assert(name.IsStringObject, 'name is not a string object');
-
-     if FGlobals.Find(Name.ToString) <> nil then exit; //already exists
-
-
-     NameValue := NewValuePair(Name,value);
-     assert(FGlobals.Add(NameValue) = true, 'failed to add to hash table');
-
+     AddGlobal(name,value);
      //bCode := FStack.Top;
      FStack.pop;
   end;
 end;
 
-procedure TVirtualMachine.Greater;
-var
-  L,R,Result : pValue;
-begin
-  //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
-  //this also means we assume the correct values are sitting in Stack...
-  try
-    R := FStack.Pop;
-    L := FStack.Pop;
 
-    Result := NewBool(l.Number > r.Number);
-    FStack.Push(result);
-    FStackResults.Add(Result);
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
-end;
-
-
-procedure TVirtualMachine.Less;
-var
-  L,R, Result : pValue;
-begin
-  //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_LESS));
-  //this also means we assume the correct values are sitting in Stack...
-  try
-    R := FStack.Pop;
-    L := FStack.Pop;
-    Result := NewBool(l.Number < r.Number);
-    FStack.Push(Result);
-    FStackResults.Add(Result);
- except on E:exception do
-     HandleRunTimeError(e);
-  end;
-end;
 
 procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings);
 begin

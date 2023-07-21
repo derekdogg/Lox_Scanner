@@ -26,7 +26,7 @@ type
   TValuePairs = record
   const
     // MAX_CAPACITY   = cMaxTokens;
-    NUM_SLOTS      = 4;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
+    NUM_SLOTS      = 100;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
     GROWTH_FACTOR  = 2;  //<== 4,8,16,32,64,128 etc
   private
     FResizeCount   : integer;
@@ -55,6 +55,7 @@ type
     function FreeSlots : integer;
     function Count : integer;
     function Add(const value : pNameValue) : boolean;
+    function NewValuePair(name : pValue; value : pValue) : pNameValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
@@ -83,16 +84,20 @@ type
  end;  *)
 
 
-  function NewValuePair(name : pValue; value : pValue) : pNameValue;
 
 
 implementation
 
-function NewValuePair(name : pValue; value : pValue) : pNameValue;
+function TValuePairs.NewValuePair(name : pValue; value : pValue) : pNameValue;
 begin
+  assert(assigned(Name),  'Name is nil');
+  assert(assigned(value), 'value is nil');
+  result := nil;
+  if Find(Name.ToString) <> nil then exit; //already exists
   new(result);
   result.name := name;
   result.Value := Value;
+  Add(result);
 end;
 
 function  TValuePairs.ItemSize : integer;
@@ -182,7 +187,6 @@ var
   HashIndex : integer;
 
 begin
-
   result := nil;
 
   Hash := GetHashString(name); //get the hash for debug before exit purposes; (i.e. to check it is a good hash).
@@ -202,7 +206,7 @@ begin
     if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
     begin
       result := prospect;
-      //exit;
+      exit;
     end;
     inc(Index);
   end;
@@ -218,7 +222,7 @@ begin
       if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
       begin
         result := prospect;
-        //exit;
+        exit;
       end;
       inc(Index);
     end;
@@ -375,7 +379,16 @@ begin
 end;
 
 procedure TValuePairs.finalize;
+var
+  i : integer;
 begin
+  for i := 0 to SlotCount-1 do
+  begin
+    if FItems[i] <> nil then
+    begin
+      dispose(FItems[i]);
+    end;
+  end;
   if assigned(FItems) then
   begin
     freeMem(FItems);
