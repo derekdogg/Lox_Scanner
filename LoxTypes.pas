@@ -483,6 +483,7 @@ type field from it. *)
   TEightBytes = array[0..7] of byte;
   TValue = record
   private
+    
     FKind  : TLoxKind;
     FValue : TEightBytes;
     function getNumber  : TNumber;
@@ -517,24 +518,41 @@ type field from it. *)
   end;
 
 
-  pByteCode = ^TByteCode;
+  (*pByteCode = ^TByteCode;
   TByteCode = record
-    Operation : TOPCODES;
-    Value     : TValue; //value associated with operation
-  end;
+    //Operation : TOPCODES;
+    Value     : pValue; //value associated with operation
+  end; *)
 
-  function NewLoxObject : pLoxObject;
+  (*function NewLoxObject : pLoxObject;
   function NewLoxString(Const str : string) : pLoxString;
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
-  function StringValue(const str : string) : TValue;
+  function StringValue(const str : string) : TValue; *)
   function GetHashString(const value : string) : UInt64;
+  //--------------------------------------------------------------
 
-
+  function NewString(const str : String) : pValue;
+  function NewNumber(Const number : TNumber) : pValue;
+  function NewBool(const Bool : Boolean) : pValue;
+  function DisposeValue(value : pValue) : boolean;
 
 implementation
 
 uses sysUtils;
+
+function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
+begin
+   assert(Assigned(pString));
+   result := @pString^;
+end;
+
+function NewLoxString(Const Str : String) : pLoxString;
+begin
+  new(Result);
+  result.init;
+  result.Chars := Copy(str,1,length(str));
+end;
 
 function StringValue(const str : string) : TValue;
 begin
@@ -542,11 +560,6 @@ begin
 end;
 
 
-function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
-begin
-   assert(Assigned(pString));
-   result := @pString^;
-end;
 
 function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
 begin
@@ -561,6 +574,42 @@ begin
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
 
+function NewString(const str : String) : pValue;
+begin
+  new(result);
+  result.LoxObject := LoxObjectFrom(NewLoxString(str));
+end;
+
+function NewBool(const Bool : Boolean) : pValue;
+begin
+  new(result);
+  result.Boolean := Bool;
+end;
+
+function NewNumber(const number : TNumber) : pValue;
+begin
+  new(result);
+  result.Number := Number;
+end;
+
+function DisposeValue(value : pValue) : boolean;
+var
+  loxString : pLoxString;
+begin
+  assert(assigned(Value), ' value for disposal is nil');
+  if value.IsStringObject then
+  begin
+    assert(value.IsStringObject = true, 'expected a lox object on disposal');
+    assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
+    LoxString := pLoxString(Value.LoxObject);
+    dispose(LoxString);
+  end;
+  dispose(Value);
+end;
+
+
+
+
 (*
 function StrPCopy(const Source: AnsiString; Dest: PAnsiChar): PAnsiChar;
 begin
@@ -568,12 +617,7 @@ begin
   Result := Dest;
 end;  *)
 
-function NewLoxString(Const Str : String) : pLoxString;
-begin
-  new(Result);
-  result.init;
-  result.Chars := Copy(str,1,length(str));
-end;
+
 
 procedure TLoxObject.Init;
 begin

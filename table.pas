@@ -13,8 +13,8 @@ type
 
   pNameValue = ^TNameValue;
   TNameValue = record
-     name   : pLoxString;
-     value  : TValue;
+     name   : pValue;
+     value  : pValue;
   end;
 
 
@@ -83,12 +83,12 @@ type
  end;  *)
 
 
-  function NewValuePair(name : pLoxString; value : TValue) : pNameValue;
+  function NewValuePair(name : pValue; value : pValue) : pNameValue;
 
 
 implementation
 
-function NewValuePair(name : pLoxString; value : TValue) : pNameValue;
+function NewValuePair(name : pValue; value : pValue) : pNameValue;
 begin
   new(result);
   result.name := name;
@@ -199,7 +199,7 @@ begin
   begin
     prospect := GetItem(index,items);
 
-    if assigned(prospect) and ((prospect.name.hash = hash)) then
+    if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
     begin
       result := prospect;
       //exit;
@@ -215,7 +215,7 @@ begin
     begin
       prospect := GetItem(index,items);
 
-      if assigned(prospect) and ((prospect.name.hash = hash)) then
+      if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
       begin
         result := prospect;
         //exit;
@@ -307,12 +307,12 @@ var
 begin
   assert(assigned(Value),'value is nil');
   assert(assigned(Value.name), 'name is nil');
-  //assert(assigned(Value.value),'value is nil');
+  assert(assigned(Value.value),'value is nil');
 
   pItem := nil;
   result := false;
 
-  pItem := DoFindEntry(value.name.chars,FItems);
+  pItem := DoFindEntry(value.name.ToString,FItems);
   Assert(pItem = nil, 'Key violation, inserting the same Key into the hash table');
 
   if isfull then GrowArray;
@@ -338,7 +338,7 @@ begin
   assert(assigned(Value.name),'name is nil');
 //  assert(assigned(Value.value),'value is nil');
   result := False;
-  newIdx := FindNewIndex(Value.name.chars,items);
+  newIdx := FindNewIndex(Value.name.ToString,items);
   assert(newIdx <> -1,'new index is -1'); //this should not fail
   insertItem(NewIdx,value,Items);
   result := true;

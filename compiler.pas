@@ -511,13 +511,13 @@ end; {
 
 function TCompiler.identifierConstant(const token : pToken) : byte;
 var
-  value : TValue;
+  value : pValue;
   text : string;
 begin
   assert(token <> nil,'Name is nil, cannot add identified constant');
   text := FScanner.ln.items[Token.Line].text;
   text := copy(text,token.Start,token.length);
-  Value := StringValue(text);
+  Value :=  NewString(Text);//StringValue(text);
   result := FChunks.MakeConstant(Value);
 end;
 
@@ -603,7 +603,7 @@ var
   token : pToken;
   number : double;
   text : string;
-  Value : TValue;
+  Value : pValue;
 begin
   Token := FTokens.Previous;
   if Token = nil then exit;
@@ -611,7 +611,7 @@ begin
   text := FScanner.ln.items[Token.Line].text;
   text := copy(text,token.Start,token.length);
 
-  Value.Number := strToFloat(text);
+  Value := NewNumber(strToFloat(text));
 
   FChunks.EmitConstant(Value);
 end;
@@ -674,14 +674,14 @@ end;
 
 procedure TCompiler.Strings(const canAssign: Boolean);
 var
-  Value : TValue;
+  Value : pValue;
   Token : pToken;
   Text  : String;
 begin
    Token := FTokens.previous;
    Text :=  FScanner.ln.items[Token.Line].text;
    text := copy(text,token.Start+1,token.length-2);
-   Value := StringValue(Text);
+   Value := NewString(Text);
    FChunks.EmitConstant(Value);
   // FChunks.AddConstant(StringValue(Copy(
   // emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,

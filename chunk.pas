@@ -4,7 +4,7 @@ interface
 
 uses
   Loxtypes,
-  ValueArray,
+  ValueList,
   IntegerArray,
   ByteArray;
 
@@ -19,14 +19,14 @@ type
   private
     FConstantCount : integer;
     FOpCodes       : TBytes;
-    FConstants     : TValues;
+    FConstants     : TValueList;
     // FLine      : TIntegers;
   public
-    function Constants : TValues;
+    function Constants : TValueList;
     Procedure emitBytes(const byte1, byte2 : byte);
     procedure EmitByte(const value : byte);
-    function MakeConstant(const value : TValue) : integer;
-    function EmitConstant(const Value: TValue) : Integer; //rename to check all instances
+    function MakeConstant(const value : pValue) : integer;
+    function EmitConstant(const Value: pValue) : Integer; //rename to check all instances
     function AddReturn : integer;
     Function AddNIL : Integer;
     Function AddTRUE : Integer;
@@ -74,7 +74,7 @@ type
   TInstructionPointer = record
   private
     FBytes      : TBytes;
-    FConstants  : TValues;
+    FConstants  : TValueList;
     FIndex      : integer;
     FCurrent    : pByte;
     FPrevious   : pByte;
@@ -169,15 +169,16 @@ function TChunks.makeConstant(Value : TValue) : Byte{
 *)
 
 
-function TChunks.MakeConstant(const value : TValue) : integer;
+function TChunks.MakeConstant(const value : pValue) : integer;
 begin
   result := FConstants.Add(Value);
   inc(FConstantCount);
 end;
 
 //add constant opcode followed by index of constant in constants array
-function TChunks.EmitConstant(const Value: TValue) : Integer;
+function TChunks.EmitConstant(const Value: pValue) : Integer;
 begin
+  assert(Assigned(Value), 'Value for emission is nil.. please try again later. Have a nice day you are screwed');
   if FConstantCount = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
   inc(FConstantCount);
   result := FOpCodes.AddConstant(OP_CONSTANT,MakeConstant(Value));
@@ -363,7 +364,7 @@ begin
   result := FOPCodes.Add(OP_TRUE);
 end;
 
-function TChunks.Constants: TValues;
+function TChunks.Constants: TValueList;
 begin
   result := FConstants;
 end;
@@ -377,7 +378,7 @@ end;
 procedure TChunks.init;
 begin
    FOPCodes.Init(64);
-   FConstants.Init;
+   FConstants.Init(true); //list ownership of pointers
 end;
 
 

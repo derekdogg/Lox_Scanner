@@ -45,7 +45,7 @@ type
     procedure Finalize;
   end; *)
 
-  TByteCodeStack = record
+  (*TByteCodeStack = record
   private
     FCount    : Integer;
     FItems    : TByteCodes;
@@ -60,7 +60,7 @@ type
     procedure Init;
     procedure Finalize;
 
-  end;
+  end;  *)
 
 
 implementation
@@ -126,7 +126,7 @@ begin
   inc(pStackTop);
 end;
 
-{TByteCodeStack}
+{TByteCodeStack}(*
 
 function TByteCodeStack.Count: Integer;
 begin
@@ -186,7 +186,7 @@ end;
 function TByteCodeStack.Top: pByteCode;
 begin
   result := peek(0);
-end;
+end;  *)
 
 end.
 

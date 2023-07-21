@@ -4,7 +4,7 @@ interface
 
 uses
   sysutils,LOXTypes;
-
+  (*
 type
  
 
@@ -61,10 +61,10 @@ type
    function PeekPrev : pByteCode;
    function MoveLast  : pByteCode;
    procedure init(const Tokens : TByteCodes);
- end;
+ end;  *)
 
 implementation
-
+    (*
 function  TByteCodes.ItemSize : integer;
 begin
   result := Sizeof(TByteCode);
@@ -312,5 +312,5 @@ end;
     FCurrent := nil;
     FPrevious := nil;
   end;
-
+  *)
 end.

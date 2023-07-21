@@ -49,7 +49,8 @@ uses
   compiler,
   vm,
   ByteCodesArray,
-  Table;
+  Table,
+  ValueList;
 
 {$R *.dfm}
 
@@ -220,21 +221,40 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  stack : TByteCodeStack;
-  a,b,c,d : TByteCode;
+  values : TValueList;
+  str : pValue;
+  num : pValue;
+  bool : pValue;
+  ValueStack : TValueStack;
+  pop : pValue;
+  
 begin
-  stack.init;
+  ValueStack.init;
+  values.Init(true);
 
-  a.value.number := 10;
-  b.value.Number := 20;
+  str := NewString('Fred');
+  num := NewNumber(1.5);
+  bool := NewBool(true);
+  Values.Add(Str);
+  Values.Add(Num);
+  Values.Add(Bool);
 
-  Stack.Push(a);
-  Stack.Push(b);
+  ValueStack.Push(str);
+  ValueStack.Push(num);
+  ValueStack.Push(bool);
 
-  c := Stack.Pop;
-  d := Stack.Pop;
+  pop := ValueStack.pop;    Assert(pop <> nil);
+  Memo3.Lines.Add(pop.ToString);
 
-  stack.finalize;
+  pop := ValueStack.pop;    Assert(pop <> nil);
+  Memo3.Lines.Add(pop.ToString);
+  pop := ValueStack.pop;    Assert(pop <> nil);
+  Memo3.Lines.Add(pop.ToString);
+
+
+
+  ValueStack.Finalize;
+  Values.Finalize;
 
 end;
 

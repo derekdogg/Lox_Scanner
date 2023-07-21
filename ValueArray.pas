@@ -1,7 +1,7 @@
 unit ValueArray;
 
 interface
-
+(*
 uses LOXTypes;
 
 type
@@ -58,10 +58,11 @@ type
    procedure init(const TValues : TValues);
  end;
 
-
+*)
 
 implementation
 
+(*
 function TValueIterator.Count : integer;
   begin
     result := FValues.Count;
@@ -303,5 +304,5 @@ begin
   AllocateArray(FItems,Fcapacity);
 end;
 
-
+ *)
 end.

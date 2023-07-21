@@ -4,7 +4,7 @@ interface
 
 uses
   sysutils,classes,Chunk,Stacks,
-  LOXTypes, Table;
+  LOXTypes, Table, ValueList;
 
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
@@ -14,8 +14,10 @@ type
   TVirtualMachine = record
   private
     FInstructionPointer  : TInstructionPointer; //pointer to instructions
-    FStack  : TByteCodeStack; //byte code stack
+    FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
+    FStack  : TValueStack; //byte code stack
     FGlobals : TValuePairs;
+
     FResults : TStrings;
     Procedure Add;
     Procedure subtract;
@@ -35,9 +37,9 @@ type
     procedure DoSetGlobal;
     procedure DoPOP;
     procedure HandleRunTimeError(const E: Exception);
-    Function isFalsey(value : TValue) : Boolean;
+    Function isFalsey(value : pValue) : Boolean;
   public
-    function Result : TByteCode;
+//    function Result : TByteCode;
     function Run : TInterpretResult;
     procedure init(const IP : TInstructionPointer; const results : TStrings);
     procedure finalize;
@@ -50,17 +52,17 @@ uses
 
 
 { TVirtualMachine }
-function TVirtualMachine.Result: TByteCode;
+(*function TVirtualMachine.Result: TByteCode;
 begin
   assert(FStack.Count = 1, 'stack is empty');
   result := FStack.Pop;
-end;
+end;*)
 
 
 
 function TVirtualMachine.Run : TInterpretResult;
 var
-  ByteCode : TByteCode;
+ // ByteCode : TByteCode;
   constantIndex : integer;
   Value : pValue;
   Name  : pValue;
@@ -72,16 +74,16 @@ begin
   while FInstructionPointer.Next <> nil do
   begin
 
-    ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
+    //ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
 
-    Case ByteCode.Operation of
+    Case TOpCodes(FInstructionPointer.Current^) of
 
       OP_CONSTANT : begin
            if FInstructionPointer.Next = nil then raise exception.create('Expected constant value following constant operation');
            constantIndex := FInstructionPointer.Current^;
            value := FInstructionPointer.value(constantIndex);
-           Bytecode.Value := Value^;
-           FStack.Push(ByteCode);
+           //Bytecode.Value := Value;
+           FStack.Push(value);
       end;
 
 
@@ -180,8 +182,8 @@ end;
 
 procedure TVirtualMachine.Add;
 var
-  L,R : TByteCode;
-  A,B : TByteCode;
+  L,R : pValue;
+
 begin
   //Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
   //Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Trying to Add - STACK[0] is not OP_CONSTANT');
@@ -194,19 +196,19 @@ begin
    // A := FStack.Pop;
 //    B := FStack.Pop;
 
-    L.Operation := OP_CONSTANT;
+    //L.Operation := OP_CONSTANT;
 
-    if (L.Value.IsNumber) and (R.Value.IsNumber) then
+    if (L.IsNumber) and (R.IsNumber) then
     begin
-      L.Value.Number := L.Value.Number + R.Value.Number;
+      L.Number := L.Number + R.Number;
       FStack.Push(L);
       exit;
     end;
 
-    if (L.Value.IsStringObject) and (R.Value.IsStringObject) then
+    if (L.IsStringObject) and (R.IsStringObject) then
     begin
       //What goes here?
-      L.Value.Str := L.Value.ToString + R.Value.ToString;
+      L.Str := L.ToString + R.ToString;
       FStack.Push(L);
     end;
   except on E:exception do
@@ -216,25 +218,27 @@ end;
 
 procedure TVirtualMachine.subtract;
 var
-  L,R : TByteCode;
+  L,R : pValue;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Stack 0 Current operation is not Constant');
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Stack 1 Current operation is not Constant');
+  //Assert(FStack.Peek(0).Operation = OP_CONSTANT, 'Stack 0 Current operation is not Constant');
+  //Assert(FStack.Peek(1).Operation = OP_CONSTANT, 'Stack 1 Current operation is not Constant');
+
+
   Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
   try
     R := FStack.Pop;
     L := FStack.Pop;
 
-    if (L.Value.IsNumber) and (R.Value.IsNumber) then
+    if (L.IsNumber) and (R.IsNumber) then
     begin
-      L.Value.number := L.Value.Number - R.Value.Number;
+      L.number := L.Number - R.Number;
       FStack.Push(L);
       exit;
     end;
 
-    if (L.Value.IsStringObject) and (R.Value.IsStringObject) then
+    if (L.IsStringObject) and (R.IsStringObject) then
     begin
-      L.Value.Str := StringReplace(l.Value.tostring,r.value.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
+      L.Str := StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
       FStack.Push(L);
     end;
   except on E:exception do
@@ -244,13 +248,13 @@ end;
 
 procedure TVirtualMachine.Multiply;
 var
-  L,R : TByteCode;
+  L,R : pValue;
   i : integer;
   s : string;
 
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+//  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+ // Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_MULTIPLY in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
@@ -258,33 +262,33 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
 
-    if (L.Value.IsNumber) and (R.Value.IsNumber) then
+    if (L.IsNumber) and (R.IsNumber) then
     begin
 
-      L.Value.Number := L.Value.Number * R.Value.Number;
+      L.Number := L.Number * R.Number;
       FStack.Push(L);
       exit;
     end;
 
-     if (L.Value.IsStringObject) and (R.Value.IsNumber) then
+     if (L.IsStringObject) and (R.IsNumber) then
      begin
        s := '';
-       for i := 0 to round(R.Value.Number-1) do
+       for i := 0 to round(R.Number-1) do
        begin
-         s := s + L.Value.Str
+         s := s + L.Str
        end;
-       L.Value.Str := s;
+       L.Str := s;
        FStack.Push(L);
      end;
 
-     if (R.Value.IsStringObject) and (L.Value.IsNumber) then
+     if (R.IsStringObject) and (L.IsNumber) then
      begin
        s := '';
-       for i := 0 to round(L.Value.Number-1) do
+       for i := 0 to round(L.Number-1) do
        begin
-         s := s + R.Value.Str
+         s := s + R.Str
        end;
-       R.Value.Str := s;
+       R.Str := s;
        FStack.Push(R);
      end;
 
@@ -298,24 +302,24 @@ end;
 procedure TVirtualMachine.Print;
 begin
   Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
-  FResults.Add('PRINT:' + FStack.Pop.Value.ToString);
+  FResults.Add('PRINT:' + FStack.Pop.ToString);
 end;
 
 procedure TVirtualMachine.Negate;
 var
-  R : TByteCode;
+  R : pValue;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+//  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_NEGATE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
-    Assert(R.Operation = OP_CONSTANT); //??
+    //Assert(R.Operation = OP_CONSTANT); //??
 
-    if (R.Value.IsNumber) then
+    if (R.IsNumber) then
     begin
-      R.Value.Number := - R.Value.Number;
+      R.Number := - R.Number;
       FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
@@ -329,25 +333,25 @@ end;
 
 procedure TVirtualMachine.Divide;
 var
-  L,R : TByteCode;
+  L,R : pValue;
 begin
-  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
-  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
+//  Assert(FStack.Peek(0).Operation = OP_CONSTANT);
+//  Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   //we assume here we're sitting on an OP_DIVIDE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
-    Assert(R.Value.Number <> 0); //divide by zero exceptions.
+    Assert(R.Number <> 0); //divide by zero exceptions.
     L := FStack.Pop;
-    L.Value.Number := L.Value.Number / R.Value.Number;
+    L.Number := L.Number / R.Number;
     FStack.Push(L);
   except on E:exception do
      HandleRunTimeError(e);
   end;
 end;
 
-Function TVirtualMachine.isFalsey(value : TValue) : Boolean;
+Function TVirtualMachine.isFalsey(value : pValue) : Boolean;
 begin
    result := (Value.Kind = lxNull) OR ((Value.Kind = lxBoolean) and Value.Boolean = false);
 end;
@@ -358,15 +362,15 @@ end;
 
 procedure TVirtualMachine.NotEqual;
 var
-  Result : TByteCode;
+  Result : pValue;
 begin
   //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
   //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
   Assert(FInstructionPointer.Current^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
-    result.Value.Boolean := isFalsey(FStack.pop.value);
+    result := NewBool(isFalsey(FStack.pop));
     FStack.Push(Result);
-
+    FStackResults.Add(Result);
    except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -374,7 +378,7 @@ end;
 
 procedure TVirtualMachine.Equal;
 var
-  L,R, Result : TByteCode;
+  L,R, Result : pValue;
 begin
    //Assert(FStack.Peek(0).Operation = OP_CONSTANT);
    //Assert(FStack.Peek(1).Operation = OP_CONSTANT);
@@ -385,9 +389,9 @@ begin
     R := FStack.Pop;
     L := FStack.Pop;
 
-    Result.Value.Boolean := r.Value.ToString = l.value.ToString;
+    Result := NewBool(r.ToString = l.ToString);
     FStack.Push(result);
-
+    FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -396,30 +400,28 @@ end;
 
 procedure TVirtualMachine.DoTrue;
 var
-  ByteCode : TByteCode;
+  value : pValue;
 begin
-  ByteCode.Operation := OP_TRUE;
-  ByteCode.Value.Boolean := true;
-  FStack.Push(ByteCode);
+  value := newBool(true);
+  FStack.Push(value);
 end;
 
 
 procedure TVirtualMachine.DoFalse;
 var
-  ByteCode : TByteCode;
+  Value : pValue;
 begin
-  ByteCode.Operation := OP_FALSE;
-  ByteCode.Value.Boolean := false;
-  FStack.Push(ByteCode);
+  Value := NewBool(False);
+  FStack.Push(Value);
 end;
 
 procedure TVirtualMachine.DoNil;
 var
-  ByteCode : TByteCode;
+  value : pValue;
 begin
-  ByteCode.Operation := OP_NULL;
-  ByteCode.Value.Null := true;
-  FStack.Push(ByteCode);
+  new(Value);
+  Value.Null := true;
+  FStack.Push(value);
 end;
 
 
@@ -438,7 +440,7 @@ var
    ConstantIndex : integer;
    Name   : pValue;
    NameValue : pNameValue;
-   ByteCode : TByteCode;
+
 begin
   assert(FInstructionPointer.Current^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
   if FInstructionPointer.Next <> nil then
@@ -447,10 +449,7 @@ begin
      name := FInstructionPointer.Value(constantIndex);
      NameValue := FGlobals.Find(name.tostring);
      Assert(NameValue <> nil, 'expected value does not exist in globals');
-
-     //ByteCode.Operation := OP_Get_GLOBAL;
-     ByteCode.Value := NameValue.Value;
-     FStack.push(ByteCode);
+     FStack.push(NameValue.Value);
   end;
   //FInstructionPointer.Next;
 end;
@@ -459,10 +458,10 @@ end;
 procedure TVirtualMachine.DoSetGlobal;
 var
    ConstantIndex : integer;
-   Name   : TValue;
-   value  : TValue;
+   Name   : pValue;
+   value  : pValue;
    NameValue : pNameValue;
-   bcode : pByteCode;
+  // bcode : pByteCode;
 begin
   assert(FInstructionPointer.Current^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
         (*
@@ -475,8 +474,8 @@ begin
   if FInstructionPointer.Next <> nil then
   begin
      constantIndex := FInstructionPointer.Current^;
-     name := FInstructionPointer.Value(constantIndex)^;
-     value := FStack.Peek(0).Value;
+     name := FInstructionPointer.Value(constantIndex);
+     value := FStack.Peek(0);
      assert(name.IsStringObject, 'name is not a string object');
      NameValue := FGlobals.Find(name.tostring);
      assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
@@ -506,24 +505,24 @@ end;
 procedure TVirtualMachine.DoGlobal;
 var
    ConstantIndex : integer;
-   Name   : TValue;
-   value  : TValue;
+   Name   : pValue;
+   value  : pValue;
    NameValue : pNameValue;
-   bcode : pByteCode;
+//   bcode : pByteCode;
    
 begin
   assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   if FInstructionPointer.Next <> nil then
   begin
      constantIndex := FInstructionPointer.Current^;
-     name := FInstructionPointer.Value(constantIndex)^;
-     value := FStack.Peek(0).Value;
+     name := FInstructionPointer.Value(constantIndex);
+     value := FStack.Peek(0);
      assert(name.IsStringObject, 'name is not a string object');
 
      if FGlobals.Find(Name.ToString) <> nil then exit; //already exists
 
 
-     NameValue := NewValuePair(NewLoxString(Name.ToString),value);
+     NameValue := NewValuePair(Name,value);
      assert(FGlobals.Add(NameValue) = true, 'failed to add to hash table');
 
      //bCode := FStack.Top;
@@ -533,7 +532,7 @@ end;
 
 procedure TVirtualMachine.Greater;
 var
-  L,R,Result : TByteCode;
+  L,R,Result : pValue;
 begin
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
@@ -541,12 +540,10 @@ begin
   try
     R := FStack.Pop;
     L := FStack.Pop;
-    Result.Operation := OP_CONSTANT;
-    if l.Value.Number > r.value.Number then
-      result.value.Boolean := true
-    else
-      result.value.Boolean := false;
-    FStack.Push(Result);
+
+    Result := NewBool(l.Number > r.Number);
+    FStack.Push(result);
+    FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -555,7 +552,7 @@ end;
 
 procedure TVirtualMachine.Less;
 var
-  L,R,Result : TByteCode;
+  L,R, Result : pValue;
 begin
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_LESS));
@@ -563,12 +560,9 @@ begin
   try
     R := FStack.Pop;
     L := FStack.Pop;
-    Result.Operation := OP_CONSTANT;
-    if l.Value.Number < r.value.Number then
-      result.value.Boolean := true
-    else
-      result.value.Boolean := false;
+    Result := NewBool(l.Number < r.Number);
     FStack.Push(Result);
+    FStackResults.Add(Result);
  except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -581,6 +575,7 @@ begin
   FInstructionPointer := IP;
   FStack.Init;
   FGlobals.Init;
+  FStackResults.Init(true);
 end;
 
 
@@ -588,6 +583,7 @@ procedure TVirtualMachine.finalize;
 begin
   FStack.Finalize;
   FGlobals.Finalize;
+  FStackResults.Finalize;
 end;
 
 
