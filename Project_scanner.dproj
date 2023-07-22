@@ -40,6 +40,7 @@
     <DCCReference Include="Chunk.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="Exceptions.pas" />
+    <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>Form1</Form>

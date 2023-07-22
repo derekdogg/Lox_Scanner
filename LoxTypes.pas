@@ -611,6 +611,8 @@ end;
 
 
 
+
+
 (*
 function StrPCopy(const Source: AnsiString; Dest: PAnsiChar): PAnsiChar;
 begin

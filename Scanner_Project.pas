@@ -222,54 +222,16 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 var
   values : TValueList;
-  str : pValue;
-  num : pValue;
-  bool : pValue;
-  ValueStack : TValueStack;
-  pop : pValue;
-
-
-  v : pNameValue;
+  value  : pValue;
+  removed : pValue;
 begin
-  new(v);
+  Values.Init(true);
 
-
-
-
-
-
-  ValueStack.init;
-  values.Init(true);
-
-  str := NewString('Fred');
-  num := NewNumber(1.5);
-  bool := NewBool(true);
-
-
-  v.name := str;
-  v.value := num;
-
-  Values.Add(Str);
-  Values.Add(Num);
-  Values.Add(Bool);
-
-  ValueStack.Push(str);
-  ValueStack.Push(num);
-  ValueStack.Push(bool);
-
-  pop := ValueStack.pop;    Assert(pop <> nil);
-  Memo3.Lines.Add(pop.ToString);
-
-  pop := ValueStack.pop;    Assert(pop <> nil);
-  Memo3.Lines.Add(pop.ToString);
-  pop := ValueStack.pop;    Assert(pop <> nil);
-  Memo3.Lines.Add(pop.ToString);
-
-
-
-  ValueStack.Finalize;
+  value := newNumber(10);
+  Values.Add(value);
+  removed := Values.Remove(0);  //removing does not free the item, even when the list is managing the items...
+  dispose(removed);
   Values.Finalize;
-  dispose(v);
 end;
 
 end.

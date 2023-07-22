@@ -2,7 +2,7 @@ unit compiler;
 
 interface
 
-uses LOXTypes, TokenArray, Scanner, Chunk;
+uses LOXTypes, TokenArray, Scanner, Chunk, locals;
 
 
 type
@@ -34,6 +34,8 @@ type
   TCompiler = class
   private
     FScopeDepth : integer;
+    FLocalCount : integer;
+    Flocals : TLocalList;
     FChunks : TChunks;
     FParseRules : TParseRules;
     FTokens : TTokenIterator;
@@ -65,6 +67,8 @@ type
     procedure CreateRulesForString;
     procedure CreateRulesForComment;
     procedure CreateRulesForSemiColon;
+    procedure CreateRulesForOpenBrace;
+    procedure CreateRulesForCloseBrace;
     procedure CreateRulesForPrint;
     procedure CreateRulesForIdentifier;
 
@@ -75,7 +79,6 @@ type
     procedure init;
     procedure Error(Const msg : String);
     function argumentList: Byte;
-
     procedure NamedVariable(const Token : pToken; const CanAssign : Boolean);
     Procedure variable(const canAssign : boolean);
     function advance : boolean;
@@ -88,6 +91,9 @@ type
     procedure grouping(const canAssign : boolean);
     procedure printStatement;
     procedure ExpressionStatement;
+    Procedure beginScope;
+    procedure block();
+    procedure endScope();
     Procedure statement;
     procedure declaration;
     procedure varDeclaration;
@@ -123,20 +129,6 @@ begin
 end;
 
 
-(*  if (canAssign && match(TOKEN_EQUAL)) {
-    error("Invalid assignment target.");
-  }    *)
-
-
-
-(*
-  123+456
-
-  previous current
-  nil      123
-  123      +
-
-*)
 
 procedure TCompiler.parsePrecedence(precedence : TPrecedence);
 var
@@ -194,16 +186,6 @@ begin
     tkBang  : FChunks.ADDNOT;
   end;
 
-
-  //Emit the bytes now.
-  (*  switch (operatorType) {
-//> Types of Values compile-not
-    case TOKEN_BANG: emitByte(OP_NOT); break;
-//< Types of Values compile-not
-    case TOKEN_MINUS: emitByte(OP_NEGATE); break;
-    default: return; // Unreachable.
-  }
-} *)
 end;
 
 procedure TCompiler.expression;
@@ -236,9 +218,23 @@ begin
 end;
 
 
+procedure TCompiler.CreateRulesForOpenBrace;
+begin
+  FParseRules[tkOpenBrace].Prefix := nil;
+  FParseRules[tkOpenBrace].Infix := nil;
+  FParseRules[tkOpenBrace].Precedence := PREC_NONE;
+end;
+
+procedure TCompiler.CreateRulesForCloseBrace;
+begin
+  FParseRules[tkCloseBrace].Prefix := nil;
+  FParseRules[tkCloseBrace].Infix := nil;
+  FParseRules[tkCloseBrace].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForClose_Bracket;
 begin
-  //[TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE}
+
   FParseRules[tkclose_bracket].Prefix := nil;
   FParseRules[tkclose_bracket].Infix := nil;
   FParseRules[tkClose_bracket].Precedence := PREC_NONE;
@@ -246,7 +242,7 @@ end;
 
 procedure TCompiler.CreateRuleForOpen_bracket;
 begin
-  //   [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
+
   FParseRules[tkopen_bracket].Prefix := grouping;
   FParseRules[tkopen_bracket].Infix := call;
   FParseRules[tkopen_bracket].Precedence := PREC_CALL;
@@ -432,6 +428,8 @@ procedure TCompiler.CreateRules;
 begin
   CreateRuleForOpen_bracket;
   CreateRulesForClose_bracket;
+  CreateRulesForOpenBrace;
+  CreateRulesForCloseBrace;
   CreateRulesForNumber;
   CreateRulesForEqualEqual;
   CreateRulesForNotEqual;
@@ -548,12 +546,54 @@ begin
   defineVariable(constantidx);
 end;
 
+Procedure TCompiler.beginScope;
+begin
+  inc(FScopeDepth);
+end;
+
+
+procedure TCompiler.block();
+begin
+  while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
+  begin
+    declaration();
+  end;
+  consume(tkCloseBrace, 'Expect "}" after block.');
+end;
+
+
+procedure TCompiler.endScope();
+begin
+  dec(FScopeDepth);
+
+
+  while (FlocalCount > 0) and (Flocals[FlocalCount - 1].depth > FScopeDepth) do
+  begin
+    if FLocals[FlocalCount - 1].isCaptured then
+    begin
+      FChunks.AddCLOSE_UPVALUE;
+    end
+    else
+    begin
+      FChunks.AddPOP;
+    end;
+    dec(FLocalCount);
+  end;
+end;
+
 
 procedure TCompiler.statement;
 begin
   if (match(tkPRINT)) then
   begin
     printStatement
+  end
+  else
+  if (match(tkOpenBrace)) then
+  begin
+    beginScope;
+    block;
+    endScope;
   end
   else
   if (match(tkVar)) then
