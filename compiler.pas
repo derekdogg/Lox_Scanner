@@ -34,7 +34,7 @@ type
   TCompiler = class
   private
     FScopeDepth : integer;
-    FLocalCount : integer;
+    //FLocalCount : integer;
     Flocals : TLocalList;
     FChunks : TChunks;
     FParseRules : TParseRules;
@@ -76,7 +76,9 @@ type
   
     procedure CreateRules;
     //--------------------------------------------------------------------------
-    procedure init;
+    procedure AddLocal(const Token: pToken);
+    function  identifiersEqual(const a, b: PToken): Boolean;
+    procedure declareVariable();
     procedure Error(Const msg : String);
     function argumentList: Byte;
     procedure NamedVariable(const Token : pToken; const CanAssign : Boolean);
@@ -141,9 +143,6 @@ begin
     //error('Advance Called when no further tokens' + TTokenName[FTokens.current.kind]);
     exit;
   end;
-
-
-
 
   prefixRule := getRule(FTokens.Previous.kind).prefix;
   if (@prefixRule = nil) then
@@ -215,6 +214,8 @@ begin
   CreateRules;
 
   FScopeDepth := 0;
+
+  FLocals.Init(true);
 end;
 
 
@@ -468,14 +469,17 @@ begin
 end;
 
 
-
-
-
- {
-  return makeConstant(OBJ_VAL(copyString(name->start,
-                                         name->length)));
-}
-
+(*
+  uint8_t getOp, setOp;
+  int arg = resolveLocal(current, &name);
+  if (arg != -1) {
+    getOp = OP_GET_LOCAL;
+    setOp = OP_SET_LOCAL;
+  } else {
+    arg = identifierConstant(&name);
+    getOp = OP_GET_GLOBAL;
+    setOp = OP_SET_GLOBAL;
+*)
 
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
@@ -522,9 +526,79 @@ end;
 
 function TCompiler.parseVariable(const errorMessage : string) : byte;
 begin
+
   consume(tkIdentifier, errorMessage);
+  DeclareVariable;
+  if FScopeDepth > 0 then
+  begin
+    result := 0;
+  end;
   result := identifierConstant(FTokens.previous); //index of the variable name in the constant table
 end;
+
+
+function TCompiler.identifiersEqual(const a, b: PToken): Boolean;
+var
+  txt1,txt2 : string;
+begin
+  result := false;
+  if a.kind <> b.kind then exit;
+
+  txt1 := FScanner.ln.items[a.Line].text;
+  txt1 := copy(txt1,a.Start,a.length);
+
+  txt2 := FScanner.ln.items[b.Line].text;
+  txt2 := copy(txt2,b.Start,b.length);
+
+
+  result := txt1 = txt2;
+
+end;
+
+procedure TCompiler.AddLocal(const Token: pToken);
+var
+  Local: PLocal;
+begin
+  if FLocals.Count = MAX_LOCALS then
+  begin
+    Error('Too many local variables in function.');
+    Exit;
+  end;
+  new(Local);
+  Local.Token := Token;
+  local.depth := FScopeDepth;
+  Local.isCaptured := False; //presumably for future captures
+  FLocals.Add(Local);
+end;
+
+
+procedure TCompiler.declareVariable();
+var
+  i: Integer;
+  token: pToken; // Assuming PToken is a pointer to the Token struct.
+  local : pLocal;
+begin
+  if FScopeDepth = 0 then
+    Exit;
+
+  token := FTokens.previous;
+
+  for i := Flocals.Count - 1 downto 0 do
+  begin
+    local := Flocals[i];
+    if (local.depth <> -1) and (local.depth < FScopeDepth) then
+      Break;
+
+    if identifiersEqual(token, Flocals[i].token) then
+    begin
+      error('Already a variable with this name in this scope.');
+      exit;
+    end;
+  end;
+
+  addLocal(token);
+end;
+
 
 procedure TCompiler.varDeclaration;
 var
@@ -561,23 +635,23 @@ begin
   consume(tkCloseBrace, 'Expect "}" after block.');
 end;
 
-
+//this needs checking. is this right? 
 procedure TCompiler.endScope();
+var
+  Local : pLocal;
+  i : integer;
 begin
   dec(FScopeDepth);
-
-
-  while (FlocalCount > 0) and (Flocals[FlocalCount - 1].depth > FScopeDepth) do
+  if FLocals.Count = 0 then exit;
+  i := Flocals.Count - 1;
+  Local := Flocals[i];
+  while (i > 0) and (local.depth > FScopeDepth) do
   begin
-    if FLocals[FlocalCount - 1].isCaptured then
-    begin
-      FChunks.AddCLOSE_UPVALUE;
-    end
-    else
-    begin
-      FChunks.AddPOP;
-    end;
-    dec(FLocalCount);
+    FChunks.AddPOP;
+
+    dec(i);
+
+    local := Flocals[i];
   end;
 end;
 
@@ -610,32 +684,6 @@ End;
 procedure TCompiler.Error(const msg: String);
 begin
   raise exception.create(msg);
- (* //not sure what to do here right now. C code included below...
-  static void errorAt(Token* token, const char* message) {
-//> check-panic-mode
-  if (parser.panicMode) return;
-//< check-panic-mode
-//> set-panic-mode
-  parser.panicMode = true;
-//< set-panic-mode
-  fprintf(stderr, "[line %d] Error", token->line);
-
-  if (token->type == TOKEN_EOF) {
-    fprintf(stderr, " at end");
-  } else if (token->type == TOKEN_ERROR) {
-    // Nothing.
-  } else {
-    fprintf(stderr, " at '%.*s'", token->length, token->start);
-  }
-
-  fprintf(stderr, ": %s\n", message);
-  parser.hadError = true;
-}
-
-static void error(const char* message) {
-  errorAt(&parser.previous, message);
-}
- *)
 end;
 
 procedure TCompiler.Number(const canAssign : boolean);
@@ -660,11 +708,6 @@ procedure TCompiler.grouping(const canAssign : boolean);
 begin
    expression();
    consume(tkclose_bracket, 'Expect '')'' after expression.');  //right bracket
-end;
-
-procedure TCompiler.init;
-begin
-
 end;
 
 procedure TCompiler.literal(const CanAssign: boolean);
@@ -808,12 +851,16 @@ end;
 
 procedure TCompiler.declaration;
 begin
-   statement;
+   if match(tkVar) then
+     varDeclaration()
+   else
+     statement();
 end;
 
 destructor TCompiler.destroy;
 begin
   FChunks.Finalize;
+  FLocals.Finalize;
   inherited;
 end;
 

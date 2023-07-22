@@ -6,6 +6,7 @@ uses
   LOXTypes;
 
 Const
+  MAX_LOCALS = 256;
   MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
   INCREMENT_CAPACITY_BY = 2;
   NUM_SLOTS = 10;
@@ -66,6 +67,7 @@ end;
 function TLocalList.Add(const value: pLocal): integer;
 begin
   assert(assigned(Value), 'Value being inserted is nil');
+  assert(assigned(FItems),'Locals storage is nil');
   FItems[FCount] := value;
   inc(FCount);
   result := FCount-1;

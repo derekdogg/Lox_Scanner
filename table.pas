@@ -93,7 +93,7 @@ begin
   assert(assigned(Name),  'Name is nil');
   assert(assigned(value), 'value is nil');
   result := nil;
-  if Find(Name.ToString) <> nil then exit; //already exists
+  assert(Find(Name.ToString) = nil,' var exists already in hash table'); //already exists
   new(result);
   result.name := name;
   result.Value := Value;

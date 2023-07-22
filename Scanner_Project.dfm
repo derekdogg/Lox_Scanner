@@ -28,7 +28,18 @@ object Form1: TForm1
     Width = 728
     Height = 226
     Lines.Strings = (
-      'print((5 - (3 - 1)) + -1) == 2;')
+      '{'
+      ''
+      '  var a = "a";'
+      '    '
+      '  {'
+      '     var b = "b";'
+      ''
+      '   }'
+      ''
+      '  var c = "c";'
+      '}'
+      '')
     TabOrder = 1
   end
   object Memo2: TMemo
@@ -75,6 +86,8 @@ object Form1: TForm1
     Width = 97
     Height = 17
     Caption = 'run'
+    Checked = True
+    State = cbChecked
     TabOrder = 6
   end
 end

@@ -137,7 +137,7 @@ begin
   end;
   Memo2.Lines.EndUpdate;
 
-  if not chkRun.Checked then exit;
+
 
   //try compiler to see what happens;
    Memo3.Lines.Clear;
@@ -193,7 +193,9 @@ begin
    finally
      Compiler.Free;
    end;
-   
+
+   if not chkRun.Checked then exit;
+
    Memo3.lines.add('-------------------------------');
    //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
    // is giving 4 currently - however, byte code is legit.
@@ -222,15 +224,35 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 var
   values : TValueList;
-  value  : pValue;
+  a,b,c  : pValue;
   removed : pValue;
+  count : integer;
 begin
   Values.Init(true);
 
-  value := newNumber(10);
-  Values.Add(value);
-  removed := Values.Remove(0);  //removing does not free the item, even when the list is managing the items...
+  a := newNumber(10);
+  Values.Add(a);
+
+  b := newNumber(20);
+  Values.Add(b);
+
+  c := newbool(true);
+  Values.Add(c);
+
+
+
+  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
   dispose(removed);
+  removed := nil;
+
+  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
+  dispose(removed);
+  removed := nil;
+
+  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
+  dispose(removed);
+  removed := nil;
+
   Values.Finalize;
 end;
 
