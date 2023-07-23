@@ -526,7 +526,7 @@ end;
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
   getOp,setOp : TOpCodes;
-  global : byte;
+  global : integer;
   arg : integer;
 begin
 
