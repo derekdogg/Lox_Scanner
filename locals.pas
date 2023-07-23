@@ -38,6 +38,7 @@ type
     function  ItemSize : integer;
     function InBounds(const index : integer; const capacity : Integer) : boolean;
   public
+    function Last : pLocal;
     function SlotCount : integer;
     function Remove(const index : integer) : pLocal;
     function Capacity : integer;
@@ -154,6 +155,11 @@ begin
   result := Sizeof(pLocal);
 end;
 
+function TLocalList.Last: pLocal;
+begin
+  result := GetItem(FCount-1);
+end;
+
 procedure TLocalList.GrowCapacity;
 begin
   FPrevCapacity := FCapacity;
@@ -188,7 +194,7 @@ function TLocalList.GetItem(const index: integer): pLocal;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
-  assert(InBounds(index,FCapacity));
+  assert(InBounds(index,FCapacity), 'index out of bounds for locals');
   result := FItems[index];
 end;
 

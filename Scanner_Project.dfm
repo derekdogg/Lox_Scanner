@@ -30,16 +30,17 @@ object Form1: TForm1
     Lines.Strings = (
       '{'
       ''
-      '  var a = "a";'
+      '  var a = "scope 1a";'
       '    '
       '  {'
-      '     var b = "b";'
+      '     var b = "scope 2";'
       ''
       '   }'
       ''
-      '  var c = "c";'
-      '}'
-      '')
+      '  var c = "scope 1b";'
+      ''
+      '  print c ;'
+      '}')
     TabOrder = 1
   end
   object Memo2: TMemo
@@ -81,7 +82,7 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object chkRun: TCheckBox
-    Left = 89
+    Left = 183
     Top = 16
     Width = 97
     Height = 17
@@ -89,5 +90,13 @@ object Form1: TForm1
     Checked = True
     State = cbChecked
     TabOrder = 6
+  end
+  object chkEmit: TCheckBox
+    Left = 89
+    Top = 16
+    Width = 97
+    Height = 17
+    Caption = 'emit'
+    TabOrder = 7
   end
 end

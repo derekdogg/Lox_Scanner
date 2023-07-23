@@ -34,7 +34,7 @@ type
   TCompiler = class
   private
     FScopeDepth : integer;
-    //FLocalCount : integer;
+//    FLocalCount : integer;
     Flocals : TLocalList;
     FChunks : TChunks;
     FParseRules : TParseRules;
@@ -76,6 +76,7 @@ type
   
     procedure CreateRules;
     //--------------------------------------------------------------------------
+    Function resolveLocal(Token : pToken) : integer;
     procedure AddLocal(const Token: pToken);
     function  identifiersEqual(const a, b: PToken): Boolean;
     procedure declareVariable();
@@ -481,19 +482,78 @@ end;
     setOp = OP_SET_GLOBAL;
 *)
 
+
+Function TCompiler.resolveLocal(Token : pToken) : integer;
+var
+  i : integer;
+  local : pLocal;
+
+  a,b : string;
+
+begin
+  result := -1;
+
+  a := FScanner.ln.items[Token.Line].text;
+  a := copy(a,token.Start,token.length);
+
+
+
+
+  for i := FLocals.Count-1 downto 0 do
+  begin
+    Local := Flocals[i];
+
+    b := FScanner.ln.items[Local.Token.Line].text;
+    b := copy(b,local.token.Start,local.token.length);
+
+
+
+
+    if identifiersEqual(Token, local.Token) then
+    begin
+      if (local.depth = -1) then
+      begin
+        error('Can''t read local variable in its own initializer.');
+      end;
+
+
+      result :=  i;
+      exit;
+    end;
+  end;
+end;
+
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
+  getOp,setOp : TOpCodes;
   global : byte;
+  arg : integer;
 begin
-  global := identifierConstant(Token);
+
+  global := resolveLocal(Token);
+  //assert(global <> -1, 'Could not resolve local for token');
+  if (global <> -1) then
+  begin
+    getOp := OP_GET_LOCAL;
+    setOp := OP_SET_LOCAL;
+  end
+  else
+  begin
+    global := identifierConstant(Token);
+    getOp := OP_GET_GLOBAL;
+    setOp := OP_SET_GLOBAL;
+  end;
+
   if canAssign and (match(tkEqual)) then
   begin
      expression();
-     FChunks.AddSET_GLOBAL(global);
+     //FChunks.AddSET_GLOBAL(global);
+     FChunks.emitBytes(byte(setOp), global);
    end
    else
    begin
-     FChunks.AddGET_GLOBAL(global);
+     //FChunks.AddGET_GLOBAL(global);
+     FChunks.emitBytes(byte(getOp), global);
    end;
 end;
 
@@ -505,6 +565,9 @@ end;
 
 procedure TCompiler.defineVariable(const constantIdx : byte);
 begin
+ 
+  if (FscopeDepth > 0) then exit;
+
   FChunks.AddDEFINE_GLOBAL(constantidx);
 end; {
   emitBytes(OP_DEFINE_GLOBAL, global);
@@ -532,6 +595,7 @@ begin
   if FScopeDepth > 0 then
   begin
     result := 0;
+    exit;
   end;
   result := identifierConstant(FTokens.previous); //index of the variable name in the constant table
 end;
@@ -541,7 +605,7 @@ function TCompiler.identifiersEqual(const a, b: PToken): Boolean;
 var
   txt1,txt2 : string;
 begin
-  result := false;
+  false;
   if a.kind <> b.kind then exit;
 
   txt1 := FScanner.ln.items[a.Line].text;
@@ -552,7 +616,6 @@ begin
 
 
   result := txt1 = txt2;
-
 end;
 
 procedure TCompiler.AddLocal(const Token: pToken);
@@ -569,6 +632,7 @@ begin
   local.depth := FScopeDepth;
   Local.isCaptured := False; //presumably for future captures
   FLocals.Add(Local);
+
 end;
 
 
@@ -635,23 +699,23 @@ begin
   consume(tkCloseBrace, 'Expect "}" after block.');
 end;
 
-//this needs checking. is this right? 
+//this needs checking. is this right?
+
+
+//[1,1,2,2,1,1]
 procedure TCompiler.endScope();
 var
   Local : pLocal;
   i : integer;
+  scope : string;
 begin
   dec(FScopeDepth);
-  if FLocals.Count = 0 then exit;
-  i := Flocals.Count - 1;
-  Local := Flocals[i];
-  while (i > 0) and (local.depth > FScopeDepth) do
+
+
+  while (Flocals.Count > 0) and (FLocals.Last.depth > FscopeDepth) do
   begin
     FChunks.AddPOP;
-
-    dec(i);
-
-    local := Flocals[i];
+    FLocals.Remove(FLocals.Count-1);
   end;
 end;
 

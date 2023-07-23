@@ -16,6 +16,7 @@ type
     BtnHash: TButton;
     Button1: TButton;
     chkRun: TCheckBox;
+    chkEmit: TCheckBox;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -50,7 +51,8 @@ uses
   vm,
   ByteCodesArray,
   Table,
-  ValueList;
+  ValueList,
+  Locals;
 
 {$R *.dfm}
 
@@ -141,6 +143,10 @@ begin
 
   //try compiler to see what happens;
    Memo3.Lines.Clear;
+
+   if chkEmit.checked then
+   begin
+     exit; //needs fixing up with oplocals
    i := 0;
    Compiler := TCompiler.Create(Scanner);
    try
@@ -193,7 +199,7 @@ begin
    finally
      Compiler.Free;
    end;
-
+   end;
    if not chkRun.Checked then exit;
 
    Memo3.lines.add('-------------------------------');
@@ -223,37 +229,28 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  values : TValueList;
-  a,b,c  : pValue;
-  removed : pValue;
-  count : integer;
+  Locals : TLocalList;
+  i : integer;
+  a,b,c,d  : pLocal;
 begin
-  Values.Init(true);
+  Locals.Init(true);
 
-  a := newNumber(10);
-  Values.Add(a);
-
-  b := newNumber(20);
-  Values.Add(b);
-
-  c := newbool(true);
-  Values.Add(c);
+  new(a);
+  new(b);
+  new(c);
+  Locals.Add(a);
+  Locals.Add(b);
+  Locals.Add(c);
 
 
+  for i := locals.Count-1 downto 0 do
+  begin
+    d := locals[i];
+  end;
 
-  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
-  dispose(removed);
-  removed := nil;
 
-  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
-  dispose(removed);
-  removed := nil;
 
-  removed := Values.Remove(values.count-1);  //removing does not free the item, even when the list is managing the items...
-  dispose(removed);
-  removed := nil;
-
-  Values.Finalize;
+  Locals.Finalize;
 end;
 
 end.

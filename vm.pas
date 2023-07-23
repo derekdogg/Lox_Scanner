@@ -36,6 +36,8 @@ type
     procedure DoGetGlobal;
     procedure DoSetGlobal;
     procedure DoPOP;
+    procedure DoGetLocal;
+    procedure DoSetLocal;
     procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : pValue ; const Value : pValue);
@@ -115,6 +117,18 @@ begin
         doGetGlobal;
 
       end;
+
+      
+      OP_GET_LOCAL:
+      begin
+        doGetLocal;
+      end;
+
+      OP_SET_LOCAL:
+      begin
+        DoSetLocal;
+      end;
+
 
       OP_Nil  : begin
         DoNil;
@@ -410,6 +424,7 @@ end;
 procedure TVirtualMachine.NotEqual;
 var
   Result : pValue;
+  
 begin
 
   Assert(FInstructionPointer.Current^ = byte(OP_NOT), 'Current instruction is <> NOT');
@@ -470,6 +485,31 @@ begin
 end;
 
 
+
+procedure TVirtualMachine.DoSetLocal;
+var
+  slot : Integer;
+begin
+  assert(FInstructionPointer.Current^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+  Slot := FInstructionPointer.Current^;
+  FStack.Push(FStack.peek(0));
+end;
+
+procedure TVirtualMachine.DoGetLocal;
+var
+  Slot  : Integer;
+  Value : pValue;
+  Count : Integer;
+begin
+  assert(FInstructionPointer.Current^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+
+  if FInstructionPointer.Next <> nil then
+  begin
+    Slot := FInstructionPointer.Current^;
+    FStack.Push(FStack.peek(FStack.Count-1 - Slot));
+  end;
+end;
+
 procedure TVirtualMachine.DoGetGlobal;
 var
    ConstantIndex : integer;
@@ -512,6 +552,7 @@ begin
   end;
 
 end;
+
 
 
 procedure TVirtualMachine.DoPOP;

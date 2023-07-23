@@ -6,6 +6,8 @@ uses
 
 type
 
+
+ 
   TScanner = record
     TokenIndex : integer;
     Tokens : TTokens;
