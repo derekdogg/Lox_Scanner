@@ -28,19 +28,18 @@ object Form1: TForm1
     Width = 728
     Height = 226
     Lines.Strings = (
+      'var global = "global";'
       '{'
-      ''
       '  var a = "scope 1a";'
-      '    '
       '  {'
       '     var b = "scope 2";'
-      ''
+      '     print b ;'
       '   }'
-      ''
-      '  var c = "scope 1b";'
-      ''
-      '  print c ;'
-      '}')
+      '   var c = "scope 1b";'
+      '   print a ;  '
+      '   print c ;'
+      '}'
+      'print global ;')
     TabOrder = 1
   end
   object Memo2: TMemo
