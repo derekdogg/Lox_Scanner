@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   Caption = 'Form1'
   ClientHeight = 749
-  ClientWidth = 753
+  ClientWidth = 1104
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -25,8 +25,14 @@ object Form1: TForm1
   object Memo1: TMemo
     Left = 8
     Top = 39
-    Width = 728
-    Height = 226
+    Width = 1088
+    Height = 307
+    Color = clMenuText
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clMoneyGreen
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
     Lines.Strings = (
       'var global = "global";'
       '{'
@@ -40,25 +46,40 @@ object Form1: TForm1
       '   print c ;'
       '}'
       'print global ;')
+    ParentFont = False
     TabOrder = 1
   end
   object Memo2: TMemo
     Left = 8
-    Top = 271
-    Width = 353
-    Height = 360
+    Top = 352
+    Width = 401
+    Height = 279
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clMoneyGreen
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
     Lines.Strings = (
       'Memo2')
+    ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 2
   end
   object Memo3: TMemo
-    Left = 367
-    Top = 271
-    Width = 369
-    Height = 360
+    Left = 415
+    Top = 352
+    Width = 681
+    Height = 279
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clMoneyGreen
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
     Lines.Strings = (
       'Memo3')
+    ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 3
   end
