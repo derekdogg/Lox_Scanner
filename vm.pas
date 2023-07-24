@@ -13,12 +13,14 @@ type
 
   TVirtualMachine = record
   private
+    FLog : TStrings;
     FInstructionPointer  : TInstructionPointer; //pointer to instructions
     FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
     FStack  : TValueStack; //byte code stack
     FGlobals : TValuePairs;
 
     FResults : TStrings;
+    procedure Log(Const txt : string);
     Procedure Add;
     Procedure subtract;
     Procedure Divide;
@@ -41,10 +43,11 @@ type
     procedure HandleRunTimeError(const E: Exception);
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : pValue ; const Value : pValue);
+
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
-    procedure init(const IP : TInstructionPointer; const results : TStrings);
+    procedure init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
     procedure finalize;
   end;
 
@@ -72,6 +75,7 @@ var
   v : TValue;
   stackCount : integer;
 begin
+  Log('Run');
   Result := INTERPRET_NONE;
   if FInstructionPointer.ByteCount = 0 then exit;
   while FInstructionPointer.Next <> nil do
@@ -200,6 +204,7 @@ procedure TVirtualMachine.Greater;
 var
   L,R,Result : pValue;
 begin
+  Log('greater');
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
   //this also means we assume the correct values are sitting in Stack...
@@ -220,6 +225,7 @@ procedure TVirtualMachine.Less;
 var
   L,R, Result : pValue;
 begin
+  Log('less');
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_LESS));
   //this also means we assume the correct values are sitting in Stack...
@@ -239,7 +245,7 @@ var
   L,R : pValue;
 
 begin
-
+  Log('Add');
   //we assume here we're sitting on an OP_ADDITION in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
@@ -274,7 +280,7 @@ var
   L,R : pValue;
   
 begin
-
+  Log('Subtract');
 
   Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
   try
@@ -313,7 +319,7 @@ var
   s : string;
 
 begin
-
+  Log('Multiply');
   //we assume here we're sitting on an OP_MULTIPLY in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
@@ -360,6 +366,7 @@ end;
 
 procedure TVirtualMachine.Print;
 begin
+  Log('Print');
   Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
   FResults.Add('PRINT:' + FStack.Pop.ToString);
 end;
@@ -368,7 +375,7 @@ procedure TVirtualMachine.Negate;
 var
   R : pValue;
 begin
-
+  Log('Negate');
   Assert(FInstructionPointer.Current^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
@@ -393,7 +400,7 @@ procedure TVirtualMachine.Divide;
 var
   L,R : pValue;
 begin
-
+  Log('Divide');
   //we assume here we're sitting on an OP_DIVIDE in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
@@ -410,6 +417,7 @@ end;
 
 Function TVirtualMachine.isFalsey(value : pValue) : Boolean;
 begin
+   Log('isFalsey');
    result :=
     (Value.Kind = lxNull) OR
     ((Value.Kind = lxBoolean) and (Value.Boolean = false)) OR
@@ -426,7 +434,7 @@ var
   Result : pValue;
   
 begin
-
+  Log('NotEqual');
   Assert(FInstructionPointer.Current^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
     result := NewBool(isFalsey(FStack.pop));
@@ -441,7 +449,7 @@ procedure TVirtualMachine.Equal;
 var
   L,R, Result : pValue;
 begin
-
+   Log('DoEqual');
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
@@ -462,6 +470,7 @@ procedure TVirtualMachine.DoTrue;
 var
   value : pValue;
 begin
+  Log('DoTrue');
   value := newBool(true);
   FStack.Push(value);
 end;
@@ -471,6 +480,7 @@ procedure TVirtualMachine.DoFalse;
 var
   Value : pValue;
 begin
+  Log('DoFalse');
   Value := NewBool(False);
   FStack.Push(Value);
 end;
@@ -479,6 +489,7 @@ procedure TVirtualMachine.DoNil;
 var
   value : pValue;
 begin
+  Log('DoNil');
   new(Value);
   Value.Null := true;
   FStack.Push(value);
@@ -490,6 +501,7 @@ procedure TVirtualMachine.DoSetLocal;
 var
   slot : Integer;
 begin
+  Log('DoSetLocal');
   assert(FInstructionPointer.Current^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
   Slot := FInstructionPointer.Current^;
   FStack.Push(FStack.peek(0));
@@ -501,6 +513,7 @@ var
   Value : pValue;
   Count : Integer;
 begin
+  Log('DoGetLocal');
   assert(FInstructionPointer.Current^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
 
   if FInstructionPointer.Next <> nil then
@@ -517,6 +530,7 @@ var
    NameValue : pNameValue;
 
 begin
+  Log('DoGetGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
   if FInstructionPointer.Next <> nil then
   begin
@@ -538,6 +552,7 @@ var
    NameValue : pNameValue;
   // bcode : pByteCode;
 begin
+  Log('DoSetGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
   if FInstructionPointer.Next <> nil then
@@ -557,15 +572,22 @@ end;
 
 procedure TVirtualMachine.DoPOP;
 begin
+  Log('Pop');
   FStack.pop;
 end;
 
 
 procedure TVirtualMachine.AddGlobal(const name : pValue ; const Value : pValue);
 begin
+  Log('AddGlobal');
   assert(assigned(FGlobals.AddNameValue(Name,value)), 'failed to add to hash table');
 end;
 
+
+procedure TVirtualMachine.Log(Const txt : string);
+begin
+  FLog.Add(txt);
+end;
 
 procedure TVirtualMachine.DoGlobal;
 var
@@ -575,7 +597,7 @@ var
 
 
 begin
-
+  Log('Entering DoGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   if FInstructionPointer.Next <> nil then
   begin
@@ -587,13 +609,17 @@ begin
 
      FStack.pop;
   end;
+  Log('Exiting DoGlobal');
 end;
 
 
 
-procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings);
+procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
 begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
+  assert(assigned(log), 'no log for vm');
+  FLog := log;
+  FLog.clear;
   FResults := results;
   FInstructionPointer := IP;
   FStack.Init;

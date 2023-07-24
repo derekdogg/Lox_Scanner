@@ -2,7 +2,7 @@ unit compiler;
 
 interface
 
-uses LOXTypes, TokenArray, Scanner, Chunk, locals;
+uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals;
 
 
 type
@@ -33,6 +33,7 @@ type
 
   TCompiler = class
   private
+    FLogging : TStrings;
     FScopeDepth : integer;
 //    FLocalCount : integer;
     Flocals : TLocalList;
@@ -43,6 +44,8 @@ type
 //    procedure emitConstant(value : TValue);
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
+    function TokenName(const token : pToken) : String;
+    procedure Log(const txt : String);
     procedure Strings(const canAssign: Boolean);
     function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
@@ -97,6 +100,7 @@ type
     Procedure beginScope;
     procedure block();
     procedure endScope();
+    procedure RemoveLocal;
     Procedure statement;
     procedure declaration;
     procedure varDeclaration;
@@ -111,7 +115,7 @@ type
     procedure expression;
 
     procedure DoCompile;
-    constructor Create(Const Scanner : TScanner);
+    constructor Create(Const Scanner : TScanner; Const logging : TStrings);
     destructor destroy;override;
   end;
 
@@ -120,8 +124,12 @@ implementation
 
 uses sysutils;
 
+
+
+
 function TCompiler.getRule(TokenKind : TTokenKind) : TParseRule;
 begin
+
   result :=  FParseRules[tokenKind];
 end;
 
@@ -203,9 +211,17 @@ begin
   error(Message)//errorAtCurrent(message);
 end;
 
-constructor TCompiler.Create(Const Scanner : TScanner);
+procedure TCompiler.Log(const txt : String);
 begin
-  Assert(Scanner.TokenCount > 1);   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
+  FLogging.add(txt);
+end;
+
+constructor TCompiler.Create(Const Scanner : TScanner; Const logging : TStrings);
+begin
+  Assert(assigned(Logging), 'No logging injected');
+  FLogging := Logging;
+  FLogging.clear;
+  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
   FChunks.Init;
   FScanner := Scanner;
 
@@ -496,18 +512,12 @@ begin
   a := FScanner.ln.items[Token.Line].text;
   a := copy(a,token.Start,token.length);
 
-
-
-
   for i := FLocals.Count-1 downto 0 do
   begin
     Local := Flocals[i];
 
     b := FScanner.ln.items[Local.Token.Line].text;
     b := copy(b,local.token.Start,local.token.length);
-
-
-
 
     if identifiersEqual(Token, local.Token) then
     begin
@@ -518,42 +528,54 @@ begin
 
 
       result :=  i;
+      Log(format('resolved local for %s. found at local index index %d',[TokenName(Token),i]));
       exit;
     end;
   end;
+  Log(format('unable to resolve local for %s.',[TokenName(Token)]));
 end;
 
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
   getOp,setOp : TOpCodes;
-  global : integer;
+  Idx : integer;
   arg : integer;
 begin
 
-  global := resolveLocal(Token);
+  Idx := resolveLocal(Token);
   //assert(global <> -1, 'Could not resolve local for token');
-  if (global <> -1) then
+  if (Idx <> -1) then
   begin
     getOp := OP_GET_LOCAL;
     setOp := OP_SET_LOCAL;
   end
   else
   begin
-    global := identifierConstant(Token);
+    Log(format('local for %s not found in scope. Must be global',[TokenName(Token)]));
+
+    Idx := identifierConstant(Token);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
   end;
 
   if canAssign and (match(tkEqual)) then
   begin
+     Log(format('Entering expression evaluation for assignable var',[TokenName(Token)]));
+
      expression();
+     Log(format('Exited expression evaluation for assignable var',[TokenName(Token)]));
+
      //FChunks.AddSET_GLOBAL(global);
-     FChunks.emitBytes(byte(setOp), global);
+     FChunks.emitBytes(byte(setOp), Idx);
+
+     Log(format('Adding byte for opcode %s, pointing to idx : %d',[opCodeToStr(setOp), idx]));
    end
    else
    begin
      //FChunks.AddGET_GLOBAL(global);
-     FChunks.emitBytes(byte(getOp), global);
+     Log('non assignable token');
+     FChunks.emitBytes(byte(getOp), Idx);
+     Log(format('Adding byte for opcode %s, pointing to index : %d ',[opCodeToStr(getOp), idx]));
    end;
 end;
 
@@ -601,6 +623,12 @@ begin
 end;
 
 
+function TCompiler.TokenName(const token : pToken) : String;
+begin
+  result := FScanner.ln.items[token.Line].text;
+  result := copy(result,token.Start,token.length);
+end;
+
 function TCompiler.identifiersEqual(const a, b: PToken): Boolean;
 var
   txt1,txt2 : string;
@@ -632,7 +660,7 @@ begin
   local.depth := FScopeDepth;
   Local.isCaptured := False; //presumably for future captures
   FLocals.Add(Local);
-
+  Log(format('Adding new local %s, %s. Current local count : %d',[TokenKindToStr(Token.Kind),TokenName(Token),FLocals.Count]));
 end;
 
 
@@ -687,20 +715,37 @@ end;
 Procedure TCompiler.beginScope;
 begin
   inc(FScopeDepth);
+  Log(format('Begin Scope : %d',[FScopeDepth]));
 end;
 
 
 procedure TCompiler.block();
 begin
+  Log(format('Begin block at : %d',[FScopeDepth]));
   while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
   begin
     declaration();
   end;
   consume(tkCloseBrace, 'Expect "}" after block.');
+  Log(format('end block at : %d',[FScopeDepth]));
 end;
 
 //this needs checking. is this right?
 
+
+procedure TCompiler.RemoveLocal;
+var
+  Local : pLocal;
+begin
+
+  while (Flocals.Count > 0) and (FLocals.Last.depth > FscopeDepth) do
+  begin
+    FChunks.AddPOP;
+    Local := FLocals.Remove(FLocals.Count-1);
+    Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
+  end;
+  dispose(Local);
+end;
 
 //[1,1,2,2,1,1]
 procedure TCompiler.endScope();
@@ -709,14 +754,11 @@ var
   i : integer;
   scope : string;
 begin
+  Log(format('End scope : %d',[FScopeDepth]));
   dec(FScopeDepth);
+  removeLocal;
 
 
-  while (Flocals.Count > 0) and (FLocals.Last.depth > FscopeDepth) do
-  begin
-    FChunks.AddPOP;
-    FLocals.Remove(FLocals.Count-1);
-  end;
 end;
 
 

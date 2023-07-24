@@ -10,13 +10,15 @@ type
 
   TForm1 = class(TForm)
     BtnScan: TButton;
-    Memo1: TMemo;
-    Memo2: TMemo;
-    Memo3: TMemo;
+    memEdit: TMemo;
+    MemTokens: TMemo;
+    memRun: TMemo;
     BtnHash: TButton;
     Button1: TButton;
     chkRun: TCheckBox;
     chkEmit: TCheckBox;
+    MemLogging: TMemo;
+    MemVmLog: TMemo;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -106,55 +108,55 @@ var
   VM :  TVirtualMachine;
 begin
   try
-  Memo2.lines.clear;
+  MemTokens.lines.clear;
 
-  Scanner.Init(Memo1.Lines.Text);
+  Scanner.Init(MemEdit.Lines.Text);
   Scanner.Scan;
-  Memo2.Lines.BeginUpdate;
+  MemTokens.Lines.BeginUpdate;
   for i := 0 to Scanner.TokenCount-1  do
   begin
      token := Scanner.Tokens.getItem(i);
 
      text := Scanner.ln.items[Token.Line].text;
      text := copy(text,token.Start,token.length);
-     Memo2.Lines.Add(format('------- TOKENS INFO %d -------------',[i]));
-     Memo2.Lines.Add(cTab + 'Token item size : ' + inttostr(Scanner.tokens.ItemSize));
-     Memo2.Lines.Add(cTab + 'Tokens Resize Count : ' + inttostr(Scanner.tokens.resizecount));
-     Memo2.Lines.Add(cTab + 'Tokens Capacity : ' + inttostr(Scanner.tokens.Capacity));
-     Memo2.Lines.Add(cTab + 'Tokens Kb : ' + floattostr(Scanner.tokens.Capacity/1000));
-     Memo2.Lines.Add(cTab + 'Tokens Slot Count : ' + inttostr(Scanner.tokens.SlotCount));
+     MemTokens.Lines.Add(format('------- TOKENS INFO %d -------------',[i]));
+     MemTokens.Lines.Add(cTab + 'Token item size : ' + inttostr(Scanner.tokens.ItemSize));
+     MemTokens.Lines.Add(cTab + 'Tokens Resize Count : ' + inttostr(Scanner.tokens.resizecount));
+     MemTokens.Lines.Add(cTab + 'Tokens Capacity : ' + inttostr(Scanner.tokens.Capacity));
+     MemTokens.Lines.Add(cTab + 'Tokens Kb : ' + floattostr(Scanner.tokens.Capacity/1000));
+     MemTokens.Lines.Add(cTab + 'Tokens Slot Count : ' + inttostr(Scanner.tokens.SlotCount));
 
 
 
 
-     Memo2.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
+     MemTokens.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
 
-     Memo2.Lines.Add(cTab + 'Token Kind : ' + TTokenName[token.kind] + ' is equal to ' + text);
-     Memo2.Lines.Add(cTab + 'Line : ' + inttostr(Token.Line));
-     Memo2.Lines.Add(cTab + 'Length : ' + inttostr(Token.Length));
-     Memo2.Lines.Add(cTab + 'Starts at : ' + inttostr(Token.Start));
+     MemTokens.Lines.Add(cTab + 'Token Kind : ' + TTokenName[token.kind] + ' is equal to ' + text);
+     MemTokens.Lines.Add(cTab + 'Line : ' + inttostr(Token.Line));
+     MemTokens.Lines.Add(cTab + 'Length : ' + inttostr(Token.Length));
+     MemTokens.Lines.Add(cTab + 'Starts at : ' + inttostr(Token.Start));
 
-     Memo2.Lines.Add(cTab + 'Ends   at : ' + inttostr(Token.Start + Token.Length-1));
-     Memo2.lines.Add(cCr);
+     MemTokens.Lines.Add(cTab + 'Ends   at : ' + inttostr(Token.Start + Token.Length-1));
+     MemTokens.lines.Add(cCr);
   end;
-  Memo2.Lines.EndUpdate;
+  MemTokens.Lines.EndUpdate;
 
 
 
   //try compiler to see what happens;
-   Memo3.Lines.Clear;
+   MemRun.Lines.Clear;
 
    if chkEmit.checked then
    begin
      exit; //needs fixing up with oplocals
    i := 0;
-   Compiler := TCompiler.Create(Scanner);
+   Compiler := TCompiler.Create(Scanner,MemLogging.Lines);
    try
      //Compiler.expression; //???
      Compiler.DoCompile;
      InstructionPointer.Init(Compiler.Chunks);
-     Memo3.Lines.add('Bytes : ' + inttostr(InstructionPointer.ByteCount));
-     Memo3.Lines.add('Constants : ' + inttostr(InstructionPointer.ConstantCount));
+     MemRun.Lines.add('Bytes : ' + inttostr(InstructionPointer.ByteCount));
+     MemRun.Lines.add('Constants : ' + inttostr(InstructionPointer.ConstantCount));
 
      While InstructionPointer.Next <> nil do
      begin
@@ -193,7 +195,7 @@ begin
 
 
 
-        Memo3.Lines.Add(inttostr(i) + ':' + ByteCode);
+        MemRun.Lines.Add(inttostr(i) + ':' + ByteCode);
         inc(i);
      end;
    finally
@@ -202,17 +204,17 @@ begin
    end;
    if not chkRun.Checked then exit;
 
-   Memo3.lines.add('-------------------------------');
+   MemRun.lines.add('-------------------------------');
    //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
    // is giving 4 currently - however, byte code is legit.
-   Compiler := TCompiler.Create(Scanner);
+   Compiler := TCompiler.Create(Scanner,MemLogging.Lines);
    try
      Compiler.DoCompile;
      instructionPointer.Init(Compiler.Chunks);
-     VM.Init(InstructionPointer,Memo3.Lines);
+     VM.Init(InstructionPointer,MemRun.Lines,MemVmLog.Lines);
      VM.Run;
      // = INTERPRET_OK then
-     //  Memo3.Lines.Add('result := ' + VM.Result.Value.ToString);
+     //  MemRun.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
      Compiler.Free;

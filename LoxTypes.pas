@@ -536,10 +536,22 @@ type field from it. *)
   function NewNumber(Const number : TNumber) : pValue;
   function NewBool(const Bool : Boolean) : pValue;
   function DisposeValue(value : pValue) : boolean;
+  function TokenKindToStr(const TokenKind : TTokenKind) : string;
+  function opCodeToStr(Const opCode : TOpCodes) : String;
 
 implementation
 
-uses sysUtils;
+uses typinfo, sysUtils;
+
+function TokenKindToStr(const TokenKind : TTokenKind) : string;
+  begin
+    result := GetEnumName(typeInfo(TTokenKind ), Ord(TokenKind));
+  end;
+
+function opCodeToStr(Const opCode : TOpCodes) : String;
+begin
+  result := GetEnumName(typeInfo(TOpCodes ), Ord(opCode));
+end;
 
 function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
 begin
@@ -667,7 +679,7 @@ begin
   result := FNV_offset_basis;
   for i := 1 to length(value) do
   begin
-    result := ((result XOR ord(value[i]))* FNV_prime);// and $FFFFFFFF;
+    result := ((result XOR ord(value[i]))* FNV_prime) and $FFFFFFFF;
   end;
 end;
 

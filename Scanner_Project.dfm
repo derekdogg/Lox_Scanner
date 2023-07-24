@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   Caption = 'Form1'
   ClientHeight = 749
-  ClientWidth = 1104
+  ClientWidth = 1498
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,10 +22,10 @@ object Form1: TForm1
     TabOrder = 0
     OnClick = BtnScanClick
   end
-  object Memo1: TMemo
+  object memEdit: TMemo
     Left = 8
     Top = 39
-    Width = 1088
+    Width = 401
     Height = 307
     Color = clMenuText
     Font.Charset = ANSI_CHARSET
@@ -48,11 +48,12 @@ object Form1: TForm1
       'print global ;')
     ParentFont = False
     TabOrder = 1
+    WantTabs = True
   end
-  object Memo2: TMemo
+  object MemTokens: TMemo
     Left = 8
     Top = 352
-    Width = 401
+    Width = 417
     Height = 279
     Color = clBlack
     Font.Charset = DEFAULT_CHARSET
@@ -66,10 +67,10 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 2
   end
-  object Memo3: TMemo
-    Left = 415
+  object memRun: TMemo
+    Left = 431
     Top = 352
-    Width = 681
+    Width = 442
     Height = 279
     Color = clBlack
     Font.Charset = DEFAULT_CHARSET
@@ -118,5 +119,39 @@ object Form1: TForm1
     Height = 17
     Caption = 'emit'
     TabOrder = 7
+  end
+  object MemLogging: TMemo
+    Left = 415
+    Top = 39
+    Width = 1067
+    Height = 307
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clMoneyGreen
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    Lines.Strings = (
+      'Memo3')
+    ParentFont = False
+    ScrollBars = ssVertical
+    TabOrder = 8
+  end
+  object MemVmLog: TMemo
+    Left = 879
+    Top = 352
+    Width = 603
+    Height = 279
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clMoneyGreen
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    Lines.Strings = (
+      'Memo3')
+    ParentFont = False
+    ScrollBars = ssVertical
+    TabOrder = 9
   end
 end
