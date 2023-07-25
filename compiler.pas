@@ -136,7 +136,13 @@ end;
 
 function TCompiler.advance : boolean;
 begin
+  if FTokens.Current <> nil then
+    log('Before Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
   result := FTokens.MoveNext <> nil;
+
+  if FTokens.Current <> nil then
+    log('After Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
+
 end;
 
 

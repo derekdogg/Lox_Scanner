@@ -50,6 +50,9 @@ type
     function ScanLine(
       const LineRecord : TLine) : TTokens;
     procedure Init(const text : string);
+
+    function TokenText(const Token : TToken) : String;
+
     procedure finalize;
     procedure Scan;
   end;
@@ -86,7 +89,12 @@ implementation
     result := MatchChar(ln.chars.PeekTo(WordStart-1),space);
   end;
 
-  function TScanner.SpaceAfterWordEnd(const WordEnd : integer) : boolean;
+function TScanner.TokenText(const Token: TToken): String;
+begin
+  result :=  copy(ln.items[Token.Line].text,token.Start,token.length);
+end;
+
+function TScanner.SpaceAfterWordEnd(const WordEnd : integer) : boolean;
   begin
     result := false;
     if (wordEnd = LineLength) or (wordEnd<1) then
@@ -230,6 +238,7 @@ begin
     ord(Asterisk),
     ord(Plus),
     ord(Comma),
+    ord(semicolon),
     ord(minus),
     ord(dot),
     ord(Bang),
@@ -259,7 +268,7 @@ begin
       //result.Text := Result.Text + ln.chars.current;
   end;
 
-  if (result.length >= 1) and (MatchSpecialChar(ln.chars.current) or CurrentCharIsNumber) then
+  if (result.length >= 1) and (MatchSpecialChar(ln.chars.current) or CurrentCharIsNumber ) then
   begin
     ln.chars.Move(-1);
   end;
@@ -681,9 +690,9 @@ end;
     if ln.LineRecordIsNull(LineRecord) then exit;
     ln.chars.Init(LineRecord.text);
 
-      while ln.chars.Next <> cNull do
-      begin
-        Token := MakeToken;
+    while ln.chars.Next <> cNull do
+    begin
+      Token := MakeToken;
 
         if Token.Kind = tkWhiteSpace then
         begin
@@ -697,7 +706,7 @@ end;
           Tokens.add(Token);
           inc(TokenCount);
         end;
-      end;
+    end;
 
   end;
 
@@ -726,7 +735,7 @@ var
   Line : TLine;
   Token : TToken;
 begin
-  While ln.HasNext do
+  while ln.HasNext do
   begin
     Line := ln.Next;
     ScanLine(Line);
