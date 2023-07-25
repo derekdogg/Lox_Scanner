@@ -5,6 +5,8 @@ interface
 
 
 const
+  
+
 //  cMaxTokens = 10000;
   cMaxLines = 1000;
   cCR = #13;     //- Carriage return (ASCII)

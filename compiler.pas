@@ -44,6 +44,9 @@ type
 //    procedure emitConstant(value : TValue);
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
+    procedure patchJump(const offset : integer);
+    function emitJump(const instruction : TOpCodes) : integer;
+    procedure ifStatement;
     function TokenName(const token : pToken) : String;
     procedure Log(const txt : String);
     procedure Strings(const canAssign: Boolean);
@@ -74,6 +77,7 @@ type
     procedure CreateRulesForCloseBrace;
     procedure CreateRulesForPrint;
     procedure CreateRulesForIdentifier;
+    procedure CreateRulesForIF;
 
     procedure CreateRulesForEOF;
   
@@ -370,6 +374,14 @@ begin
   FParseRules[tkIdentifier].Precedence := PREC_NONE;
 end;
 
+procedure TCompiler.CreateRulesForIF;
+begin
+//  [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
+  FParseRules[tkIF].Prefix := nil;
+  FParseRules[tkIF].Infix := binary;
+  FParseRules[tkIF].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForLessThan;
 begin
   // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
@@ -474,6 +486,7 @@ begin
   CreateRulesForSemiColon;
   CreateRulesForPrint;
   CreateRulesForIdentifier;
+  CreateRulesForIF;
   CreateRulesForEOF;
 end;
 
@@ -769,15 +782,54 @@ begin
   end;
 end;
 
-//[1,1,2,2,1,1]
+procedure TCompiler.PatchJump(const OffSet: Integer);
+const
+  MAX_JUMP =  65535;
+var
+  Jump: Integer;
+begin
+  // -2 to adjust for the bytecode for the jump offset itself.
+  Jump := FChunks.OPCodes.Count - OffSet - 2;
 
+  if Jump > MAX_JUMP then
+    Error('Too much code to jump over.');
 
+  FChunks.OpCodes.Item(OffSet)^   := (Jump shr 8) and $FF;
+  FChunks.OpCodes.Item(OffSet+1)^ := Jump and $FF;
+end;
+
+function TCompiler.emitJump(const instruction : TOpCodes) : integer;
+begin
+  FChunks.emitByte(Byte(instruction));
+  FChunks.emitByte($FF);
+  FChunks.emitByte($FF);
+  result :=  FChunks.OpCodes.count - 2;
+end;
+
+procedure TCompiler.ifStatement;
+var
+  thenJump : integer;
+begin
+  consume(tkOpen_Bracket,'Expect "(" after "if".');
+  expression();
+  consume(tkClose_Bracket, 'Expect ")" after condition.');
+
+  thenJump := emitJump(OP_JUMP_IF_FALSE);
+  statement();
+
+  patchJump(thenJump);
+end;
 
 procedure TCompiler.statement;
 begin
   if (match(tkPRINT)) then
   begin
     printStatement
+  end
+  else
+  if (match(tkIF))then
+  begin
+    ifStatement();
   end
   else
   if (match(tkOpenBrace)) then

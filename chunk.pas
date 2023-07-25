@@ -23,6 +23,7 @@ type
     // FLine      : TIntegers;
   public
     function Constants : TValueList;
+    function OpCodes : TBytes;
     Procedure emitBytes(const byte1, byte2 : byte);
     procedure EmitByte(const value : byte);
     function MakeConstant(const value : pValue) : integer;
@@ -173,6 +174,11 @@ function TChunks.MakeConstant(const value : pValue) : integer;
 begin
   result := FConstants.Add(Value);
   inc(FConstantCount);
+end;
+
+function TChunks.OpCodes: TBytes;
+begin
+  result := FOpCodes;
 end;
 
 //add constant opcode followed by index of constant in constants array

@@ -94,9 +94,9 @@ object Form1: TForm1
     TabOrder = 3
   end
   object BtnHash: TButton
-    Left = 440
+    Left = 367
     Top = 8
-    Width = 121
+    Width = 74
     Height = 25
     Caption = 'Hash testing'
     TabOrder = 4
