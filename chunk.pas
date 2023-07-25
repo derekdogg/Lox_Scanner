@@ -393,7 +393,7 @@ function TInstructionPointer.value(const Index : byte) : pValue;
 begin
   assert(index >= 0, 'Index for value is < 0');
   assert(index < FConstants.count, 'index is > than FConstants Count');
-  result := FConstants.Item(Index);
+  result := FConstants.Item[Index];
 end;
 
 function TInstructionPointer.ConstantCount: integer;

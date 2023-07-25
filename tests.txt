@@ -20,4 +20,276 @@ I personally would just prefer 'false' and 'true'
 
 
 
+//scoping
+var global = "global 1" ;
+{
+   var a = "1a";
+   print a;
+}
+
+print global ;
+
+
+
+
+{
+    var s = "Scope 1";
+    print s ;
+    var a = "1a";
+    print a ;
+    {
+        var s = "Scope 2";
+        print s ;
+        var a = "2a";
+        print a ;
+        {
+	        var s = "Scope 3";
+	        print s ;
+	        var a = "3a";
+        	print a ;	
+
+            {
+	            var s = "Scope 4";
+	            print s ;
+		        var a = "4a";
+        	          print a ;	
+
+
+
+            }
+        }
+    }
+}
+
+/*
+    PRINT:Scope 1
+    PRINT:1a
+    PRINT:Scope 2
+    PRINT:2a
+    PRINT:Scope 3
+    PRINT:3a
+    PRINT:Scope 4
+    PRINT:4a
+*/
+
+
+
+
+
+{
+    var s = "Scope 1";
+     
+    var a = "1a";
+    print a ;
+    print s ;
+    {
+        var s = "Scope 2";
+         
+        var a = "2a";
+        print a ;
+        print s ;
+        {
+	        var s = "Scope 3";
+	        
+	        var a = "3a";
+        	print a ;	
+            print s ;
+
+            {
+	            var s = "Scope 4";
+	             
+		        var a = "4a";
+        	    print a ;	
+                print s ;
+
+
+
+            }
+        }
+    }
+}
+
+/*
+    PRINT:1a
+    PRINT:Scope 1
+    PRINT:2a
+    PRINT:Scope 2
+    PRINT:3a
+    PRINT:Scope 3
+    PRINT:4a
+    PRINT:Scope 4
+
+*/
+
+{
+    var s = "Scope 1";
+    var a = "1a";
+    {
+
+
+    }
+    print s ;
+    print a ;
+    
+}
+
+/*
+PRINT:Scope 1
+PRINT:1a
+
+*/
+
+
+{
+    var s = "Scope 1";
+    var a = "1a";
+    {
+
+
+    }
+    {
+
+
+    }
+    {
+
+
+    }
+    {
+
+
+    }
+    print s ;
+    print a ;
+    
+}
+
+/*
+    PRINT:Scope 1
+    PRINT:1a
+
+
+*/
+
+
+
+{
+    
+    {
+        
+        {
+	        
+            
+            {
+                
+    
+                {
+                    var s = "Scope 5";
+                    var a = "5a";
+                    print a ;	
+                    print s ;
+    
+    
+    
+                }
+                
+            }
+        
+        }
+    }
+}
+
+
+/*
+    PRINT:5a
+    PRINT:Scope 5
+*/
+
+{
+    
+    {
+        
+        {
+	        
+            
+            {
+                var s = "Scope 4";
+                var a = "4a";    
+                {
+                    var s = "Scope 5";
+                    var a = "5a";
+                    print a ;	
+                    print s ;
+                }
+                print a ;	
+                print s ;
+            }
+        
+        }
+    }
+}
+
+/*
+PRINT:5a
+PRINT:Scope 5
+PRINT:4a
+PRINT:Scope 4
+
+
+
+
+
+*/
+
+var global = "top global" ;
+{
+    print global ;
+    {
+        print global ;
+        {
+        
+            
+            {
+                var s = "Scope 4";
+                var a = "4a";    
+                {
+                    var s = "Scope 5";
+                    var a = "5a";
+                    print a ;	
+                    print s ;
+                    {
+                        var s = "Scope 6";
+                        var a = "6a";
+                        print a ;	
+                        print s ;
+                    }
+                    {
+                        var s = "Scope 7";
+                        var a = "7a";
+                        print a ;
+                        print s ;
+                    }
+                }
+                print a ;	
+                print s ;
+            }
+        
+        }
+    }
+}
+/*
+PRINT:top global
+PRINT:top global
+PRINT:5a
+PRINT:Scope 5
+PRINT:6a
+PRINT:Scope 6
+PRINT:7a
+PRINT:Scope 7
+PRINT:4a
+PRINT:Scope 4
+*/
+
+
+
  

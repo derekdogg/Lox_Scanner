@@ -20,7 +20,11 @@ type
     FGlobals : TValuePairs;
 
     FResults : TStrings;
+    procedure ClearLog;
     procedure Log(Const txt : string);
+    procedure PopStack;
+    procedure MoveNext;
+    procedure DoConstant;
     Procedure Add;
     Procedure subtract;
     Procedure Divide;
@@ -51,8 +55,8 @@ type
     procedure finalize;
   end;
 
-
 implementation
+
 uses
   dialogs;
 
@@ -67,14 +71,8 @@ end;*)
 
 
 function TVirtualMachine.Run : TInterpretResult;
-var
- // ByteCode : TByteCode;
-  constantIndex : integer;
-  Value : pValue;
-  Name  : pValue;
-  v : TValue;
-  stackCount : integer;
 begin
+  clearLog;
   Log('Run');
   Result := INTERPRET_NONE;
   if FInstructionPointer.ByteCount = 0 then exit;
@@ -86,11 +84,8 @@ begin
     Case TOpCodes(FInstructionPointer.Current^) of
 
       OP_CONSTANT : begin
-           if FInstructionPointer.Next = nil then raise exception.create('Expected constant value following constant operation');
-           constantIndex := FInstructionPointer.Current^;
-           value := FInstructionPointer.value(constantIndex);
-           //Bytecode.Value := Value;
-           FStack.Push(value);
+
+         DoConstant;
       end;
 
 
@@ -188,7 +183,7 @@ begin
           Print;
       end;
     end;
-    StackCount := FStack.Count;
+    
   end;
   Result := INTERPRET_OK;
 end;
@@ -197,6 +192,18 @@ end;
 procedure TVirtualMachine.HandleRunTimeError(const E : Exception);
 begin
   showmessage(E.message);
+end;
+
+procedure TVirtualMachine.DoConstant;
+var
+  constantIndex : integer;
+  Value : pValue;
+begin
+   Log('DoConstant');
+   MoveNext;
+   constantIndex := FInstructionPointer.Current^;
+   value := FInstructionPointer.value(constantIndex);
+   FStack.Push(value);
 end;
 
 
@@ -503,8 +510,9 @@ var
 begin
   Log('DoSetLocal');
   assert(FInstructionPointer.Current^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+  moveNext;
   Slot := FInstructionPointer.Current^;
-  FStack.Push(FStack.peek(0));
+  FStack[slot] := FStack.peek(0);
 end;
 
 procedure TVirtualMachine.DoGetLocal;
@@ -512,15 +520,17 @@ var
   Slot  : Integer;
   Value : pValue;
   Count : Integer;
+
 begin
   Log('DoGetLocal');
   assert(FInstructionPointer.Current^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+  moveNext;
+  Slot := FInstructionPointer.Current^;
+ //  value := FStack.peek(FStack.Count-1-PeekIdx);
+  value := FStack.Item[slot];
+  Log(format('fetched value %s from stack for local using idx %d',[value.tostring, slot]));
+  FStack.Push(value);
 
-  if FInstructionPointer.Next <> nil then
-  begin
-    Slot := FInstructionPointer.Current^;
-    FStack.Push(FStack.peek(FStack.Count-1 - Slot));
-  end;
 end;
 
 procedure TVirtualMachine.DoGetGlobal;
@@ -532,17 +542,16 @@ var
 begin
   Log('DoGetGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
-  if FInstructionPointer.Next <> nil then
-  begin
-     constantIndex := FInstructionPointer.Current^;
-     name := FInstructionPointer.Value(constantIndex);
-     NameValue := FGlobals.Find(name.tostring);
-     Assert(NameValue <> nil, 'expected value does not exist in globals');
-     FStack.push(NameValue.Value);
-  end;
+  MoveNext;
+  constantIndex := FInstructionPointer.Current^;
+  name := FInstructionPointer.Value(constantIndex);
+  NameValue := FGlobals.Find(name.tostring);
+  Assert(NameValue <> nil, 'expected value does not exist in globals');
+  FStack.push(NameValue.Value);
+
   //FInstructionPointer.Next;
 end;
-
+ 
 
 procedure TVirtualMachine.DoSetGlobal;
 var
@@ -555,17 +564,14 @@ begin
   Log('DoSetGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
-  if FInstructionPointer.Next <> nil then
-  begin
-     constantIndex := FInstructionPointer.Current^;
-     name := FInstructionPointer.Value(constantIndex);
-     value := FStack.Peek(0);
-     assert(name.IsStringObject, 'name is not a string object');
-     NameValue := FGlobals.Find(name.tostring);
-     assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
-     NameValue.Value := Value;
-  end;
-
+  MoveNext;
+  constantIndex := FInstructionPointer.Current^;
+  name := FInstructionPointer.Value(constantIndex);
+  value := FStack.Peek(0);
+  assert(name.IsStringObject, 'name is not a string object');
+  NameValue := FGlobals.Find(name.tostring);
+  assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
+  NameValue.Value := Value;
 end;
 
 
@@ -583,10 +589,26 @@ begin
   assert(assigned(FGlobals.AddNameValue(Name,value)), 'failed to add to hash table');
 end;
 
+procedure TVirtualMachine.ClearLog;
+begin
+  FLog.Clear;
+end;
 
 procedure TVirtualMachine.Log(Const txt : string);
 begin
   FLog.Add(txt);
+end;
+
+procedure TVirtualMachine.MoveNext;
+begin
+  Log('MoveNext');
+  Assert(FInstructionPointer.Next <> nil,'Expected constant value following constant operation');
+end;
+
+procedure TVirtualMachine.PopStack;
+begin
+  Log('PopStack');
+  FStack.Pop;
 end;
 
 procedure TVirtualMachine.DoGlobal;
@@ -595,20 +617,16 @@ var
    Name   : pValue;
    value  : pValue;
 
-
 begin
   Log('Entering DoGlobal');
   assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
-  if FInstructionPointer.Next <> nil then
-  begin
-     constantIndex := FInstructionPointer.Current^;
-     name := FInstructionPointer.Value(constantIndex);
-     value := FStack.Peek(0);
-     assert(name.IsStringObject, 'name is not a string object');
-     AddGlobal(name,value);
-
-     FStack.pop;
-  end;
+  MoveNext;
+  constantIndex := FInstructionPointer.Current^;
+  name := FInstructionPointer.Value(constantIndex);
+  value := FStack.Peek(0);
+  assert(name.IsStringObject, 'name is not a string object');
+  AddGlobal(name,value);
+  popStack;
   Log('Exiting DoGlobal');
 end;
 

@@ -587,9 +587,14 @@ end;
 
 procedure TCompiler.defineVariable(const constantIdx : byte);
 begin
- 
-  if (FscopeDepth > 0) then exit;
+  log('define variable');
+  if (FscopeDepth > 0) then
+  begin
+    log('scope depth is > 0 therefore not global');
+    exit;
+  end;
 
+  log('define global variable');
   FChunks.AddDEFINE_GLOBAL(constantidx);
 end; {
   emitBytes(OP_DEFINE_GLOBAL, global);
@@ -611,7 +616,7 @@ end;
 
 function TCompiler.parseVariable(const errorMessage : string) : byte;
 begin
-
+  Log('Parse variable');
   consume(tkIdentifier, errorMessage);
   DeclareVariable;
   if FScopeDepth > 0 then
@@ -679,7 +684,9 @@ begin
   begin
     local := Flocals[i];
     if (local.depth <> -1) and (local.depth < FScopeDepth) then
+    begin
       Break;
+    end;
 
     if identifiersEqual(token, Flocals[i].token) then
     begin
@@ -730,8 +737,17 @@ begin
   Log(format('end block at : %d',[FScopeDepth]));
 end;
 
-//this needs checking. is this right?
 
+procedure TCompiler.endScope();
+var
+  Local : pLocal;
+  i : integer;
+  scope : string;
+begin
+  Log(format('End scope : %d',[FScopeDepth]));
+  dec(FScopeDepth);
+  removeLocal;
+end;
 
 procedure TCompiler.RemoveLocal;
 var
@@ -742,24 +758,13 @@ begin
   begin
     FChunks.AddPOP;
     Local := FLocals.Remove(FLocals.Count-1);
+    Dispose(Local);
     Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
   end;
-  dispose(Local);
 end;
 
 //[1,1,2,2,1,1]
-procedure TCompiler.endScope();
-var
-  Local : pLocal;
-  i : integer;
-  scope : string;
-begin
-  Log(format('End scope : %d',[FScopeDepth]));
-  dec(FScopeDepth);
-  removeLocal;
 
-
-end;
 
 
 procedure TCompiler.statement;

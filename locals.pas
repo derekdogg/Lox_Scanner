@@ -74,16 +74,22 @@ begin
   result := FCount-1;
 end;
 
+
+(*
+1 2 3 4 5 6 7 8 9 0
+    *
+
+
+*)
 function TLocalList.Remove(const index : integer) : pLocal;
+
 begin
   assert(InBounds(Index,FCapacity),'index of removal outside bounds');
+  assert(Index < FCount, 'removed index is > than count');
   result := FItems^[Index];
   assert(Result <> nil, 'removed index is not nil');
-  Dec(FCount);
-  if Index < FCount then
-    Move(FItems^[Index + 1], FItems[Index],
-      (FCount - Index) * SizeOf(pLocal)); 
-
+  dec(FCount);
+  Move(FItems^[Index + 1], FItems[Index], (FCount - Index) * SizeOf(pLocal));
 end;
 
 procedure TLocalList.AllocateArray(var Items : pLocals; const size : integer);

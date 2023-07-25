@@ -104,7 +104,7 @@ var
   constantIndex : byte;
   value : pValue; //represents a constant
   ByteCode : string;
-
+  list : TList;
   VM :  TVirtualMachine;
 begin
   try

@@ -25,7 +25,7 @@ object Form1: TForm1
   object memEdit: TMemo
     Left = 8
     Top = 39
-    Width = 401
+    Width = 641
     Height = 307
     Color = clMenuText
     Font.Charset = ANSI_CHARSET
@@ -34,18 +34,27 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     Lines.Strings = (
-      'var global = "global";'
       '{'
-      '  var a = "scope 1a";'
-      '  {'
-      '     var b = "scope 2";'
-      '     print b ;'
-      '   }'
-      '   var c = "scope 1b";'
-      '   print a ;  '
-      '   print c ;'
-      '}'
-      'print global ;')
+      '    var s = "Scope 1";'
+      '    print s ;'
+      '    var a = "1a";'
+      '    {'
+      '        var s = "Scope 2";'
+      '        print s ;'
+      '        {'
+      #9'        var s = "Scope 3";'
+      #9'        print s ;'
+      ''
+      '            {'
+      #9'            var s = "Scope 4";'
+      #9'            print s ;'
+      ''
+      ''
+      '            }'
+      '        }'
+      '    }'
+      ''
+      '}')
     ParentFont = False
     TabOrder = 1
     WantTabs = True
@@ -121,9 +130,9 @@ object Form1: TForm1
     TabOrder = 7
   end
   object MemLogging: TMemo
-    Left = 415
+    Left = 655
     Top = 39
-    Width = 1067
+    Width = 827
     Height = 307
     Color = clBlack
     Font.Charset = DEFAULT_CHARSET
