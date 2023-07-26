@@ -45,6 +45,7 @@ type
     procedure DoGetLocal;
     procedure DoSetLocal;
     procedure HandleRunTimeError(const E: Exception);
+    procedure JumpFalse;
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : pValue ; const Value : pValue);
 
@@ -67,6 +68,7 @@ begin
   assert(FStack.Count = 1, 'stack is empty');
   result := FStack.Pop;
 end;*)
+
 
 
 
@@ -182,6 +184,13 @@ begin
       OP_PRINT  : begin
           Print;
       end;
+
+
+      OP_JUMP_IF_FALSE:
+      begin
+        JumpFalse;
+      end;
+
     end;
     
   end;
@@ -376,6 +385,22 @@ begin
   Log('Print');
   Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
   FResults.Add('PRINT:' + FStack.Pop.ToString);
+end;
+
+
+procedure TVirtualMachine.JumpFalse;
+var
+  a,b : byte;
+  offset : integer;
+begin
+   Log('JumpFalse');
+   a := FInstructionPointer.Next^;
+   b := FInstructionPointer.Next^;
+   offset := a shl 8 + b;
+   if (isFalsey(FStack.peek(0))) then
+   begin
+     FInstructionPointer.Move(FInstructionPointer.Index + offset);
+   end;
 end;
 
 procedure TVirtualMachine.Negate;

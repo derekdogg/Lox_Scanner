@@ -794,8 +794,8 @@ begin
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
 
-  FChunks.OpCodes.Item(OffSet)^   := (Jump shr 8) and $FF;
-  FChunks.OpCodes.Item(OffSet+1)^ := Jump and $FF;
+  FChunks.OpCodes.Item[OffSet]^   := (Jump shr 8) and $FF;
+  FChunks.OpCodes.Item[OffSet+1]^ := Jump and $FF;
 end;
 
 function TCompiler.emitJump(const instruction : TOpCodes) : integer;
@@ -815,6 +815,7 @@ begin
   consume(tkClose_Bracket, 'Expect ")" after condition.');
 
   thenJump := emitJump(OP_JUMP_IF_FALSE);
+
   statement();
 
   patchJump(thenJump);

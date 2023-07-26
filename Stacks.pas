@@ -21,17 +21,6 @@ type
     procedure Finalize;
   end;
 
-  TByteStack = record
-  private
-    FIndex    : Integer;
-    FItems    : TBytes;
-    pStackTop : pByte;
-  public
-    procedure Push(const Item : TOpCodes);
-    function  Pop : Byte;
-    procedure Init;
-    procedure Finalize;
-  end;
 
   (*TDoubleStack = record
   private
@@ -98,34 +87,6 @@ begin
 end;
 
 { TByteStack }
-
-procedure TByteStack.Finalize;
-begin
-  FItems.Finalize;
-end;
-
-procedure TByteStack.Init;
-begin
-  FIndex := 0;
-  FItems.Init(16);
-  pStackTop := FItems.Item(0);
-end;
-
-function TByteStack.Pop: Byte;
-begin
-  if FIndex = 0 then raise exception.create('Nothing to pop');
-  dec(FIndex);
-  dec(pStackTop);
-  result := pStackTop^;
-end;
-
-procedure TByteStack.Push(const Item: TOpCodes);
-begin
-  inc(FIndex);
-  FItems.Add(Item);
-  inc(pStackTop);
-end;
-
 {TByteCodeStack}(*
 
 function TByteCodeStack.Count: Integer;

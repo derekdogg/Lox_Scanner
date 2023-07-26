@@ -1,84 +1,166 @@
 unit ByteArray;
 
 interface
-uses
-  LoxTypes;
 
+uses LoxTypes;
+
+Const
+  MAX_CAPACITY = 256; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
+  INCREMENT_CAPACITY_BY = 2;
+  NUM_SLOTS = 10;
+  GROWTH_FACTOR  = 2;
 type
 
+  pbytes = ^TbyteList;
 
-
+  TbyteList = array[0..MAX_CAPACITY - 1] of pByte;
 
 
   TBytes = record
-  const
-    //NUM_SLOTS = 10;
-    INCREMENT_CAPACITY_BY = 2;
   private
+    FOwnbytes      : Boolean;
     FResizeCount   : integer;
     FIndex         : integer;
     FCount         : integer;
     FPrevcapacity  : integer;
     FCapacity      : integer;
-    FItems         : pointer;
-    procedure AllocateArray(var p : pointer; const size : integer);
+    FItems         : pbytes;
+    procedure AllocateArray(var Items : pbytes; const size : integer);
     Procedure GrowArray;
     procedure GrowCapacity;
+    function  ItemSize : integer;
+    function InBounds(const index : integer; const capacity : Integer) : boolean;
+
   public
-    function Index : integer;
     function SlotCount : integer;
+    function Remove(const index : integer) : pByte;
     function Capacity : integer;
     function IsFull : boolean;
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : TOpCodes) : integer;
-    function AddByte(const value : Byte) : integer;
-    function AddOperand(const Value : TOpCodes; const Operand : Byte) : integer;
-    function AddConstant(const Value : TOpCodes; const ConstantIndex : Byte) : integer;
-    function  Item(const index : integer) : pByte;
-    constructor init(const Count : integer);
+    function Add(const value : pByte) : integer;
+    function  GetItem(const index : integer) : pByte;
+    procedure SetItem(const index : integer; const value : pByte);
+    constructor init(Const Ownbytes : Boolean);
     procedure finalize; //<-- no destructor allowed, seems weird.
+    property Item[const Index : integer] : pByte read getItem write setItem;default;
  end;
+
+ Tbytestack = record
+ private
+    FCount    : Integer;
+    FItems    : TBytes;
+  public
+    function GetItem(const index : integer) : pByte;
+    procedure setItem(const index : integer; const value : pByte);
+    Function Count : Integer;
+    function Top : pByte;
+    Function Peek : pByte; overload;
+    Function Peek(const distance : integer) : pByte; overload;
+    procedure Push(const Item : pByte);
+    function  Pop : pByte;
+    procedure Init;
+    procedure Finalize;
+    property Item[const index : integer] : pByte read getItem write setItem; default;
+ end;
+
+
 
 
 implementation
 
-
-function TBytes.AddByte(const value : Byte) : integer;
-var
-  pIndex : pByte;
+function Tbytestack.Count: Integer;
 begin
   result := FCount;
-  GrowArray;
-  pIndex  := Item(FCount);
-  pIndex^ := value;
-  inc(FIndex);
+end;
+
+procedure Tbytestack.Finalize;
+begin
+  FItems.Finalize;
+end;
+
+procedure Tbytestack.Init;
+begin
+  FCount := 0;
+  FItems.Init(false);
+end;
+
+function Tbytestack.GetItem(const index: integer): pByte;
+begin
+  result := FItems.item[index];
+end;
+
+function Tbytestack.Peek(const distance: integer): pByte;
+begin
+  result := FItems.Item[FCount-1 -distance];
+end;
+
+function Tbytestack.Peek: pByte;
+begin
+  result := Peek(0);
+end;
+
+function Tbytestack.Pop: pByte;
+var
+  removed : pByte;
+begin
+  assert(FCount > 0,'Nothing to pop');
+  result := Peek(0);
+  removed :=FItems.Remove(FCount-1);
+
+  dec(FCount);
+end;
+
+procedure Tbytestack.Push(const Item: pByte);
+begin
   inc(FCount);
+  FItems.Add(Item);
 end;
 
-function TBytes.Index : integer;
+procedure Tbytestack.setItem(const index: integer; const value: pByte);
 begin
-  result := FIndex;
+  FItems[index] := value; 
 end;
 
-function TBytes.SlotCount : integer;
+function Tbytestack.Top: pByte;
 begin
-  result := FCapacity div Sizeof(Byte);
+  result := peek(0);
 end;
 
-function TBytes.Capacity : integer;
+
+
+{ TBytes }
+
+function TBytes.Add(const value: pByte): integer;
+begin
+  assert(assigned(Value), 'Value being inserted is nil');
+  growArray;
+  FItems[FCount] := value;
+  inc(FCount);
+  result := FCount-1;
+end;
+
+function TBytes.Remove(const index : integer) : pByte;
+begin
+  assert(Index < FCount, 'removed index is > than count');
+  assert(InBounds(Index,FCapacity),'index of removal outside bounds');
+  result := FItems^[Index];
+  assert(Result <> nil, 'removed index is not nil');
+  Dec(FCount);
+  Move(FItems^[Index + 1], FItems[Index],(FCount - Index) * SizeOf(pByte));
+end;
+
+procedure TBytes.AllocateArray(var Items : pbytes; const size : integer);
+begin
+  assert(Items = nil);
+  getMem(Items,size);
+  fillchar(Items^,size,#0);
+end;
+
+function TBytes.Capacity: integer;
 begin
   result := FCapacity;
-end;
-
-
-procedure TBytes.AllocateArray(var p : pointer; const size : integer);
-begin
-  assert(p = nil);
-  getMem(p,size);
-  fillchar(p^,size,#0);
-
 end;
 
 function TBytes.Count: integer;
@@ -86,57 +168,20 @@ begin
   result := FCount;
 end;
 
-procedure  TBytes.GrowArray;
-var
-  pCopyItems : pointer;
-begin
-  pCopyItems := nil;
-  if not isfull then exit;
-  GrowCapacity;
-  AllocateArray(pCopyItems,FCapacity);
-  Move(FItems^, pCopyItems^, FPrevCapacity);  //copy existing memory into new memory;
-  FreeMem(FItems);                           //free the old memory
-  FItems := nil;                             //make the old memory nil
-  FItems := pCopyItems;                      // set the old memory to the new memory;
-
-  inc(FResizeCount); //<-- used for debug checking.
-end;
-
-
-function TBytes.AddConstant(const Value : TOpCodes; const ConstantIndex : Byte) : integer;
-begin
-  assert(Value = OP_CONSTANT, 'value is not a constant');
-  Add(Value);
-  Add(TOpCodes(ConstantIndex));
-end;
-
-function TBytes.AddOperand(const Value : TOpCodes; const Operand : Byte) : integer;
-begin
-  Add(Value);
-  Add(TOpCodes(Operand));
-end;
-
-function TBytes.Add(const value : TOpCodes) : integer;
-begin
-  addByte(byte(Value)); 
-end;
-
-function TBytes.Item(const index: integer): pByte;
-begin
-  assert(FCapacity > 0);
-  assert(FItems <> nil);
-  assert((FIndex * sizeof(Byte)) <= FCapacity);
-  result := @FItems^;
-  inc(result,index);
-end;
-
-function TBytes.ResizeCount: integer;
-begin
-  result := FResizeCount;
-end;
-
 procedure TBytes.finalize;
+var
+  i : integer;
+  p : pByte;
 begin
+  if FOwnbytes then
+  begin
+    for i := 0 to FCount-1 do
+    begin
+      p := Item[i];
+      assert(p <> nil, 'finalize value item expected non nil value');
+      Dispose(p);
+    end;
+  end;
   if assigned(FItems) then
   begin
     freeMem(FItems);
@@ -148,32 +193,93 @@ function TBytes.FreeSlots: integer;
 begin
   result := 0;
   if FCapacity = 0 then exit;
-  result := (FCapacity - (FCount * sizeof(Byte))) div Sizeof(Byte);
+  result := (FCapacity - (FCount * ItemSize)) div ItemSize;
 end;
 
-function TBytes.IsFull : boolean;
+procedure TBytes.GrowArray;
+var
+  pCopyItems : pbytes;
 begin
-  result := (FCount * sizeof(Byte)) = FCapacity
+  if not isfull then exit;
+  pCopyItems := nil;
+
+
+  GrowCapacity;
+  AllocateArray(pCopyItems,FCapacity);
+
+  Move(FItems^, pCopyItems^, FPrevCapacity);
+
+  FreeMem(FItems);                           //free the old memory
+  FItems := nil;                             //make the old memory nil
+  FItems := pCopyItems;                      // set the old memory to the new memory;
+
+  inc(FResizeCount); //<-- used for debug checking.
+
 end;
 
-procedure TBytes.growCapacity;
+function  TBytes.ItemSize : integer;
+begin
+  result := Sizeof(pByte);
+end;
+
+procedure TBytes.GrowCapacity;
 begin
   FPrevCapacity := FCapacity;
-  FCapacity := FCapacity  * INCREMENT_CAPACITY_BY;
-  assert(FCapacity mod sizeof(Byte) = 0);
+  FCapacity := FCapacity  * GROWTH_FACTOR;
+  assert(FCapacity mod itemSize = 0);
+  assert(FCapacity < MAX_CAPACITY,'Max size reached')
 end;
 
-Constructor TBytes.init(const Count : integer);
+constructor TBytes.init(Const Ownbytes : Boolean);
 begin
+  FOwnbytes := Ownbytes;
   FresizeCount := 0;
   FItems := nil;
-  Findex := 0;
   Fcount := 0;
-  Fcapacity := count * sizeof(Byte);
+  Fcapacity := NUM_SLOTS * sizeof(pByte);
   Fprevcapacity := Fcapacity;
 
-  AllocateArray(FItems,Fcapacity);
+  AllocateArray(FItems,FCapacity);
 end;
 
+function TBytes.IsFull: boolean;
+begin
+  result := (FCount * ItemSize) = FCapacity;
+end;
+
+function TBytes.InBounds(const index : integer; const capacity : Integer) : boolean;
+begin
+   result := Index * ItemSize <= capacity;
+end;
+
+function TBytes.GetItem(const index: integer): pByte;
+begin
+  assert(FCapacity > 0);
+  assert(FItems <> nil);
+  assert(InBounds(index,FCapacity), 'Index out of bounds on value list Item(index)');
+  result := FItems[index];
+end;
+
+function TBytes.ResizeCount: integer;
+begin
+  result := FResizeCount;
+end;
+
+procedure TBytes.SetItem(const index: integer; const value: pByte);
+begin
+  if FItems[index] = value then exit;
+  if FItems[Index] = nil then
+  begin
+    FItems[index] := value;
+    exit;
+  end;
+  dispose(FItems[index]);
+  FItems[index] := value;
+end;
+
+function TBytes.SlotCount: integer;
+begin
+  result := FCapacity div ItemSize;
+end;
 
 end.
