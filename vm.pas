@@ -46,6 +46,7 @@ type
     procedure DoSetLocal;
     procedure HandleRunTimeError(const E: Exception);
     procedure JumpFalse;
+    procedure Jump;
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : pValue ; const Value : pValue);
 
@@ -190,6 +191,13 @@ begin
       begin
         JumpFalse;
       end;
+
+      
+      OP_JUMP:
+      begin
+        Jump;
+      end;
+
 
     end;
     
@@ -388,18 +396,31 @@ begin
 end;
 
 
+procedure TVirtualMachine.Jump;
+var
+  a,b : pbyte;
+  offset : integer;
+begin
+  a := FInstructionPointer.Next;
+  b := FInstructionPointer.Next;
+  offset := a^ shl 8 + b^;
+  assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump offset');
+end;
+
 procedure TVirtualMachine.JumpFalse;
 var
-  a,b : byte;
+  a,b : pbyte;
   offset : integer;
 begin
    Log('JumpFalse');
-   a := FInstructionPointer.Next^;
-   b := FInstructionPointer.Next^;
-   offset := a shl 8 + b;
+   a := FInstructionPointer.Next;
+   b := FInstructionPointer.Next;
+   assert(a <> nil, 'a is nil can''t jump');
+   assert(b <> nil, 'b is nil can''t jump');
+   offset := a^ shl 8 + b^;
    if (isFalsey(FStack.peek(0))) then
    begin
-     FInstructionPointer.Move(FInstructionPointer.Index + offset);
+     assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
    end;
 end;
 

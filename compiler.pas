@@ -78,6 +78,7 @@ type
     procedure CreateRulesForPrint;
     procedure CreateRulesForIdentifier;
     procedure CreateRulesForIF;
+    procedure CreateRulesForElse;
 
     procedure CreateRulesForEOF;
   
@@ -110,7 +111,7 @@ type
     procedure varDeclaration;
     function identifierConstant(const token : pToken) : byte;
     function parseVariable(const errorMessage : string) : byte;
-    procedure defineVariable(const constantidx : byte);
+    procedure defineVariable(const constantidx : integer);
     procedure parsePrecedence(precedence : TPrecedence);
     function getRule(TokenKind : TTokenKind) : TParseRule;
     procedure consume(const TokenKind : TTokenKind; const Message : String);
@@ -451,6 +452,14 @@ begin
   FParseRules[tkAsterisk].Precedence := PREC_FACTOR;
 end;
 
+procedure TCompiler.CreateRulesForElse;
+begin
+  //[TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
+  FParseRules[tkEOF].Prefix := nil;
+  FParseRules[tkEOF].Infix := nil;
+  FParseRules[tkEOF].Precedence := PREC_NONE;
+end;
+
 procedure TCompiler.CreateRulesForEOF;
 begin
 // [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
@@ -487,6 +496,7 @@ begin
   CreateRulesForPrint;
   CreateRulesForIdentifier;
   CreateRulesForIF;
+  CreateRulesForElse;
   CreateRulesForEOF;
 end;
 
@@ -604,7 +614,7 @@ begin
 end;
 
 
-procedure TCompiler.defineVariable(const constantIdx : byte);
+procedure TCompiler.defineVariable(const constantIdx : integer);
 begin
   log('define variable');
   if (FscopeDepth > 0) then
@@ -808,7 +818,7 @@ end;
 
 procedure TCompiler.ifStatement;
 var
-  thenJump : integer;
+  thenJump,elseJump : integer;
 begin
   consume(tkOpen_Bracket,'Expect "(" after "if".');
   expression();
@@ -818,7 +828,16 @@ begin
 
   statement();
 
+
+  elseJump := emitJump(OP_JUMP);
   patchJump(thenJump);
+
+  
+  if (match(tkElse)) then statement();
+
+  
+  patchJump(elseJump);
+
 end;
 
 procedure TCompiler.statement;
@@ -931,14 +950,11 @@ var
   Token : pToken;
   Text  : String;
 begin
-   Token := FTokens.previous;
-   Text :=  FScanner.ln.items[Token.Line].text;
-   text := copy(text,token.Start+1,token.length-2);
-   Value := NewString(Text);
-   FChunks.EmitConstant(Value);
-  // FChunks.AddConstant(StringValue(Copy(
-  // emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
-  //                                parser.previous.length - 2))); *)
+  Token := FTokens.previous;
+  Text :=  FScanner.ln.items[Token.Line].text;
+  text := copy(text,token.Start+1,token.length-2);
+  Value := NewString(Text);
+  FChunks.EmitConstant(Value);
 end;
 
 procedure TCompiler.EmitBytes(const Byte1,Byte2 : Byte);

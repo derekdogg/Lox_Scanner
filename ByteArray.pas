@@ -5,15 +5,15 @@ interface
 uses LoxTypes;
 
 Const
-  MAX_CAPACITY = 256; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
+  MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
   INCREMENT_CAPACITY_BY = 2;
-  NUM_SLOTS = 10;
+  NUM_SLOTS = 100;
   GROWTH_FACTOR  = 2;
 type
 
   pbytes = ^TbyteList;
 
-  TbyteList = array[0..MAX_CAPACITY - 1] of pByte;
+  TByteList = array[0..MAX_CAPACITY - 1] of pByte;
 
 
   TBytes = record
