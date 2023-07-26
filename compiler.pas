@@ -53,6 +53,8 @@ type
     function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
     //------------------rules---------------------------------------------------
+    procedure CreateRulesForAnd;
+    procedure CreateRulesForOR;
     procedure CreateRuleForOpen_bracket;
     procedure CreateRulesForClose_bracket;
     procedure CreateRulesForNumber;
@@ -84,6 +86,8 @@ type
   
     procedure CreateRules;
     //--------------------------------------------------------------------------
+    Procedure and_(const canAssign : boolean);
+    Procedure or_(const canAssign : boolean);
     Function resolveLocal(Token : pToken) : integer;
     procedure AddLocal(const Token: pToken);
     function  identifiersEqual(const a, b: PToken): Boolean;
@@ -191,8 +195,6 @@ begin
      error('Invalid assignment target.');
   end;
 end;
-
-
 
 procedure TCompiler.Unary(const canAssign: boolean);
 var
@@ -469,6 +471,23 @@ begin
   FParseRules[tkEOF].Precedence := PREC_NONE;
 end;
 
+procedure TCompiler.CreateRulesForOR;
+begin
+  //[TOKEN_OR]            = {NULL,     or_,    PREC_OR},
+  FParseRules[tkOR].Prefix := nil;
+  FParseRules[tkOR].Infix := Or_;
+  FParseRules[tkOR].Precedence := PREC_OR;
+end;
+
+procedure TCompiler.CreateRulesForAnd;
+begin
+  //[TOKEN_AND]           = {NULL,     and_,   PREC_AND},
+  FParseRules[tkAnd].Prefix := nil;
+  FParseRules[tkAnd].Infix := and_;
+  FParseRules[tkAnd].Precedence := PREC_AND;
+end;
+
+
 procedure TCompiler.CreateRules;
 begin
   CreateRuleForOpen_bracket;
@@ -497,8 +516,38 @@ begin
   CreateRulesForIdentifier;
   CreateRulesForIF;
   CreateRulesForElse;
+  CreateRulesForAnd;
+  CreateRulesForOr;
   CreateRulesForEOF;
 end;
+
+//note book suggests better ways to do this, but this uses existing functionality.
+Procedure TCompiler.or_(const canAssign : boolean);
+var
+  elseJump,endJump : integer;
+begin
+  elseJump := emitJump(OP_JUMP_IF_FALSE);
+  endJump := emitJump(OP_JUMP);
+
+  patchJump(elseJump);
+  FChunks.ADDPOP;
+
+  parsePrecedence(PREC_OR);
+  patchJump(endJump);
+end;
+
+
+
+Procedure TCompiler.and_(const canAssign : boolean);
+var
+  endJump : integer;
+begin
+  endJump := emitJump(OP_JUMP_IF_FALSE);
+  FChunks.AddPOP;
+  parsePrecedence(PREC_AND);
+  patchJump(endJump);
+end;
+
 
 procedure TCompiler.printStatement;
 begin
