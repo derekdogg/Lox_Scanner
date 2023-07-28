@@ -34,14 +34,22 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     Lines.Strings = (
+      'var i = 1;'
       'var a = 1;'
+      'var b = 2;'
+      'var c;'
       ''
       ''
-      'while (a < 10) '
-      '{'
-      '  print a;'
-      '  a = a + 1;'
-      ''
+      'print a;'
+      'print b;'
+      'while (i <= 10) {'
+      '  c = a + b;'
+      '  a = b;'
+      '  b = c;  '
+      '  '
+      '  print c;'
+      ' '
+      '  i= i + 1;'
       '}')
     ParentFont = False
     TabOrder = 1
