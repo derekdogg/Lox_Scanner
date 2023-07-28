@@ -8,6 +8,10 @@ uses
   IntegerArray,
   ByteArray;
 
+
+const
+  MAX_JUMP =  65535;
+
 type
 
   TConstantChunk = record

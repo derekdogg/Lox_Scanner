@@ -31,6 +31,7 @@ type
     Procedure Multiply;
     Procedure Negate;
     procedure Print;
+    procedure Loop;
     procedure Equal;
     procedure Greater;
     procedure Less;
@@ -197,6 +198,12 @@ begin
       begin
         Jump;
       end;
+
+      
+       OP_LOOP:
+       begin
+         loop;
+       end;
 
 
     end;
@@ -393,6 +400,17 @@ begin
   Log('Print');
   Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
   FResults.Add('PRINT:' + FStack.Pop.ToString);
+end;
+
+procedure TVirtualMachine.Loop;
+var
+  a,b : pbyte;
+  offset : integer;
+begin
+   a := FInstructionPointer.Next;
+   b := FInstructionPointer.Next;
+   offset := a^ shl 8 + b^;
+   assert(FInstructionPointer.Move(FInstructionPointer.Index - offset) = true, 'failed to move to loop offset');
 end;
 
 

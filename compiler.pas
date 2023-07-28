@@ -44,14 +44,7 @@ type
 //    procedure emitConstant(value : TValue);
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
-    procedure patchJump(const offset : integer);
-    function emitJump(const instruction : TOpCodes) : integer;
-    procedure ifStatement;
-    function TokenName(const token : pToken) : String;
-    procedure Log(const txt : String);
-    procedure Strings(const canAssign: Boolean);
-    function  checkKind(Kind : TTokenKind) : boolean;
-    function  match(const Expected : TTokenKind) : boolean;
+
     //------------------rules---------------------------------------------------
     procedure CreateRulesForAnd;
     procedure CreateRulesForOR;
@@ -81,11 +74,22 @@ type
     procedure CreateRulesForIdentifier;
     procedure CreateRulesForIF;
     procedure CreateRulesForElse;
+    procedure CreateRulesForWhile;
 
     procedure CreateRulesForEOF;
   
     procedure CreateRules;
     //--------------------------------------------------------------------------
+    procedure patchJump(const offset : integer);
+    function emitJump(const instruction : TOpCodes) : integer;
+    procedure ifStatement;
+    function TokenName(const token : pToken) : String;
+    procedure Log(const txt : String);
+    procedure Strings(const canAssign: Boolean);
+    function  checkKind(Kind : TTokenKind) : boolean;
+    function  match(const Expected : TTokenKind) : boolean;
+    procedure whileStatement();
+    procedure emitLoop(const loopStart : integer);
     Procedure and_(const canAssign : boolean);
     Procedure or_(const canAssign : boolean);
     Function resolveLocal(Token : pToken) : integer;
@@ -248,7 +252,6 @@ begin
   FLocals.Init(true);
 end;
 
-
 procedure TCompiler.CreateRulesForOpenBrace;
 begin
   FParseRules[tkOpenBrace].Prefix := nil;
@@ -351,6 +354,14 @@ begin
   FParseRules[tkTrue].Prefix := literal;
   FParseRules[tkTrue].Infix := nil;
   FParseRules[tkTrue].Precedence := PREC_NONE;
+end;
+
+procedure TCompiler.CreateRulesForWhile;
+begin
+//  [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
+  FParseRules[tkWhile].Prefix := nil;
+  FParseRules[tkWhile].Infix := binary;
+  FParseRules[tkWhile].Precedence := PREC_NONE;
 end;
 
 procedure TCompiler.CreateRulesForGreaterThan;
@@ -518,6 +529,7 @@ begin
   CreateRulesForElse;
   CreateRulesForAnd;
   CreateRulesForOr;
+  CreateRulesForWhile;
   CreateRulesForEOF;
 end;
 
@@ -842,8 +854,6 @@ begin
 end;
 
 procedure TCompiler.PatchJump(const OffSet: Integer);
-const
-  MAX_JUMP =  65535;
 var
   Jump: Integer;
 begin
@@ -877,17 +887,48 @@ begin
 
   statement();
 
-
   elseJump := emitJump(OP_JUMP);
   patchJump(thenJump);
 
-  
   if (match(tkElse)) then statement();
 
-  
   patchJump(elseJump);
+end;
+
+
+
+procedure TCompiler.emitLoop(const loopStart : integer);
+var
+  offset : integer;
+begin
+  FChunks.emitByte(OP_LOOP);
+
+  offset := FChunks.OpCodes.count - loopStart + 2;
+  if (offset > MAX_JUMP) then error('Loop body too large.');
+
+  FChunks.emitByte((offset shr 8) and $ff);
+  FChunks.emitByte(offset and $ff);
 
 end;
+
+procedure TCompiler.whileStatement();
+var
+  exitJump : integer;
+  loopStart : integer;
+begin
+  
+  loopStart := FChunks.OpCodes.count;
+  consume(tkOpen_Bracket, 'Expect "(" after while.');
+  expression();
+  consume(tkClose_Bracket, 'Expect ")" after condition.');
+  exitJump := emitJump(OP_JUMP_IF_FALSE);
+  FChunks.addPOP;
+  statement();
+  emitLoop(loopStart);
+  patchJump(exitJump);
+  FChunks.addPOP;
+end;
+
 
 procedure TCompiler.statement;
 begin
@@ -911,6 +952,11 @@ begin
   if (match(tkVar)) then
   begin
     varDeclaration;
+  end
+  else
+  if (match(tkWhile)) then
+  begin
+    whileStatement();
   end
   else
   begin
