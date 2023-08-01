@@ -25,7 +25,7 @@ type
     procedure PopStack;
     procedure MoveNext;
     procedure DoConstant;
-    Procedure Add;
+    Procedure DoAdd;
     Procedure subtract;
     Procedure Divide;
     Procedure Multiply;
@@ -163,7 +163,7 @@ begin
 
 
       OP_ADD : begin
-        Add;
+        DoAdd;
       end;
 
       OP_SUBTRACT : begin
@@ -271,7 +271,7 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.Add;
+procedure TVirtualMachine.DoAdd;
 var
   L,R : pValue;
 
@@ -301,6 +301,21 @@ begin
       L.Str := L.ToString + R.ToString;
       FStack.Push(L);
     end;
+
+    if (L.IsStringObject) and (R.IsNumber) then
+    begin
+      //What goes here?
+      L.Str := L.ToString + R.ToString;
+      FStack.Push(L);
+    end;
+
+    if (L.IsNumber) and (R.IsStringObject) then
+    begin
+      //What goes here?
+      L.Str := L.ToString + R.ToString;
+      FStack.Push(L);
+    end;
+
   except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -329,12 +344,20 @@ begin
     begin
       L.Str := StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
       FStack.Push(L);
+      exit;
     end;
 
     if (L.IsStringObject) and (R.IsNumber) then
     begin
       L.Str := Copy(L.Str,0, Length(L.Str) - round(R.Number));
       FStack.Push(L);
+      exit;
+    end;
+
+    if (L.IsNumber) and (R.IsStringObject) then
+    begin
+      //What goes here?
+      raise exception.create('trying to subtract a string from a number'); //not sure yet what to put here.
     end;
 
 

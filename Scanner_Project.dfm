@@ -108,9 +108,9 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object chkRun: TCheckBox
-    Left = 183
-    Top = 16
-    Width = 97
+    Left = 135
+    Top = 8
+    Width = 42
     Height = 17
     Caption = 'run'
     Checked = True
@@ -119,8 +119,8 @@ object Form1: TForm1
   end
   object chkEmit: TCheckBox
     Left = 89
-    Top = 16
-    Width = 97
+    Top = 8
+    Width = 40
     Height = 17
     Caption = 'emit'
     TabOrder = 7
@@ -158,5 +158,14 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 9
+  end
+  object btnClear: TButton
+    Left = 183
+    Top = 8
+    Width = 75
+    Height = 17
+    Caption = 'Clear'
+    TabOrder = 10
+    OnClick = btnClearClick
   end
 end

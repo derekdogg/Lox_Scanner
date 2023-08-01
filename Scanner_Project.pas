@@ -19,9 +19,11 @@ type
     chkEmit: TCheckBox;
     MemLogging: TMemo;
     MemVmLog: TMemo;
+    btnClear: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure BtnHashClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
     prevbuffer,buffer : pointer;
@@ -59,6 +61,11 @@ uses
 {$R *.dfm}
 
 
+
+procedure TForm1.btnClearClick(Sender: TObject);
+begin
+  memEdit.Lines.clear;
+end;
 
 procedure TForm1.BtnHashClick(Sender: TObject);
 var
