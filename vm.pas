@@ -71,9 +71,6 @@ begin
   result := FStack.Pop;
 end;*)
 
-
-
-
 function TVirtualMachine.Run : TInterpretResult;
 begin
   clearLog;

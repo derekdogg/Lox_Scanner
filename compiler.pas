@@ -2,7 +2,7 @@ unit compiler;
 
 interface
 
-uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals;
+uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction;
 
 
 type
@@ -33,6 +33,7 @@ type
 
   TCompiler = class
   private
+    FFunc : pLoxFunction;
     FLogging : TStrings;
     FScopeDepth : integer;
 //    FLocalCount : integer;
@@ -250,6 +251,7 @@ begin
   FScopeDepth := 0;
 
   FLocals.Init(true);
+  FLocals.Add; //add an empty local for later use internally.
 end;
 
 procedure TCompiler.CreateRulesForOpenBrace;
@@ -605,7 +607,7 @@ begin
   for i := FLocals.Count-1 downto 0 do
   begin
     Local := Flocals[i];
-
+    if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
     b := FScanner.ln.items[Local.Token.Line].text;
     b := copy(b,local.token.Start,local.token.length);
 
@@ -1071,6 +1073,7 @@ begin
   result := FChunks;
 end;
 
+//virtual machine calls compile from interpret...
 procedure TCompiler.DoCompile;
 begin
   advance;

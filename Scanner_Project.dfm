@@ -26,7 +26,7 @@ object Form1: TForm1
     Left = 8
     Top = 39
     Width = 641
-    Height = 307
+    Height = 363
     Color = clMenuText
     Font.Charset = ANSI_CHARSET
     Font.Color = clMoneyGreen
@@ -57,7 +57,7 @@ object Form1: TForm1
   end
   object MemTokens: TMemo
     Left = 8
-    Top = 352
+    Top = 408
     Width = 417
     Height = 279
     Color = clBlack
@@ -74,7 +74,7 @@ object Form1: TForm1
   end
   object memRun: TMemo
     Left = 431
-    Top = 352
+    Top = 408
     Width = 442
     Height = 279
     Color = clBlack
@@ -89,24 +89,6 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 3
   end
-  object BtnHash: TButton
-    Left = 367
-    Top = 8
-    Width = 74
-    Height = 25
-    Caption = 'Hash testing'
-    TabOrder = 4
-    OnClick = BtnHashClick
-  end
-  object Button1: TButton
-    Left = 286
-    Top = 8
-    Width = 75
-    Height = 25
-    Caption = 'Button1'
-    TabOrder = 5
-    OnClick = Button1Click
-  end
   object chkRun: TCheckBox
     Left = 135
     Top = 8
@@ -115,7 +97,7 @@ object Form1: TForm1
     Caption = 'run'
     Checked = True
     State = cbChecked
-    TabOrder = 6
+    TabOrder = 4
   end
   object chkEmit: TCheckBox
     Left = 89
@@ -123,13 +105,13 @@ object Form1: TForm1
     Width = 40
     Height = 17
     Caption = 'emit'
-    TabOrder = 7
+    TabOrder = 5
   end
   object MemLogging: TMemo
     Left = 655
     Top = 39
     Width = 827
-    Height = 307
+    Height = 363
     Color = clBlack
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clMoneyGreen
@@ -140,11 +122,11 @@ object Form1: TForm1
       'Memo3')
     ParentFont = False
     ScrollBars = ssVertical
-    TabOrder = 8
+    TabOrder = 6
   end
   object MemVmLog: TMemo
-    Left = 879
-    Top = 352
+    Left = 887
+    Top = 408
     Width = 603
     Height = 279
     Color = clBlack
@@ -157,7 +139,7 @@ object Form1: TForm1
       'Memo3')
     ParentFont = False
     ScrollBars = ssVertical
-    TabOrder = 9
+    TabOrder = 7
   end
   object btnClear: TButton
     Left = 183
@@ -165,7 +147,7 @@ object Form1: TForm1
     Width = 75
     Height = 17
     Caption = 'Clear'
-    TabOrder = 10
+    TabOrder = 8
     OnClick = btnClearClick
   end
 end

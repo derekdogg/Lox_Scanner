@@ -13,15 +13,12 @@ type
     memEdit: TMemo;
     MemTokens: TMemo;
     memRun: TMemo;
-    BtnHash: TButton;
-    Button1: TButton;
     chkRun: TCheckBox;
     chkEmit: TCheckBox;
     MemLogging: TMemo;
     MemVmLog: TMemo;
     btnClear: TButton;
     procedure BtnScanClick(Sender: TObject);
-    procedure BtnHashClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
   private
@@ -65,36 +62,6 @@ uses
 procedure TForm1.btnClearClick(Sender: TObject);
 begin
   memEdit.Lines.clear;
-end;
-
-procedure TForm1.BtnHashClick(Sender: TObject);
-var
-  Entries : TValuePairs;
-
-  value0 : pNameValue;
-  value1 : pNameValue;
-  value2 : pNameValue;
-
-  s     : string;
-  idx   : integer;
-
-
-  //strings :  TloxStringIterator;
-begin
-  value1 := nil;
-  Value0 := nil;
-   
-
-  Entries.Init;
-  Entries.Add(Value0);
-
-
-  value1 := Entries.Find('a');
-
-
-
-  Entries.Finalize;
-
 end;
 
 procedure TForm1.BtnScanClick(Sender: TObject);
@@ -212,8 +179,7 @@ begin
    if not chkRun.Checked then exit;
 
    MemRun.lines.add('-------------------------------');
-   //spin up compiler again, to show result. At the moment only handles add, plus,divde, multiply. which is why (I think) (5 - (3 - 1)) + -1
-   // is giving 4 currently - however, byte code is legit.
+   
    Compiler := TCompiler.Create(Scanner,MemLogging.Lines);
    try
      Compiler.DoCompile;

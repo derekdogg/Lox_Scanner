@@ -46,7 +46,8 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : pLocal) : integer;
+    function Add(const value : pLocal) : integer; overload;
+    function add : pLocal; overload;
     function  GetItem(const index : integer) : pLocal;
     constructor init(Const OwnValues : Boolean);
     procedure finalize; //<-- no destructor allowed, seems weird.
@@ -64,6 +65,13 @@ begin
   value := nil;
 end;
 
+
+function TLocalList.add : pLocal;
+begin
+  new(result);
+  fillchar(result^,sizeof(result^),#0);
+  add(result);
+end;
 
 function TLocalList.Add(const value: pLocal): integer;
 begin
