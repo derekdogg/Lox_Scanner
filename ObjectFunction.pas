@@ -4,7 +4,8 @@ interface
 
 uses
   Chunk,
-  Loxtypes;
+  Loxtypes,
+  valueArray;
 
 type
  
@@ -28,6 +29,34 @@ type
     Name : String;
     Chunks : TChunks;
   end;
+
+  
+ //so the value (I think) is an index into an array of pValue. If you have 1, you can either increment it, or decrement it.
+ TCallFrame = record
+   ObjectFunction      : pLoxFunction;
+   InstructionPointer  : TInstructionPointer;
+   Slots : pValue; //not exactly sure, but rolling with this. Basically an array of PValues;
+
+   (*
+   Slot : ??? The slots field points
+              into the VM’s value stack at the first slot that this function can use.
+
+
+              *)
+
+  //thanks to C’s weird “pointers are sort of arrays”
+  //thing—we’ll treat it like an array.
+
+ end;
+
+
+(*typedef struct {
+  ObjFunction* function;
+  uint8_t* ip;
+  Value* slots;
+} CallFrame; *)
+
+
 
 (*
 typedef struct {

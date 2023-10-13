@@ -4,20 +4,35 @@ interface
 
 uses
   sysutils,classes,Chunk,Stacks,
-  LOXTypes, Table, ValueList;
+  LOXTypes, Table, ValueList, objectFunction;
+
+const
+   Frames_Max = 128;
+   Stack_Max = Frames_Max * 256;
+
 
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
-  //to do : add in Negate next;
+
+  TFrames = array[0..Frames_Max-1] of TCallFrame;
+
 
   TVirtualMachine = record
   private
     FLog : TStrings;
+    FFrameCount : integer;
+    FFrames : TFrames;
+
+
+
     FInstructionPointer  : TInstructionPointer; //pointer to instructions
     FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
     FStack  : TValueStack; //byte code stack
     FGlobals : TValuePairs;
+
+
+
 
     FResults : TStrings;
     procedure ClearLog;
@@ -73,7 +88,11 @@ end;*)
 
 function TVirtualMachine.Run : TInterpretResult;
 begin
+  
+  //CallFrame* frame = &vm.frames[vm.frameCount - 1];
+
   clearLog;
+
   Log('Run');
   Result := INTERPRET_NONE;
   if FInstructionPointer.ByteCount = 0 then exit;
@@ -292,7 +311,13 @@ begin
       exit;
     end;
 
-    if (L.IsStringObject) and (R.IsStringObject) then
+    xxx
+
+   (*god darnit - I've bolloxed up scoping along the way.
+
+    Now need to fix.
+
+   (* if (L.IsStringObject) and (R.IsStringObject) then
     begin
       //What goes here?
       L.Str := L.ToString + R.ToString;
@@ -311,7 +336,7 @@ begin
       //What goes here?
       L.Str := L.ToString + R.ToString;
       FStack.Push(L);
-    end;
+    end; *)
 
   except on E:exception do
      HandleRunTimeError(e);
@@ -612,7 +637,7 @@ begin
   Slot := FInstructionPointer.Current^;
  //  value := FStack.peek(FStack.Count-1-PeekIdx);
   value := FStack.Item[slot];
-  Log(format('fetched value %s from stack for local using idx %d',[value.tostring, slot]));
+  //Log(format('fetched value %s from stack for local using idx %d',[value.tostring, slot]));
   FStack.Push(value);
 
 end;
@@ -727,6 +752,14 @@ begin
   FStack.Init;
   FGlobals.Init;
   FStackResults.Init(true);
+
+  //frames
+  FFrameCount := 0;
+
+(*   We’ve moved ip out of the VM struct and into
+     CallFrame. We need to fix every line of code in the VM that touches ip to
+     handle that. Also, the instructions that access local variables by stack slot
+     need to be updated to do so relative to the current CallFrame’s slots field. *)
 end;
 
 

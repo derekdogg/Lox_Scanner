@@ -2,10 +2,8 @@ unit LoxTypes;
 
 interface
 
-
-
 const
-  
+
 
 //  cMaxTokens = 10000;
   cMaxLines = 1000;
@@ -20,6 +18,8 @@ const
 
 
 type
+
+
 
  
  TFunctionKind = (TYPE_FUNCTION,TYPE_SCRIPT);
@@ -238,7 +238,7 @@ TTokenKind = (
   'Class',
   'Else',
   'False',
-  'Fun',
+  'Fun',                 
   'For',
   'If',
   'Nil',
@@ -486,7 +486,7 @@ type field from it. *)
   TEightBytes = array[0..7] of byte;
   TValue = record
   private
-    
+
     FKind  : TLoxKind;
     FValue : TEightBytes;
     function getNumber  : TNumber;

@@ -228,6 +228,15 @@ begin
   FLocals.Init(true);
   FLocals.Add; //add an empty local for later use internally.
 
+  (*
+
+  Local* local = &current->locals[current->localCount++];
+  local->depth = 0;
+  local->name.start = "";
+  local->name.length = 0;
+
+  *)
+
 
   FFunctionKind := FunctionKind;
   FFunc := newLoxFunction('TopLevelCompiler');
