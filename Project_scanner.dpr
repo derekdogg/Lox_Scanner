@@ -15,7 +15,8 @@ uses
   ByteCodesArray in 'ByteCodesArray.pas',
   table in 'table.pas',
   ValueList in 'ValueList.pas',
-  locals in 'locals.pas';
+  locals in 'locals.pas',
+  CompilerRules in 'CompilerRules.pas';
 
 {$R *.res}
 

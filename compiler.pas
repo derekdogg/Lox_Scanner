@@ -9,90 +9,51 @@ type
 
  TParseFn = procedure(const canAssign : boolean) of object;
 
- TPrecedence = (
-  PREC_NONE,
-  PREC_ASSIGNMENT,  // =
-  PREC_OR,          // or
-  PREC_AND,         // and
-  PREC_EQUALITY,    // == !=
-  PREC_COMPARISON,  // < > <= >=
-  PREC_TERM,        // + -
-  PREC_FACTOR,      // * /
-  PREC_UNARY,       // ! -
-  PREC_CALL,        // . ()
-  PREC_PRIMARY
- );
+ 
 
+
+  pParseRule = ^TParseRule;
   TParseRule = record
     prefix: TParseFn;
     infix: TParseFn;
     precedence: TPrecedence;
   end;
 
-  TParseRules = array[tknull..tkEOF] of TParseRule;
+  TParseRules = array[tknull..tkEOF] of pParseRule;
 
   TCompiler = class
   private
+
     FFunc : pLoxFunction;
+    FFunctionKind : TFunctionKind;
+
+    FParseRules : TParseRules;
+
     FLogging : TStrings;
     FScopeDepth : integer;
 //    FLocalCount : integer;
     Flocals : TLocalList;
     FChunks : TChunks;
-    FParseRules : TParseRules;
+
     FTokens : TTokenIterator;
     FScanner : TScanner;
 //    procedure emitConstant(value : TValue);
  //   function NumberVal(num: Integer): TValue;
  //   function NumToValue(num: Double): TValue;
 
-    //------------------rules---------------------------------------------------
-    procedure CreateRulesForAnd;
-    procedure CreateRulesForOR;
-    procedure CreateRuleForOpen_bracket;
-    procedure CreateRulesForClose_bracket;
-    procedure CreateRulesForNumber;
-    procedure CreateRulesForEqualEqual;
-    procedure CreateRulesForNotEqual;
-    procedure CreateRulesForMultiply;
-    procedure CreateRulesForDivide;
-    procedure CreateRulesForTrue;
-    procedure CreateRulesForFalse;
-    procedure CreateRulesForNil;
-    procedure CreateRulesForBang;
-    procedure CreateRulesForPlus;
-    procedure CreateRulesForMinus;
-    procedure CreateRulesForLessThan;
-    procedure CreateRulesForLessThanEqual;
-    procedure CreateRulesForGreaterThanEqual;
-    procedure CreateRulesForGreaterThan;
-    procedure CreateRulesForString;
-    procedure CreateRulesForComment;
-    procedure CreateRulesForSemiColon;
-    procedure CreateRulesForOpenBrace;
-    procedure CreateRulesForCloseBrace;
-    procedure CreateRulesForPrint;
-    procedure CreateRulesForIdentifier;
-    procedure CreateRulesForIF;
-    procedure CreateRulesForElse;
-    procedure CreateRulesForWhile;
 
-    procedure CreateRulesForEOF;
-  
-    procedure CreateRules;
     //--------------------------------------------------------------------------
     procedure patchJump(const offset : integer);
     function emitJump(const instruction : TOpCodes) : integer;
     procedure ifStatement;
     function TokenName(const token : pToken) : String;
     procedure Log(const txt : String);
-    procedure Strings(const canAssign: Boolean);
+
     function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
     procedure whileStatement();
     procedure emitLoop(const loopStart : integer);
-    Procedure and_(const canAssign : boolean);
-    Procedure or_(const canAssign : boolean);
+
     Function resolveLocal(Token : pToken) : integer;
     procedure AddLocal(const Token: pToken);
     function  identifiersEqual(const a, b: PToken): Boolean;
@@ -100,15 +61,12 @@ type
     procedure Error(Const msg : String);
     function argumentList: Byte;
     procedure NamedVariable(const Token : pToken; const CanAssign : Boolean);
-    Procedure variable(const canAssign : boolean);
     function advance : boolean;
-    procedure EmitBytes(const Byte1,Byte2 : Byte);
-    procedure Number(const canAssign : boolean);
-    procedure Binary(const canAssign : boolean);
-    procedure Unary(const canAssign : boolean);
-    procedure call(const canAssign : boolean);
-    procedure literal(const CanAssign : boolean);
-    procedure grouping(const canAssign : boolean);
+
+
+
+
+
     procedure printStatement;
     procedure ExpressionStatement;
     Procedure beginScope;
@@ -121,31 +79,50 @@ type
     function identifierConstant(const token : pToken) : byte;
     function parseVariable(const errorMessage : string) : byte;
     procedure defineVariable(const constantidx : integer);
+
     procedure parsePrecedence(precedence : TPrecedence);
-    function getRule(TokenKind : TTokenKind) : TParseRule;
+
+
+
     procedure consume(const TokenKind : TTokenKind; const Message : String);
+    function GetParseRule(const TokenKind: TTokenKind): pParseRule;
+    procedure SetParseRule(const TokenKind: TTokenKind;
+      const Value: pParseRule);
   public
+    Procedure and_(const canAssign : boolean);
+    Procedure or_(const canAssign : boolean);
+    Procedure variable(const canAssign : boolean);
+    procedure Strings(const canAssign: Boolean);
+    procedure EmitBytes(const Byte1,Byte2 : Byte);
+    procedure Number(const canAssign : boolean);
+    procedure Binary(const canAssign : boolean);
+    procedure Unary(const canAssign : boolean);
+    procedure call(const canAssign : boolean);
+    procedure literal(const CanAssign : boolean);
+    procedure grouping(const canAssign : boolean);
+
     function Chunks : TChunks;
     procedure expression;
 
     procedure DoCompile;
-    constructor Create(Const Scanner : TScanner; Const logging : TStrings);
+    constructor Create(
+
+        Const Scanner : TScanner;
+        Const logging : TStrings;
+        Const FunctionKind : TFunctionKind);
     destructor destroy;override;
+
+
+    property ParseRule[const TokenKind : TTokenKind] : pParseRule
+      read   GetParseRule
+      write  SetParseRule;
   end;
+
 
 
 implementation
 
 uses sysutils;
-
-
-
-
-function TCompiler.getRule(TokenKind : TTokenKind) : TParseRule;
-begin
-
-  result :=  FParseRules[tokenKind];
-end;
 
 
 function TCompiler.advance : boolean;
@@ -161,43 +138,38 @@ end;
 
 
 
-procedure TCompiler.parsePrecedence(precedence : TPrecedence);
+procedure TCompiler.Number(const canAssign : boolean);
 var
-  prefixRule : TParseFn;
-  infixRule : TParseFn;
-  canAssign : boolean;
+  token : pToken;
+  number : double;
+  text : string;
+  Value : pValue;
 begin
-  if not advance then
-  begin
-    //error('Advance Called when no further tokens' + TTokenName[FTokens.current.kind]);
-    exit;
-  end;
+  Token := FTokens.Previous;
+  if Token = nil then exit;
 
-  prefixRule := getRule(FTokens.Previous.kind).prefix;
-  if (@prefixRule = nil) then
-  begin
-    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);
-    exit;
-  end;
+  text := FScanner.ln.items[Token.Line].text;
+  text := copy(text,token.Start,token.length);
 
-  canAssign := precedence <= PREC_ASSIGNMENT;
-  prefixRule(canAssign);
+  Value := NewNumber(strToFloat(text));
 
-  while (precedence <= getRule(FTokens.current.Kind).precedence) do
-  begin
-    if not advance then exit;
-    infixRule := getRule(FTokens.previous.Kind).infix;
-    if (@InfixRule = nil) then
-    begin
-      error('No infix rule. Expected.');
-      exit;
-    end;
-    infixRule(canAssign);
-  end;
+  FChunks.EmitConstant(Value);
+end;
 
-  if (canAssign And match(tkEqual)) then
-  begin
-     error('Invalid assignment target.');
+
+
+procedure TCompiler.grouping(const canAssign : boolean);
+begin
+   expression();
+   consume(tkclosebracket, 'Expect '')'' after expression.');  //right bracket
+end;
+
+procedure TCompiler.literal(const CanAssign: boolean);
+begin
+  case  FTokens.Previous.Kind of
+    tkFalse : FChunks.AddFALSE;
+    tknil   : FChunks.AddNil;
+    tkTrue  : FChunks.AddTrue;
   end;
 end;
 
@@ -234,8 +206,12 @@ begin
   FLogging.add(txt);
 end;
 
-constructor TCompiler.Create(Const Scanner : TScanner; Const logging : TStrings);
+constructor TCompiler.Create(
+  Const Scanner : TScanner;
+  Const logging : TStrings;
+  Const FunctionKind : TFunctionKind);
 begin
+
   Assert(assigned(Logging), 'No logging injected');
   FLogging := Logging;
   FLogging.clear;
@@ -246,294 +222,18 @@ begin
   FTokens.Init(Scanner.Tokens);
   //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
   FillChar(FParseRules,sizeof(FParseRules),#0);
-  CreateRules;
 
   FScopeDepth := 0;
 
   FLocals.Init(true);
   FLocals.Add; //add an empty local for later use internally.
+
+
+  FFunctionKind := FunctionKind;
+  FFunc := newLoxFunction('TopLevelCompiler');
+  
 end;
 
-procedure TCompiler.CreateRulesForOpenBrace;
-begin
-  FParseRules[tkOpenBrace].Prefix := nil;
-  FParseRules[tkOpenBrace].Infix := nil;
-  FParseRules[tkOpenBrace].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForCloseBrace;
-begin
-  FParseRules[tkCloseBrace].Prefix := nil;
-  FParseRules[tkCloseBrace].Infix := nil;
-  FParseRules[tkCloseBrace].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForClose_Bracket;
-begin
-
-  FParseRules[tkclose_bracket].Prefix := nil;
-  FParseRules[tkclose_bracket].Infix := nil;
-  FParseRules[tkClose_bracket].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRuleForOpen_bracket;
-begin
-
-  FParseRules[tkopen_bracket].Prefix := grouping;
-  FParseRules[tkopen_bracket].Infix := call;
-  FParseRules[tkopen_bracket].Precedence := PREC_CALL;
-end;
-
-
-procedure TCompiler.CreateRulesForBang;
-begin
-  // [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE}
-  FParseRules[tkBang].Prefix := unary;
-  FParseRules[tkBang].Infix := nil;
-  FParseRules[tkBang].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForComment;
-begin
-  FParseRules[tkComment].Prefix := literal;
-  FParseRules[tkComment].Infix := nil;
-  FParseRules[tkComment].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForDivide;
-begin
-//  [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
-  FParseRules[tkSlash].Prefix := nil;
-  FParseRules[tkSlash].Infix := binary;
-  FParseRules[tkSlash].Precedence := PREC_FACTOR;
-end;
-
-procedure TCompiler.CreateRulesForNil;
-begin
-   //[TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
-  FParseRules[tkNil].Prefix := literal;
-  FParseRules[tkNil].Infix := nil;
-  FParseRules[tkNil].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForNotEqual;
-begin
-// [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
-  FParseRules[tkBangEqual].Prefix := nil;
-  FParseRules[tkBangEqual].Infix := binary;
-  FParseRules[tkBangEqual].Precedence := PREC_EQUALITY;
-end;
-
-procedure TCompiler.CreateRulesForNumber;
-begin
-  // [TOKEN_NUMBER]   = {number,   NULL,   PREC_NONE},
-  FParseRules[tkNumber].Prefix := number;
-  FParseRules[tkNumber].Infix := nil;
-  FParseRules[tkNumber].Precedence := PREC_NONE;
-end;
-
-
-procedure TCompiler.CreateRulesForEqualEqual;
-begin
-  //[TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
-  FParseRules[tkEqualEqual].Prefix := nil;
-  FParseRules[tkEqualEqual].Infix := binary;
-  FParseRules[tkEqualEqual].Precedence := PREC_EQUALITY;
-end;
-
-
-procedure TCompiler.CreateRulesForFalse;
-begin
- //[TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE}
-  FParseRules[tkFalse].Prefix := literal;
-  FParseRules[tkFalse].Infix := nil;
-  FParseRules[tkFalse].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForTrue;
-begin
-   //[TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE}
-  FParseRules[tkTrue].Prefix := literal;
-  FParseRules[tkTrue].Infix := nil;
-  FParseRules[tkTrue].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForWhile;
-begin
-//  [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
-  FParseRules[tkWhile].Prefix := nil;
-  FParseRules[tkWhile].Infix := binary;
-  FParseRules[tkWhile].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForGreaterThan;
-begin
-  //[TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON}
-  FParseRules[tkGreater_Than].Prefix := nil;
-  FParseRules[tkGreater_Than].Infix := binary;
-  FParseRules[tkGreater_Than].Precedence := PREC_COMPARISON;
-end;
-
-procedure TCompiler.CreateRulesForGreaterThanEqual;
-begin
-  //[TOKEN_GREATER_EQUAL] = {NULL,     binary, PREC_COMPARISON},
-  FParseRules[tkGreaterThanEqual].Prefix := nil;
-  FParseRules[tkGreaterThanEqual].Infix := binary;
-  FParseRules[tkGreaterThanEqual].Precedence := PREC_COMPARISON;
-end;
-
-procedure TCompiler.CreateRulesForIdentifier;
-begin
-//   [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE}
-  FParseRules[tkIdentifier].Prefix := variable;
-  FParseRules[tkIdentifier].Infix := nil;
-  FParseRules[tkIdentifier].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForIF;
-begin
-//  [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
-  FParseRules[tkIF].Prefix := nil;
-  FParseRules[tkIF].Infix := binary;
-  FParseRules[tkIF].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForLessThan;
-begin
-  // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
-  FParseRules[tkLess_Than].Prefix := nil;
-  FParseRules[tkLess_Than].Infix := binary;
-  FParseRules[tkLess_Than].Precedence := PREC_COMPARISON;
-end;
-
-procedure TCompiler.CreateRulesForLessThanEqual;
-begin
-  //[TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
-  FParseRules[tkLessThanEqual].Prefix := nil;
-  FParseRules[tkLessThanEqual].Infix := binary;
-  FParseRules[tkLessThanEqual].Precedence := PREC_COMPARISON;
-end;
-
-procedure TCompiler.CreateRulesForPlus;
-begin
-  //[TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
-
-  FParseRules[tkPlus].Prefix := nil;
-  FParseRules[tkPlus].Infix := binary;
-  FParseRules[tkPlus].Precedence := PREC_TERM;
-end;
-
-
-procedure TCompiler.CreateRulesForPrint;
-begin
-// [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE}
-  FParseRules[tkPrint].Prefix := nil;
-  FParseRules[tkPrint].Infix := nil;
-  FParseRules[tkPrint].Precedence := PREC_NONE;
-end;
-
-
-procedure TCompiler.CreateRulesForSemiColon;
-begin
-  //[TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE}
-  FParseRules[tkSemiColon].Prefix := nil;
-  FParseRules[tkSemiColon].Infix := nil;
-  FParseRules[tkSemiColon].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForString;
-begin
-   //[TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
-  FParseRules[tkQuotes].Prefix := strings;
-  FParseRules[tkQuotes].Infix := binary;
-  FParseRules[tkQuotes].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForMinus;
-begin
- // [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
-
-  FParseRules[tkMinus].Prefix := unary;
-  FParseRules[tkMinus].Infix := binary;
-  FParseRules[tkMinus].Precedence := PREC_TERM;
-end;
-
-procedure TCompiler.CreateRulesForMultiply;
-begin
-// [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
-
-  FParseRules[tkAsterisk].Prefix := nil;
-  FParseRules[tkAsterisk].Infix := binary;
-  FParseRules[tkAsterisk].Precedence := PREC_FACTOR;
-end;
-
-procedure TCompiler.CreateRulesForElse;
-begin
-  //[TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
-  FParseRules[tkEOF].Prefix := nil;
-  FParseRules[tkEOF].Infix := nil;
-  FParseRules[tkEOF].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForEOF;
-begin
-// [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
-
-  FParseRules[tkEOF].Prefix := nil;
-  FParseRules[tkEOF].Infix := nil;
-  FParseRules[tkEOF].Precedence := PREC_NONE;
-end;
-
-procedure TCompiler.CreateRulesForOR;
-begin
-  //[TOKEN_OR]            = {NULL,     or_,    PREC_OR},
-  FParseRules[tkOR].Prefix := nil;
-  FParseRules[tkOR].Infix := Or_;
-  FParseRules[tkOR].Precedence := PREC_OR;
-end;
-
-procedure TCompiler.CreateRulesForAnd;
-begin
-  //[TOKEN_AND]           = {NULL,     and_,   PREC_AND},
-  FParseRules[tkAnd].Prefix := nil;
-  FParseRules[tkAnd].Infix := and_;
-  FParseRules[tkAnd].Precedence := PREC_AND;
-end;
-
-
-procedure TCompiler.CreateRules;
-begin
-  CreateRuleForOpen_bracket;
-  CreateRulesForClose_bracket;
-  CreateRulesForOpenBrace;
-  CreateRulesForCloseBrace;
-  CreateRulesForNumber;
-  CreateRulesForEqualEqual;
-  CreateRulesForNotEqual;
-  CreateRulesForLessThan;
-  CreateRulesForLessThanEqual;
-  CreateRulesForGreaterThan;
-  CreateRulesForGreaterThanEqual;
-  CreateRulesForPlus;
-  CreateRulesForMinus;
-  CreateRulesForMultiply;
-  CreateRulesForDivide;
-  CreateRulesForFalse;
-  CreateRulesForTrue;
-  CreateRulesForNil;
-  CreateRulesForBang;
-  CreateRulesForComment;
-  CreateRulesForString;
-  CreateRulesForSemiColon;
-  CreateRulesForPrint;
-  CreateRulesForIdentifier;
-  CreateRulesForIF;
-  CreateRulesForElse;
-  CreateRulesForAnd;
-  CreateRulesForOr;
-  CreateRulesForWhile;
-  CreateRulesForEOF;
-end;
 
 //note book suggests better ways to do this, but this uses existing functionality.
 Procedure TCompiler.or_(const canAssign : boolean);
@@ -577,6 +277,11 @@ begin
   FChunks.ADDPOP;
 end;
 
+
+function TCompiler.GetParseRule(const TokenKind: TTokenKind): pParseRule;
+begin
+   result := FParseRules[TokenKind];
+end;
 
 (*
   uint8_t getOp, setOp;
@@ -627,6 +332,12 @@ begin
   Log(format('unable to resolve local for %s.',[TokenName(Token)]));
 end;
 
+procedure TCompiler.SetParseRule(const TokenKind: TTokenKind;
+  const Value: pParseRule);
+begin
+  FParseRules[TokenKind] := Value;
+end;
+
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
   getOp,setOp : TOpCodes;
@@ -635,7 +346,7 @@ var
 begin
 
   Idx := resolveLocal(Token);
-  //assert(global <> -1, 'Could not resolve local for token');
+
   if (Idx <> -1) then
   begin
     getOp := OP_GET_LOCAL;
@@ -691,6 +402,47 @@ begin
 end; {
   emitBytes(OP_DEFINE_GLOBAL, global);
 }
+
+
+procedure TCompiler.parsePrecedence(precedence : TPrecedence);
+var
+  prefixRule : TParseFn;
+  infixRule : TParseFn;
+  canAssign : boolean;
+begin
+  if not advance then
+  begin
+    //error('Advance Called when no further tokens' + TTokenName[FTokens.current.kind]);
+    exit;
+  end;
+
+  prefixRule := FParseRules[FTokens.Previous.kind].prefix;
+  if (@prefixRule = nil) then
+  begin
+    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);
+    exit;
+  end;
+
+  canAssign := precedence <= PREC_ASSIGNMENT;
+  prefixRule(canAssign);
+
+  while (precedence <= FParseRules[FTokens.current.Kind].precedence) do
+  begin
+    if not advance then exit;
+    infixRule := FParseRules[FTokens.previous.Kind].infix;
+    if (@InfixRule = nil) then
+    begin
+      error('No infix rule. Expected.');
+      exit;
+    end;
+    infixRule(canAssign);
+  end;
+
+  if (canAssign And match(tkEqual)) then
+  begin
+     error('Invalid assignment target.');
+  end;
+end;
 
 
 function TCompiler.identifierConstant(const token : pToken) : byte;
@@ -881,9 +633,9 @@ procedure TCompiler.ifStatement;
 var
   thenJump,elseJump : integer;
 begin
-  consume(tkOpen_Bracket,'Expect "(" after "if".');
+  consume(tkOpenBracket,'Expect "(" after "if".');
   expression();
-  consume(tkClose_Bracket, 'Expect ")" after condition.');
+  consume(tkCloseBracket, 'Expect ")" after condition.');
 
   thenJump := emitJump(OP_JUMP_IF_FALSE);
 
@@ -920,9 +672,9 @@ var
 begin
   
   loopStart := FChunks.OpCodes.count;
-  consume(tkOpen_Bracket, 'Expect "(" after while.');
+  consume(tkOpenBracket, 'Expect "(" after while.');
   expression();
-  consume(tkClose_Bracket, 'Expect ")" after condition.');
+  consume(tkCloseBracket, 'Expect ")" after condition.');
   exitJump := emitJump(OP_JUMP_IF_FALSE);
   FChunks.addPOP;
   statement();
@@ -930,8 +682,7 @@ begin
   patchJump(exitJump);
   FChunks.addPOP;
 end;
-
-
+ 
 procedure TCompiler.statement;
 begin
   if (match(tkPRINT)) then
@@ -972,38 +723,7 @@ begin
   raise exception.create(msg);
 end;
 
-procedure TCompiler.Number(const canAssign : boolean);
-var
-  token : pToken;
-  number : double;
-  text : string;
-  Value : pValue;
-begin
-  Token := FTokens.Previous;
-  if Token = nil then exit;
 
-  text := FScanner.ln.items[Token.Line].text;
-  text := copy(text,token.Start,token.length);
-
-  Value := NewNumber(strToFloat(text));
-
-  FChunks.EmitConstant(Value);
-end;
-
-procedure TCompiler.grouping(const canAssign : boolean);
-begin
-   expression();
-   consume(tkclose_bracket, 'Expect '')'' after expression.');  //right bracket
-end;
-
-procedure TCompiler.literal(const CanAssign: boolean);
-begin
-  case  FTokens.Previous.Kind of
-    tkFalse : FChunks.AddFALSE;
-    tknil   : FChunks.AddNil;
-    tkTrue  : FChunks.AddTrue;
-  end;
-end;
 
 
 function TCompiler.checkKind(Kind : TTokenKind) : boolean;
@@ -1025,7 +745,7 @@ var
   argCount: Byte;
 begin
   argCount := 0;
-  if not (FTokens.Current.Kind = tkclose_Bracket) then  //check(TOKEN_RIGHT_PAREN) then
+  if not (FTokens.Current.Kind = tkcloseBracket) then  //check(TOKEN_RIGHT_PAREN) then
   begin
     repeat   //looking at the c code is this equivalent looping?
       expression;
@@ -1036,7 +756,7 @@ begin
       Inc(argCount);
     until not match(tkComma);
   end;
-  consume(tkclose_Bracket, 'Expect '')'' after arguments.');
+  consume(tkcloseBracket, 'Expect '')'' after arguments.');
   Result := argCount;
 end;
 
@@ -1090,10 +810,10 @@ end;
 procedure TCompiler.binary(const canAssign : boolean);
 var
   TokenKind : TTokenKind;
-  rule : TParseRule;
+  rule : pParseRule;
 begin
   TokenKind := FTokens.Previous.Kind;
-  rule := getRule(TokenKind);
+  rule := FParseRules[FTokens.Previous.Kind];
   parsePrecedence(TPrecedence(ord(rule.Precedence) + 1));
 
 
@@ -1103,10 +823,10 @@ begin
     tkAsterisk          : FChunks.AddMULTIPLY;
     tkEqualEqual        : FChunks.AddEQUAL;
     tkBangEqual         : FChunks.AddNOTEqual;
-    tkLess_Than         : FChunks.AddLess;
+    tkLessThan          : FChunks.AddLess;
     tkLessThanEqual     : FChunks.AddLESSTHANEQUAL;
     tkGreaterThanEqual  : FChunks.AddGREATERTHANEQUAL;
-    tkgreater_than      : FChunks.AddGREATER;
+    tkgreaterthan       : FChunks.AddGREATER;
     tkSlash             : FChunks.AddDivide;
     else
     begin
@@ -1152,6 +872,8 @@ end;
 
 
 
+
+ 
 
 end.
 

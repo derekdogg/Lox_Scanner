@@ -53,7 +53,8 @@ uses
   ByteCodesArray,
   Table,
   ValueList,
-  Locals;
+  Locals,
+  CompilerRules;
 
 {$R *.dfm}
 
@@ -80,6 +81,7 @@ var
   ByteCode : string;
   list : TList;
   VM :  TVirtualMachine;
+  CompilerRules : TCompilerRules;
 begin
   try
   MemTokens.lines.clear;
@@ -124,7 +126,9 @@ begin
    begin
      exit; //needs fixing up with oplocals
    i := 0;
-   Compiler := TCompiler.Create(Scanner,MemLogging.Lines);
+   Compiler := TCompiler.Create(Scanner,MemLogging.Lines,TYPE_SCRIPT);
+   CompilerRules := TCompilerRules.Create;
+   CompilerRules.CreateRules(Compiler);
    try
      //Compiler.expression; //???
      Compiler.DoCompile;
@@ -173,6 +177,7 @@ begin
         inc(i);
      end;
    finally
+     CompilerRules.Free;
      Compiler.Free;
    end;
    end;
@@ -180,7 +185,9 @@ begin
 
    MemRun.lines.add('-------------------------------');
    
-   Compiler := TCompiler.Create(Scanner,MemLogging.Lines);
+   Compiler := TCompiler.Create(Scanner,MemLogging.Lines,TYPE_SCRIPT);
+   CompilerRules := TCompilerRules.Create;
+   CompilerRules.CreateRules(Compiler);
    try
      Compiler.DoCompile;
      instructionPointer.Init(Compiler.Chunks);
@@ -190,6 +197,7 @@ begin
      //  MemRun.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
+     CompilerRules.Free;
      Compiler.Free;
    end;
 
@@ -197,6 +205,7 @@ begin
 
   finally
     Scanner.finalize;
+
   end;
 
 end;

@@ -449,11 +449,11 @@ function TScanner.MakeToken : TToken;
         case ord(ln.chars.Current) of
 
         ord(open_Bracket) : begin
-          Token := MakeSingleToken(tkOpen_Bracket)
+          Token := MakeSingleToken(tkOpenBracket)
         end;
 
         ord(close_Bracket) : begin
-          Token := MakeSingleToken(tkClose_Bracket);
+          Token := MakeSingleToken(tkCloseBracket);
         end;
 
         ord(Curly_Opening_brace) : begin
@@ -540,7 +540,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token := MakeSingleToken(tkLess_than);
+             Token := MakeSingleToken(tkLessthan);
            end;
         end;
 
@@ -552,7 +552,7 @@ function TScanner.MakeToken : TToken;
            end
            else
            begin
-             Token := MakeSingleToken(tkgreater_than);
+             Token := MakeSingleToken(tkgreaterthan);
            end;
         end;
 

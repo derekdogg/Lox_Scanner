@@ -21,6 +21,9 @@ const
 
 type
 
+ 
+ TFunctionKind = (TYPE_FUNCTION,TYPE_SCRIPT);
+
   TPrecedence =(
     PREC_NONE,
     PREC_ASSIGNMENT,  // =
@@ -164,8 +167,8 @@ TTokenKind = (
   tkNumber,
   tkQuotes,
   tkUnterminatedQuotes,
-  tkopen_bracket,
-  tkclose_Bracket,
+  tkopenbracket,
+  tkcloseBracket,
   tkAsterisk,
   tkPlus,
   tkComma,
@@ -177,9 +180,9 @@ TTokenKind = (
   tkEqual,
   tkEqualEqual,
   tkLessThanEqual,
-  tkLess_than,
+  tkLessthan,
   tkGreaterThanEqual,
-  tkgreater_than,
+  tkgreaterthan,
   tkAnd,
   tkClass,
   tkElse,
@@ -476,8 +479,6 @@ type field from it. *)
 
 
 
-
-
   TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject);
   TNumber = Double;
 
@@ -526,7 +527,8 @@ type field from it. *)
     Value     : pValue; //value associated with operation
   end; *)
 
-  (*function NewLoxObject : pLoxObject;
+  function NewLoxObject : pLoxObject;
+  (*
   function NewLoxString(Const str : string) : pLoxString;
   function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;

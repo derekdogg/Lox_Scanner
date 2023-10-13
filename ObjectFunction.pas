@@ -8,17 +8,34 @@ uses
 
 type
  
-  TFunctionKind = (TYPE_FUNCTION,TYPE_SCRIPT);
+   
+
+
+  (* When the compiler reaches a function declaration, it needs to emit code into the
+     function’s chunk when compiling its body.
+
+      At the end of the function body, the compiler needs to return to the
+      previous chunk it was working with
+
+     *)
 
   pLoxFunction = ^TLoxFunction;
   TLoxFunction = record
   private
-    LoxObject : TLoxObject;
+    LoxObject : pLoxObject;
     FuncKind : TFunctionKind;
-    Arity : integer;
+    Arity : integer; // The arity field stores the number of parameters the function expects.
     Name : String;
     Chunks : TChunks;
   end;
+
+(*
+typedef struct {
+  Obj obj;
+  int arity;
+  Chunk chunk;
+  ObjString* name;
+} ObjFunction;
 
   (*TCallFrame = record
     LoxFunction : pLoxObject;
@@ -27,22 +44,19 @@ type
   end; *)
 
 
-
-
-
-
-  function newLoxFunction : pLoxFunction;
+  function newLoxFunction(const Name : String) : pLoxFunction;
 
 implementation
 
-  function newLoxFunction : pLoxFunction;
+  function newLoxFunction(const Name : String) : pLoxFunction;
   begin
     new(result);
+    result.LoxObject := NewLoxObject;
     result.LoxObject.Kind := OBJ_FUNCTION;
     result.LoxObject.Next := nil;
     result.FuncKind := Type_Function;
     result.Arity := 0;
-    result.Name := '';
+    result.Name := Name;
     result.Chunks.Init;
   end;
 

@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-    <DCC_DependencyCheckOutputName>Project_scanner.exe</DCC_DependencyCheckOutputName>
+    <DCC_DependencyCheckOutputName>Output\Project_scanner.exe</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Version>7.0</Version>
@@ -23,6 +23,7 @@
     <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
     <DCC_DebugVN>True</DCC_DebugVN>
     <DCC_RemoteDebug>True</DCC_RemoteDebug>
+    <DCC_ExeOutput>C:\Users\hsldse\Documents\Lox_Scanner\Output</DCC_ExeOutput>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
@@ -39,6 +40,7 @@
     <DCCReference Include="ByteCodesArray.pas" />
     <DCCReference Include="Chunk.pas" />
     <DCCReference Include="compiler.pas" />
+    <DCCReference Include="CompilerRules.pas" />
     <DCCReference Include="Exceptions.pas" />
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
