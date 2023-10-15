@@ -32,6 +32,7 @@ type
 
   
  //so the value (I think) is an index into an array of pValue. If you have 1, you can either increment it, or decrement it.
+ //push...
  TCallFrame = record
    ObjectFunction      : pLoxFunction;
    InstructionPointer  : TInstructionPointer;
