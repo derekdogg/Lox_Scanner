@@ -75,7 +75,7 @@ end;
 
 function TLocalList.Add(const value: pLocal): integer;
 begin
-  assert(assigned(Value), 'Value being inserted is nil');
+  //assert(assigned(Value), 'Value being inserted is nil');
   assert(assigned(FItems),'Locals storage is nil');
   FItems[FCount] := value;
   inc(FCount);
@@ -127,8 +127,10 @@ begin
     for i := 0 to FCount-1 do
     begin
       p := GetItem(i);
-      assert(p <> nil, 'finalize value item expected non nil value');
-      DisposeLocal(p);
+
+      if p <> nil then
+      //  assert(p <> nil, 'finalize value item expected non nil value');
+        DisposeLocal(p);
     end;
   end;
   if assigned(FItems) then

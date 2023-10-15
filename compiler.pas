@@ -2,8 +2,11 @@ unit compiler;
 
 interface
 
-uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction;
+uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction,
+    ScopeDepth;
 
+const
+  Start_Scope_depth = 10;
 
 type
 
@@ -23,15 +26,16 @@ type
 
   TCompiler = class
   private
+    FScopeDepth : TScopeDepth;
 
     FFunc : pLoxFunction;
     FFunctionKind : TFunctionKind;
 
     FParseRules : TParseRules;
 
-    FLogging : TStrings;
-    FScopeDepth : integer;
-//    FLocalCount : integer;
+
+
+
     Flocals : TLocalList;
     FChunks : TChunks;
 
@@ -47,7 +51,7 @@ type
     function emitJump(const instruction : TOpCodes) : integer;
     procedure ifStatement;
     function TokenName(const token : pToken) : String;
-    procedure Log(const txt : String);
+
 
     function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
@@ -55,7 +59,9 @@ type
     procedure emitLoop(const loopStart : integer);
 
     Function resolveLocal(Token : pToken) : integer;
-    procedure AddLocal(const Token: pToken);
+    procedure AddLocal(
+      const Token: pToken;
+      const ScopeDepth : integer);
     function  identifiersEqual(const a, b: PToken): Boolean;
     procedure declareVariable();
     procedure Error(Const msg : String);
@@ -108,7 +114,6 @@ type
     constructor Create(
 
         Const Scanner : TScanner;
-        Const logging : TStrings;
         Const FunctionKind : TFunctionKind);
     destructor destroy;override;
 
@@ -127,12 +132,9 @@ uses sysutils;
 
 function TCompiler.advance : boolean;
 begin
-  if FTokens.Current <> nil then
-    log('Before Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
+
   result := FTokens.MoveNext <> nil;
 
-  if FTokens.Current <> nil then
-    log('After Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
 
 end;
 
@@ -201,20 +203,12 @@ begin
   error(Message)//errorAtCurrent(message);
 end;
 
-procedure TCompiler.Log(const txt : String);
-begin
-  FLogging.add(txt);
-end;
 
 constructor TCompiler.Create(
   Const Scanner : TScanner;
-  Const logging : TStrings;
   Const FunctionKind : TFunctionKind);
 begin
 
-  Assert(assigned(Logging), 'No logging injected');
-  FLogging := Logging;
-  FLogging.clear;
   Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
   FChunks.Init;
   FScanner := Scanner;
@@ -223,10 +217,14 @@ begin
   //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
   FillChar(FParseRules,sizeof(FParseRules),#0);
 
-  FScopeDepth := 0;
+
+  FScopeDepth := TScopeDepth.Create(Start_Scope_depth);
+
+
+  //FScopeDepth := Start_Scope_depth;
 
   FLocals.Init(true);
-  //FLocals.Add; //add an empty local for later use internally.
+  //AddLocal(nil,0); //add an empty local for later use internally.
 
   (*
 
@@ -318,7 +316,7 @@ begin
   a := FScanner.ln.items[Token.Line].text;
   a := copy(a,token.Start,token.length);
 
-  for i := FLocals.Count-1 downto 0 do
+  for i := FLocals.Count-1 downto FScopeDepth.StartScopeDepth do
   begin
     Local := Flocals[i];
     if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
@@ -334,11 +332,11 @@ begin
 
 
       result :=  i;
-      Log(format('resolved local for %s. found at local index index %d',[TokenName(Token),i]));
+
       exit;
     end;
   end;
-  Log(format('unable to resolve local for %s.',[TokenName(Token)]));
+
 end;
 
 procedure TCompiler.SetParseRule(const TokenKind: TTokenKind;
@@ -363,7 +361,7 @@ begin
   end
   else
   begin
-    Log(format('local for %s not found in scope. Must be global',[TokenName(Token)]));
+
 
     Idx := identifierConstant(Token);
     getOp := OP_GET_GLOBAL;
@@ -372,22 +370,22 @@ begin
 
   if canAssign and (match(tkEqual)) then
   begin
-     Log(format('Entering expression evaluation for assignable var',[TokenName(Token)]));
+      
 
      expression();
-     Log(format('Exited expression evaluation for assignable var',[TokenName(Token)]));
+
 
      //FChunks.AddSET_GLOBAL(global);
      FChunks.emitBytes(byte(setOp), Idx);
 
-     Log(format('Adding byte for opcode %s, pointing to idx : %d',[opCodeToStr(setOp), idx]));
+
    end
    else
    begin
      //FChunks.AddGET_GLOBAL(global);
-     Log('non assignable token');
+
      FChunks.emitBytes(byte(getOp), Idx);
-     Log(format('Adding byte for opcode %s, pointing to index : %d ',[opCodeToStr(getOp), idx]));
+
    end;
 end;
 
@@ -396,17 +394,13 @@ begin
   namedVariable(FTokens.previous, CanAssign);
 end;
 
-
+//define globals? 
 procedure TCompiler.defineVariable(const constantIdx : integer);
 begin
-  log('define variable');
-  if (FscopeDepth > 0) then
+  if (FscopeDepth.ScopeDepth > Start_Scope_depth) then
   begin
-    log('scope depth is > 0 therefore not global');
     exit;
   end;
-
-  log('define global variable');
   FChunks.AddDEFINE_GLOBAL(constantidx);
 end; {
   emitBytes(OP_DEFINE_GLOBAL, global);
@@ -469,12 +463,12 @@ end;
 
 function TCompiler.parseVariable(const errorMessage : string) : byte;
 begin
-  Log('Parse variable');
+
   consume(tkIdentifier, errorMessage);
   DeclareVariable;
-  if FScopeDepth > 0 then
+  if FScopeDepth.ScopeDepth > Start_Scope_depth then
   begin
-    result := 0;
+    result := Start_Scope_depth;
     exit;
   end;
   result := identifierConstant(FTokens.previous); //index of the variable name in the constant table
@@ -504,7 +498,9 @@ begin
   result := txt1 = txt2;
 end;
 
-procedure TCompiler.AddLocal(const Token: pToken);
+procedure TCompiler.AddLocal(
+  const Token: pToken;
+  const ScopeDepth : integer);
 var
   Local: PLocal;
 begin
@@ -515,10 +511,10 @@ begin
   end;
   new(Local);
   Local.Token := Token;
-  local.depth := FScopeDepth;
+  local.depth := ScopeDepth;
   Local.isCaptured := False; //presumably for future captures
   FLocals.Add(Local);
-  Log(format('Adding new local %s, %s. Current local count : %d',[TokenKindToStr(Token.Kind),TokenName(Token),FLocals.Count]));
+
 end;
 
 
@@ -528,15 +524,16 @@ var
   token: pToken; // Assuming PToken is a pointer to the Token struct.
   local : pLocal;
 begin
-  if FScopeDepth = 0 then
-    Exit;
+  if FScopeDepth.ScopeDepth = Start_Scope_depth then
+    exit;
 
   token := FTokens.previous;
 
-  for i := Flocals.Count - 1 downto 0 do
+  //look for duplicate vars in same scope
+  for i := Flocals.Count - 1 downto Start_Scope_depth do
   begin
     local := Flocals[i];
-    if (local.depth <> -1) and (local.depth < FScopeDepth) then
+    if (local.depth <> -1) and (local.depth < FScopeDepth.ScopeDepth) then
     begin
       Break;
     end;
@@ -548,7 +545,7 @@ begin
     end;
   end;
 
-  addLocal(token);
+  addLocal(token,FScopeDepth.ScopeDepth);
 end;
 
 
@@ -567,6 +564,7 @@ begin
   begin
     FChunks.ADDNil;
   end;
+
   consume(tkSemiColon,'Expect ";" after variable declaration.');
 
   defineVariable(constantidx);
@@ -574,20 +572,18 @@ end;
 
 Procedure TCompiler.beginScope;
 begin
-  inc(FScopeDepth);
-  Log(format('Begin Scope : %d',[FScopeDepth]));
+  FScopeDepth.push;
 end;
 
 
 procedure TCompiler.block();
 begin
-  Log(format('Begin block at : %d',[FScopeDepth]));
+
   while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
   begin
     declaration();
   end;
   consume(tkCloseBrace, 'Expect "}" after block.');
-  Log(format('end block at : %d',[FScopeDepth]));
 end;
 
 
@@ -597,8 +593,7 @@ var
   i : integer;
   scope : string;
 begin
-  Log(format('End scope : %d',[FScopeDepth]));
-  dec(FScopeDepth);
+  FScopeDepth.Pop;
   removeLocal;
 end;
 
@@ -607,12 +602,13 @@ var
   Local : pLocal;
 begin
 
-  while (Flocals.Count > 0) and (FLocals.Last.depth > FscopeDepth) do
+  while (Flocals.Count > 0)   and
+        (FLocals.Last <> nil) and
+        (FLocals.Last.depth > FscopeDepth.ScopeDepth) do
   begin
     FChunks.AddPOP;
     Local := FLocals.Remove(FLocals.Count-1);
     Dispose(Local);
-    Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
   end;
 end;
 
@@ -735,7 +731,7 @@ begin
   expressionStatement;
 
 
-End;
+end;
 
 procedure TCompiler.Error(const msg: String);
 begin
@@ -882,6 +878,7 @@ end;
 
 destructor TCompiler.destroy;
 begin
+  FScopeDepth.Free;
   FChunks.Finalize;
   FLocals.Finalize;
   inherited;

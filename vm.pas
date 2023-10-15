@@ -20,7 +20,7 @@ type
 
   TVirtualMachine = record
   private
-    FLog : TStrings;
+
     FFrameCount : integer;
     FFrames : TFrames;
 
@@ -69,7 +69,7 @@ type
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
-    procedure init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
+    procedure init(const IP : TInstructionPointer; const results : TStrings);
     procedure finalize;
   end;
 
@@ -674,12 +674,12 @@ end;
 
 procedure TVirtualMachine.ClearLog;
 begin
-  FLog.Clear;
+
 end;
 
 procedure TVirtualMachine.Log(Const txt : string);
 begin
-  FLog.Add(txt);
+
 end;
 
 procedure TVirtualMachine.MoveNext;
@@ -715,12 +715,10 @@ end;
 
 
 
-procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
+procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings);
 begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
-  assert(assigned(log), 'no log for vm');
-  FLog := log;
-  FLog.clear;
+
   FResults := results;
   FInstructionPointer := IP;
   FStack.Init;

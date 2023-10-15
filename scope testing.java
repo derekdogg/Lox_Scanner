@@ -8,6 +8,22 @@ print global ;
 
 
 
+//two scope depth
+var global = "global 1" ;
+{
+   var a = "1a";
+   print a ;
+   {
+        var a = "1a";
+        print a ;
+    }
+}
+
+print global ;
+
+
+
+
 var global = "global 1" ;
 var i = 1;
 { 
@@ -32,6 +48,10 @@ var i = 1;
 } 
 
 
+//declare same global *2 in different scoping contexts
+
+var someglobal;
+
 {
     var s = "Scope 1";
     print s ;
@@ -46,13 +66,16 @@ var i = 1;
 	        var s = "Scope 3";
 	        print s ;
 	        var a = "3a";
-        	print a ;	
+        		print a ;	
 
             {
-	            var s = "Scope 4";
+	            
+		var someglobal;
+		var s = "Scope 4";
 	            print s ;
 		        var a = "4a";
         	          print a ;	
+	          print someglobal;
 
 
 

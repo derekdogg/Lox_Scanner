@@ -135,7 +135,7 @@ end;
 
 function TValueList.Add(const value: pValue): integer;
 begin
-  assert(assigned(Value), 'Value being inserted is nil');
+  //assert(assigned(Value), 'Value being inserted is nil');
   growArray;
   FItems[FCount] := value;
   inc(FCount);
@@ -147,7 +147,7 @@ begin
   assert(Index < FCount, 'removed index is > than count');
   assert(InBounds(Index,FCapacity),'index of removal outside bounds');
   result := FItems^[Index];
-  assert(Result <> nil, 'removed index is not nil');
+  //assert(Result <> nil, 'removed index is nil');
   Dec(FCount);
   Move(FItems^[Index + 1], FItems[Index],(FCount - Index) * SizeOf(PValue));
 end;

@@ -48,6 +48,7 @@
     <DCCReference Include="Scanner_Project.pas">
       <Form>Form1</Form>
     </DCCReference>
+    <DCCReference Include="ScopeDepth.pas" />
     <DCCReference Include="Stacks.pas" />
     <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />

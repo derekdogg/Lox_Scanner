@@ -11,12 +11,9 @@ type
   TForm1 = class(TForm)
     BtnScan: TButton;
     memEdit: TMemo;
-    MemTokens: TMemo;
     memRun: TMemo;
     chkRun: TCheckBox;
     chkEmit: TCheckBox;
-    MemLogging: TMemo;
-    MemVmLog: TMemo;
     btnClear: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -83,70 +80,34 @@ var
   VM :  TVirtualMachine;
   CompilerRules : TCompilerRules;
 begin
-  try
-  MemTokens.lines.clear;
-
-  Scanner.Init(MemEdit.Lines.Text);
-  Scanner.Scan;
-  MemTokens.Lines.BeginUpdate;
-  for i := 0 to Scanner.TokenCount-1  do
-  begin
-     token := Scanner.Tokens.getItem(i);
-
-     text := Scanner.ln.items[Token.Line].text;
-     text := copy(text,token.Start,token.length);
-     MemTokens.Lines.Add(format('------- TOKENS INFO %d -------------',[i]));
-     MemTokens.Lines.Add(cTab + 'Token item size : ' + inttostr(Scanner.tokens.ItemSize));
-     MemTokens.Lines.Add(cTab + 'Tokens Resize Count : ' + inttostr(Scanner.tokens.resizecount));
-     MemTokens.Lines.Add(cTab + 'Tokens Capacity : ' + inttostr(Scanner.tokens.Capacity));
-     MemTokens.Lines.Add(cTab + 'Tokens Kb : ' + floattostr(Scanner.tokens.Capacity/1000));
-     MemTokens.Lines.Add(cTab + 'Tokens Slot Count : ' + inttostr(Scanner.tokens.SlotCount));
-
-
-     MemTokens.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
-
-     MemTokens.Lines.Add(cTab + 'Token Kind : ' + TTokenName[token.kind] + ' is equal to ' + text);
-     MemTokens.Lines.Add(cTab + 'Line : ' + inttostr(Token.Line));
-     MemTokens.Lines.Add(cTab + 'Length : ' + inttostr(Token.Length));
-     MemTokens.Lines.Add(cTab + 'Starts at : ' + inttostr(Token.Start));
-
-     MemTokens.Lines.Add(cTab + 'Ends   at : ' + inttostr(Token.Start + Token.Length-1));
-     MemTokens.lines.Add(cCr);
-  end;
-  MemTokens.Lines.EndUpdate;
+   memRun.Lines.clear;
 
 
 
-  //try compiler to see what happens;
-   MemRun.Lines.Clear;
 
-   
+   Scanner.Init(MemEdit.Lines.Text);
+   Scanner.Scan;
+   Compiler := TCompiler.Create(Scanner,TYPE_SCRIPT);
+   CompilerRules := TCompilerRules.Create;
+   try
+
+
    if not chkRun.Checked then exit;
 
-   MemRun.lines.add('-------------------------------');
-   
-   Compiler := TCompiler.Create(Scanner,MemLogging.Lines,TYPE_SCRIPT);
-   CompilerRules := TCompilerRules.Create;
-   CompilerRules.CreateRules(Compiler);
-   try
+     CompilerRules.CreateRules(Compiler);
+
      Compiler.DoCompile;
      instructionPointer.Init(Compiler.Chunks);
-     VM.Init(InstructionPointer,MemRun.Lines,MemVmLog.Lines);
+     VM.Init(InstructionPointer,MemRun.Lines);
      VM.Run;
      // = INTERPRET_OK then
      //  MemRun.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
-      VM.Finalize;
+     VM.Finalize;
      CompilerRules.Free;
      Compiler.Free;
+     Scanner.finalize;
    end;
-
-
-
-  finally
-    Scanner.finalize;
-
-  end;
 
 end;
 

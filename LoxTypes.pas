@@ -163,6 +163,7 @@ typedef enum {
 } TokenType; *)
 
 TTokenKind = (
+  //tkInternal,
   tkNull,
   tkNumber,
   tkQuotes,
@@ -214,6 +215,7 @@ TTokenKind = (
 
 
   TTokenName : Array[tkNull..tkEOF] of string = (
+  //'Internal',
   'Null',
   'Number',
   'Quotes',
@@ -275,6 +277,7 @@ type
 
 
   TOpCodes = (
+        OP_Internal,
         OP_NULL,
         OP_CONSTANT,
         OP_NIL,

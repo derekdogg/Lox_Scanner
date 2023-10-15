@@ -17,7 +17,8 @@ uses
   ValueList in 'ValueList.pas',
   locals in 'locals.pas',
   CompilerRules in 'CompilerRules.pas',
-  Addition in 'Addition.pas';
+  Addition in 'Addition.pas',
+  ScopeDepth in 'ScopeDepth.pas';
 
 {$R *.res}
 

@@ -227,7 +227,7 @@ begin
   FPrevCapacity := FCapacity;
   FCapacity := FCapacity  * GROWTH_FACTOR;
   assert(FCapacity mod itemSize = 0);
-  assert(FCapacity < MAX_CAPACITY,'Max size reached')
+  assert(FCapacity < MAX_CAPACITY,'Max size reached. Increase constant buffer size')
 end;
 
 constructor TBytes.init(Const Ownbytes : Boolean);
