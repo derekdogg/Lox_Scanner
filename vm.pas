@@ -76,7 +76,7 @@ type
 implementation
 
 uses
-  dialogs;
+  dialogs, addition;
 
 
 { TVirtualMachine }
@@ -104,19 +104,13 @@ begin
     Case TOpCodes(FInstructionPointer.Current^) of
 
       OP_CONSTANT : begin
-
          DoConstant;
       end;
 
 
       OP_DEFINE_GLOBAL: begin
           DoGlobal;
-          { ObjString* name = READ_STRING();
-        tableSet(&vm.globals, name, peek(0));
-        pop();
-        break; }
-
-      end;
+       end;
 
       OP_POP : Begin
           DoPOP;
@@ -126,7 +120,6 @@ begin
       OP_SET_GLOBAL:
       begin
         DoSetGlobal;
-
       end;
 
 
@@ -134,10 +127,9 @@ begin
       OP_GET_GLOBAL:
       begin
         doGetGlobal;
-
       end;
 
-      
+
       OP_GET_LOCAL:
       begin
         doGetLocal;
@@ -150,7 +142,7 @@ begin
 
 
       OP_Nil  : begin
-        DoNil;
+         DoNil;
       end;
 
       OP_TRUE : begin
@@ -200,7 +192,7 @@ begin
       end;
 
       OP_PRINT  : begin
-          Print;
+         Print;
       end;
 
 
@@ -220,8 +212,6 @@ begin
        begin
          loop;
        end;
-
-
     end;
     
   end;
@@ -290,8 +280,9 @@ end;
 procedure TVirtualMachine.DoAdd;
 var
   L,R : pValue;
-
+  Result : pValue;
 begin
+  result := nil;
   Log('Add');
   //we assume here we're sitting on an OP_ADDITION in the IP
   Assert(FInstructionPointer.Current^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
@@ -299,48 +290,31 @@ begin
   try
     R := FStack.Pop;
     L := FStack.Pop;
-   // A := FStack.Pop;
-//    B := FStack.Pop;
 
-    //L.Operation := OP_CONSTANT;
-
-    if (L.IsNumber) and (R.IsNumber) then
-    begin
-      L.Number := L.Number + R.Number;
-      FStack.Push(L);
-      exit;
-    end;
-
-    xxx
-
-   (*god darnit - I've bolloxed up scoping along the way.
-
-    Now need to fix.
-
-   (* if (L.IsStringObject) and (R.IsStringObject) then
-    begin
-      //What goes here?
-      L.Str := L.ToString + R.ToString;
-      FStack.Push(L);
-    end;
-
-    if (L.IsStringObject) and (R.IsNumber) then
-    begin
-      //What goes here?
-      L.Str := L.ToString + R.ToString;
-      FStack.Push(L);
-    end;
-
-    if (L.IsNumber) and (R.IsStringObject) then
-    begin
-      //What goes here?
-      L.Str := L.ToString + R.ToString;
-      FStack.Push(L);
-    end; *)
+    result := TAddition.Add(L,R);
+    if assigned(result) then FStack.Push(result);
 
   except on E:exception do
      HandleRunTimeError(e);
   end;
+end;
+
+
+function SubtractStrings(original, toSubtract: string): string;
+var
+  i, j: Integer;
+  resultString: string;
+begin
+  resultString := original;
+  
+  for i := 1 to Length(toSubtract) do
+  begin
+    j := Pos(toSubtract[i], resultString);
+    if j > 0 then
+      System.Delete(resultString, j, 1);
+  end;
+
+  Result := resultString;
 end;
 
 procedure TVirtualMachine.subtract;
@@ -362,21 +336,21 @@ begin
       exit;
     end;
 
-    if (L.IsStringObject) and (R.IsStringObject) then
+    if (L.IsString) and (R.IsString) then
     begin
-      L.Str := StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
+      L.Str := SubtractStrings(L.toString,R.ToString);//StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
       FStack.Push(L);
       exit;
     end;
 
-    if (L.IsStringObject) and (R.IsNumber) then
+    if (L.IsString) and (R.IsNumber) then
     begin
       L.Str := Copy(L.Str,0, Length(L.Str) - round(R.Number));
       FStack.Push(L);
       exit;
     end;
 
-    if (L.IsNumber) and (R.IsStringObject) then
+    if (L.IsNumber) and (R.IsString) then
     begin
       //What goes here?
       raise exception.create('trying to subtract a string from a number'); //not sure yet what to put here.
@@ -411,7 +385,7 @@ begin
       exit;
     end;
 
-     if (L.IsStringObject) and (R.IsNumber) then
+     if (L.IsString) and (R.IsNumber) then
      begin
        s := '';
        for i := 0 to round(R.Number-1) do
@@ -422,10 +396,10 @@ begin
        FStack.Push(L);
      end;
 
-     if (R.IsStringObject) and (L.IsNumber) then
+     if (R.IsString) and (L.IsNumber) then
      begin
        s := '';
-       for i := 0 to round(L.Number-1) do
+       for i := 0 to round(abs(L.Number))-1 do
        begin
          s := s + R.Str
        end;
@@ -538,7 +512,7 @@ begin
     (Value.Kind = lxNull) OR
     ((Value.Kind = lxBoolean) and (Value.Boolean = false)) OR
     ((Value.Kind = lxNumber) and (Value.Number <= 0)) OR
-    ((Value.isStringObject) and (lowercase(Value.ToString) = 'false'));
+    ((Value.IsString) and (lowercase(Value.ToString) = 'false'));
 end;
 
 {  C code...
@@ -677,7 +651,7 @@ begin
   constantIndex := FInstructionPointer.Current^;
   name := FInstructionPointer.Value(constantIndex);
   value := FStack.Peek(0);
-  assert(name.IsStringObject, 'name is not a string object');
+  assert(name.IsString, 'name is not a string object');
   NameValue := FGlobals.Find(name.tostring);
   assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
   NameValue.Value := Value;
@@ -733,7 +707,7 @@ begin
   constantIndex := FInstructionPointer.Current^;
   name := FInstructionPointer.Value(constantIndex);
   value := FStack.Peek(0);
-  assert(name.IsStringObject, 'name is not a string object');
+  assert(name.IsString, 'name is not a string object');
   AddGlobal(name,value);
   popStack;
   Log('Exiting DoGlobal');

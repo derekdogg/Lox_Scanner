@@ -36,6 +36,7 @@
     <DelphiCompile Include="Project_scanner.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <DCCReference Include="Addition.pas" />
     <DCCReference Include="ByteArray.pas" />
     <DCCReference Include="ByteCodesArray.pas" />
     <DCCReference Include="Chunk.pas" />

@@ -103,8 +103,6 @@ begin
      MemTokens.Lines.Add(cTab + 'Tokens Slot Count : ' + inttostr(Scanner.tokens.SlotCount));
 
 
-
-
      MemTokens.Lines.Add(format('------- TOKEN INFO %d -------------',[i]));
 
      MemTokens.Lines.Add(cTab + 'Token Kind : ' + TTokenName[token.kind] + ' is equal to ' + text);
@@ -122,65 +120,7 @@ begin
   //try compiler to see what happens;
    MemRun.Lines.Clear;
 
-   if chkEmit.checked then
-   begin
-     exit; //needs fixing up with oplocals
-   i := 0;
-   Compiler := TCompiler.Create(Scanner,MemLogging.Lines,TYPE_SCRIPT);
-   CompilerRules := TCompilerRules.Create;
-   CompilerRules.CreateRules(Compiler);
-   try
-     //Compiler.expression; //???
-     Compiler.DoCompile;
-     InstructionPointer.Init(Compiler.Chunks);
-     MemRun.Lines.add('Bytes : ' + inttostr(InstructionPointer.ByteCount));
-     MemRun.Lines.add('Constants : ' + inttostr(InstructionPointer.ConstantCount));
-
-     While InstructionPointer.Next <> nil do
-     begin
-        ByteCode := TOP_Code_name[TOpCodes(InstructionPointer.Current^)];
-
-        if (InstructionPointer.Current^ = byte(OP_CONSTANT)) then
-        begin
-          if InstructionPointer.Next <> nil then
-          begin
-            constantIndex := InstructionPointer.Current^;
-            value := InstructionPointer.Value(constantIndex);
-            ByteCode := ByteCode + '=' + value.ToString;
-          end;
-        end;
-
-        if (instructionPointer.Current^ = byte(OP_DEFINE_GLOBAL)) then
-        begin
-          if InstructionPointer.Next <> nil then
-          begin
-            constantIndex := InstructionPointer.Current^;
-            value := InstructionPointer.Value(constantIndex);
-            ByteCode := ByteCode + '=' + value.ToString;
-          end;
-        end;
-
-        if (instructionPointer.Current^ = byte(OP_GET_GLOBAL)) then
-        begin
-          //this should be the index of the 
-          if InstructionPointer.Next <> nil then
-          begin
-            constantIndex := InstructionPointer.Current^;
-            value := InstructionPointer.Value(constantIndex);
-            ByteCode := ByteCode + '=' + value.ToString;
-          end;
-        end;
-
-
-
-        MemRun.Lines.Add(inttostr(i) + ':' + ByteCode);
-        inc(i);
-     end;
-   finally
-     CompilerRules.Free;
-     Compiler.Free;
-   end;
-   end;
+   
    if not chkRun.Checked then exit;
 
    MemRun.lines.add('-------------------------------');

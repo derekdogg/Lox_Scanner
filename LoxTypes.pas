@@ -505,11 +505,13 @@ type field from it. *)
     function getIsNumber: Boolean;
     function getIsStringObject: Boolean;
     function getIsObject : Boolean;
+    function getIsNull: Boolean;
 
   public
     property IsObject       : Boolean read getisobject;
-    property IsStringObject : Boolean read getIsStringObject;
+    property IsString       : Boolean read getIsStringObject;
     property IsNumber       : Boolean read getIsNumber;
+    property IsNull         : Boolean read getIsNull;
     property Kind           : TLoxKind read FKind write FKind;
     property Number         : TNumber read getNumber write SetNumber;
     property Boolean        : Boolean read getBoolean write setBoolean;
@@ -613,9 +615,9 @@ var
   loxString : pLoxString;
 begin
   assert(assigned(Value), ' value for disposal is nil');
-  if value.IsStringObject then
+  if value.IsString then
   begin
-    assert(value.IsStringObject = true, 'expected a lox object on disposal');
+    assert(value.IsString = true, 'expected a lox object on disposal');
     assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
     LoxString := pLoxString(Value.LoxObject);
     dispose(LoxString);
@@ -777,6 +779,11 @@ begin
   FKind := lxBoolean;
   FillChar(FValue,Sizeof(FValue),#0);
   Move(value, FValue[0], SizeOf(Value))
+end;
+
+function TValue.getIsNull: Boolean;
+begin
+  result := FKind = lxNull;
 end;
 
 function TValue.getIsNumber: Boolean;

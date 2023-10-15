@@ -539,7 +539,7 @@ begin
   CreateRulesForElse;
   CreateRulesForAnd;
   CreateRulesForOr;
-  CreateRulesForWhile;
+//  CreateRulesForWhile;
   CreateRulesForEOF;
 
 end;

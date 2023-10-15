@@ -16,7 +16,8 @@ uses
   table in 'table.pas',
   ValueList in 'ValueList.pas',
   locals in 'locals.pas',
-  CompilerRules in 'CompilerRules.pas';
+  CompilerRules in 'CompilerRules.pas',
+  Addition in 'Addition.pas';
 
 {$R *.res}
 

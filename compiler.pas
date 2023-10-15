@@ -226,7 +226,7 @@ begin
   FScopeDepth := 0;
 
   FLocals.Init(true);
-  FLocals.Add; //add an empty local for later use internally.
+  //FLocals.Add; //add an empty local for later use internally.
 
   (*
 
@@ -694,37 +694,47 @@ end;
  
 procedure TCompiler.statement;
 begin
+  if (match(tkComment)) then
+  begin
+    exit;
+  end;
+
   if (match(tkPRINT)) then
   begin
-    printStatement
-  end
-  else
+    printStatement;
+    exit;
+  end;
+
   if (match(tkIF))then
   begin
     ifStatement();
-  end
-  else
+    exit;
+  end;
+
   if (match(tkOpenBrace)) then
   begin
     beginScope;
     block;
     endScope;
-  end
-  else
+    exit;
+  end;
+
   if (match(tkVar)) then
   begin
     varDeclaration;
-  end
-  else
+    exit;
+  end;
+
   if (match(tkWhile)) then
   begin
     whileStatement();
-  end
-  else
-  begin
-    expressionStatement;
-//    FTokens.MoveLast;
+    exit;
   end;
+
+
+  expressionStatement;
+
+
 End;
 
 procedure TCompiler.Error(const msg: String);
