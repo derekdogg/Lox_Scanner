@@ -4,7 +4,8 @@ interface
 
 uses
   SysUtils,
-  LOXTypes;
+  LOXTypes,
+  values;
 
 
 Const MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.

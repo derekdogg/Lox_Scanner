@@ -5,7 +5,8 @@ interface
 uses
   Chunk,
   Loxtypes,
-  valueArray;
+  valueArray,
+  values;
 
 type
  

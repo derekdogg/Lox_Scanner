@@ -2,7 +2,7 @@ unit compiler;
 
 interface
 
-uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction;
+uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction,values;
 
 
 type
@@ -204,43 +204,6 @@ end;
 procedure TCompiler.Log(const txt : String);
 begin
   FLogging.add(txt);
-end;
-
-constructor TCompiler.Create(
-  Const Scanner : TScanner;
-  Const logging : TStrings;
-  Const FunctionKind : TFunctionKind);
-begin
-
-  Assert(assigned(Logging), 'No logging injected');
-  FLogging := Logging;
-  FLogging.clear;
-  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
-  FChunks.Init;
-  FScanner := Scanner;
-
-  FTokens.Init(Scanner.Tokens);
-  //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
-  FillChar(FParseRules,sizeof(FParseRules),#0);
-
-  FScopeDepth := 0;
-
-  FLocals.Init(true);
-  //FLocals.Add; //add an empty local for later use internally.
-
-  (*
-
-  Local* local = &current->locals[current->localCount++];
-  local->depth = 0;
-  local->name.start = "";
-  local->name.length = 0;
-
-  *)
-
-
-  FFunctionKind := FunctionKind;
-  FFunc := newLoxFunction('TopLevelCompiler');
-  
 end;
 
 
@@ -879,6 +842,45 @@ begin
    else
      statement();
 end;
+
+constructor TCompiler.Create(
+  Const Scanner : TScanner;
+  Const logging : TStrings;
+  Const FunctionKind : TFunctionKind);
+begin
+
+  Assert(assigned(Logging), 'No logging injected');
+  FLogging := Logging;
+  FLogging.clear;
+  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
+  FChunks.Init;
+  FScanner := Scanner;
+
+  FTokens.Init(Scanner.Tokens);
+  //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
+  FillChar(FParseRules,sizeof(FParseRules),#0);
+
+  FScopeDepth := 0;
+
+  FLocals.Init(true);
+  //FLocals.Add; //add an empty local for later use internally.
+
+  (*
+
+  Local* local = &current->locals[current->localCount++];
+  local->depth = 0;
+  local->name.start = "";
+  local->name.length = 0;
+
+  *)
+
+
+  FFunctionKind := FunctionKind;
+  FFunc := newLoxFunction('TopLevelCompiler');
+
+end;
+
+
 
 destructor TCompiler.destroy;
 begin

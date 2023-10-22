@@ -2,7 +2,7 @@ unit ValueList;
 
 interface
 uses
- LoxTypes;
+ LoxTypes,values;
 
 Const
   MAX_CAPACITY = 10000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.

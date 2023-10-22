@@ -54,7 +54,8 @@ uses
   Table,
   ValueList,
   Locals,
-  CompilerRules;
+  CompilerRules,
+  values;
 
 {$R *.dfm}
 
@@ -130,15 +131,15 @@ begin
    CompilerRules.CreateRules(Compiler);
    try
      Compiler.DoCompile;
-     instructionPointer.Init(Compiler.Chunks);
+     instructionPointer.Init(Compiler.Chunks.OPCodes,Compiler.Chunks.Constants);
      VM.Init(InstructionPointer,MemRun.Lines,MemVmLog.Lines);
      VM.Run;
      // = INTERPRET_OK then
      //  MemRun.Lines.Add('result := ' + VM.Result.Value.ToString);
    finally
       VM.Finalize;
-     CompilerRules.Free;
-     Compiler.Free;
+      CompilerRules.Free;
+      Compiler.Free;
    end;
 
 

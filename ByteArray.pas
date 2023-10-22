@@ -16,7 +16,7 @@ type
   TByteList = array[0..MAX_CAPACITY - 1] of pByte;
 
 
-  TBytes = record
+  TDynamicBytes = record
   private
     FOwnbytes      : Boolean;
     FResizeCount   : integer;
@@ -47,10 +47,10 @@ type
     property Item[const Index : integer] : pByte read getItem write setItem;default;
  end;
 
- Tbytestack = record
+ TDynamicBytestack = record
  private
     FCount    : Integer;
-    FItems    : TBytes;
+    FItems    : TDynamicBytes;
   public
     function GetItem(const index : integer) : pByte;
     procedure setItem(const index : integer; const value : pByte);
@@ -70,38 +70,38 @@ type
 
 implementation
 
-function Tbytestack.Count: Integer;
+function TDynamicBytestack.Count: Integer;
 begin
   result := FCount;
 end;
 
-procedure Tbytestack.Finalize;
+procedure TDynamicBytestack.Finalize;
 begin
   FItems.Finalize;
 end;
 
-procedure Tbytestack.Init;
+procedure TDynamicBytestack.Init;
 begin
   FCount := 0;
   FItems.Init(false);
 end;
 
-function Tbytestack.GetItem(const index: integer): pByte;
+function TDynamicBytestack.GetItem(const index: integer): pByte;
 begin
   result := FItems.item[index];
 end;
 
-function Tbytestack.Peek(const distance: integer): pByte;
+function TDynamicBytestack.Peek(const distance: integer): pByte;
 begin
   result := FItems.Item[FCount-1 -distance];
 end;
 
-function Tbytestack.Peek: pByte;
+function TDynamicBytestack.Peek: pByte;
 begin
   result := Peek(0);
 end;
 
-function Tbytestack.Pop: pByte;
+function TDynamicBytestack.Pop: pByte;
 var
   removed : pByte;
 begin
@@ -112,27 +112,27 @@ begin
   dec(FCount);
 end;
 
-procedure Tbytestack.Push(const Item: pByte);
+procedure TDynamicBytestack.Push(const Item: pByte);
 begin
   inc(FCount);
   FItems.Add(Item);
 end;
 
-procedure Tbytestack.setItem(const index: integer; const value: pByte);
+procedure TDynamicBytestack.setItem(const index: integer; const value: pByte);
 begin
   FItems[index] := value; 
 end;
 
-function Tbytestack.Top: pByte;
+function TDynamicBytestack.Top: pByte;
 begin
   result := peek(0);
 end;
 
 
 
-{ TBytes }
+{ TDynamicBytes }
 
-function TBytes.Add(const value: pByte): integer;
+function TDynamicBytes.Add(const value: pByte): integer;
 begin
   assert(assigned(Value), 'Value being inserted is nil');
   growArray;
@@ -141,7 +141,7 @@ begin
   result := FCount-1;
 end;
 
-function TBytes.Remove(const index : integer) : pByte;
+function TDynamicBytes.Remove(const index : integer) : pByte;
 begin
   assert(Index < FCount, 'removed index is > than count');
   assert(InBounds(Index,FCapacity),'index of removal outside bounds');
@@ -151,24 +151,24 @@ begin
   Move(FItems^[Index + 1], FItems[Index],(FCount - Index) * SizeOf(pByte));
 end;
 
-procedure TBytes.AllocateArray(var Items : pbytes; const size : integer);
+procedure TDynamicBytes.AllocateArray(var Items : pbytes; const size : integer);
 begin
   assert(Items = nil);
   getMem(Items,size);
   fillchar(Items^,size,#0);
 end;
 
-function TBytes.Capacity: integer;
+function TDynamicBytes.Capacity: integer;
 begin
   result := FCapacity;
 end;
 
-function TBytes.Count: integer;
+function TDynamicBytes.Count: integer;
 begin
   result := FCount;
 end;
 
-procedure TBytes.finalize;
+procedure TDynamicBytes.finalize;
 var
   i : integer;
   p : pByte;
@@ -189,14 +189,14 @@ begin
   end;
 end;
 
-function TBytes.FreeSlots: integer;
+function TDynamicBytes.FreeSlots: integer;
 begin
   result := 0;
   if FCapacity = 0 then exit;
   result := (FCapacity - (FCount * ItemSize)) div ItemSize;
 end;
 
-procedure TBytes.GrowArray;
+procedure TDynamicBytes.GrowArray;
 var
   pCopyItems : pbytes;
 begin
@@ -217,12 +217,12 @@ begin
 
 end;
 
-function  TBytes.ItemSize : integer;
+function  TDynamicBytes.ItemSize : integer;
 begin
   result := Sizeof(pByte);
 end;
 
-procedure TBytes.GrowCapacity;
+procedure TDynamicBytes.GrowCapacity;
 begin
   FPrevCapacity := FCapacity;
   FCapacity := FCapacity  * GROWTH_FACTOR;
@@ -230,7 +230,7 @@ begin
   assert(FCapacity < MAX_CAPACITY,'Max size reached')
 end;
 
-constructor TBytes.init(Const Ownbytes : Boolean);
+constructor TDynamicBytes.init(Const Ownbytes : Boolean);
 begin
   FOwnbytes := Ownbytes;
   FresizeCount := 0;
@@ -242,17 +242,17 @@ begin
   AllocateArray(FItems,FCapacity);
 end;
 
-function TBytes.IsFull: boolean;
+function TDynamicBytes.IsFull: boolean;
 begin
   result := (FCount * ItemSize) = FCapacity;
 end;
 
-function TBytes.InBounds(const index : integer; const capacity : Integer) : boolean;
+function TDynamicBytes.InBounds(const index : integer; const capacity : Integer) : boolean;
 begin
    result := Index * ItemSize <= capacity;
 end;
 
-function TBytes.GetItem(const index: integer): pByte;
+function TDynamicBytes.GetItem(const index: integer): pByte;
 begin
   assert(FCapacity > 0);
   assert(FItems <> nil);
@@ -260,12 +260,12 @@ begin
   result := FItems[index];
 end;
 
-function TBytes.ResizeCount: integer;
+function TDynamicBytes.ResizeCount: integer;
 begin
   result := FResizeCount;
 end;
 
-procedure TBytes.SetItem(const index: integer; const value: pByte);
+procedure TDynamicBytes.SetItem(const index: integer; const value: pByte);
 begin
   if FItems[index] = value then exit;
   if FItems[Index] = nil then
@@ -277,7 +277,7 @@ begin
   FItems[index] := value;
 end;
 
-function TBytes.SlotCount: integer;
+function TDynamicBytes.SlotCount: integer;
 begin
   result := FCapacity div ItemSize;
 end;

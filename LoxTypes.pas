@@ -482,45 +482,6 @@ type field from it. *)
   TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject);
   TNumber = Double;
 
-  pValue = ^TValue;
-  TEightBytes = array[0..7] of byte;
-  TValue = record
-  private
-
-    FKind  : TLoxKind;
-    FValue : TEightBytes;
-    function getNumber  : TNumber;
-    procedure SetNumber(const value : TNumber);
-
-    function getBoolean : Boolean;
-    procedure setBoolean(const value : Boolean);
-
-    procedure setObject(const value : pLoxObject);
-    function  getObject : pLoxObject;
-
-    procedure setNull(const value : Boolean);
-    function getNull: boolean;
-    procedure SetString(Const value : String);
-    function GetString : String;
-    function getIsNumber: Boolean;
-    function getIsStringObject: Boolean;
-    function getIsObject : Boolean;
-    function getIsNull: Boolean;
-
-  public
-    property IsObject       : Boolean read getisobject;
-    property IsString       : Boolean read getIsStringObject;
-    property IsNumber       : Boolean read getIsNumber;
-    property IsNull         : Boolean read getIsNull;
-    property Kind           : TLoxKind read FKind write FKind;
-    property Number         : TNumber read getNumber write SetNumber;
-    property Boolean        : Boolean read getBoolean write setBoolean;
-    property Str            : String read getString write setString;
-    property Bytes          : TEightBytes read FValue;
-    property LoxObject      : pLoxObject read getObject write setObject;
-    property ToString       : string read getString;
-    property Null           : boolean read getNull write setNull;
-  end;
 
 
   (*pByteCode = ^TByteCode;
@@ -530,20 +491,18 @@ type field from it. *)
   end; *)
 
   function NewLoxObject : pLoxObject;
-  (*
+  function LoxObjectFrom(const pString : pLoxString) : pLoxObject;
+
   function NewLoxString(Const str : string) : pLoxString;
-  function LoxObjectFrom(const pString : pLoxString) : pLoxObject; //going up the hierarchy
+
+
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
-  function StringValue(const str : string) : TValue; *)
+ 
   function GetHashString(const value : string) : UInt64;
   //--------------------------------------------------------------
 
-  function NewString(const str : String) : pValue;
-  function NewNumber(Const number : TNumber) : pValue;
-  function NewBool(const Bool : Boolean) : pValue;
-  function DisposeValue(value : pValue) : boolean;
-  function TokenKindToStr(const TokenKind : TTokenKind) : string;
-  function opCodeToStr(Const opCode : TOpCodes) : String;
+   function TokenKindToStr(const TokenKind : TTokenKind) : string;
+   function opCodeToStr(Const opCode : TOpCodes) : String;
 
 implementation
 
@@ -572,10 +531,7 @@ begin
   result.Chars := Copy(str,1,length(str));
 end;
 
-function StringValue(const str : string) : TValue;
-begin
-  result.LoxObject := LoxObjectFrom(NewLoxString(str));
-end;
+
 
 
 
@@ -591,41 +547,6 @@ begin
   new(Result);
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
-
-function NewString(const str : String) : pValue;
-begin
-  new(result);
-  result.LoxObject := LoxObjectFrom(NewLoxString(str));
-end;
-
-function NewBool(const Bool : Boolean) : pValue;
-begin
-  new(result);
-  result.Boolean := Bool;
-end;
-
-function NewNumber(const number : TNumber) : pValue;
-begin
-  new(result);
-  result.Number := Number;
-end;
-
-function DisposeValue(value : pValue) : boolean;
-var
-  loxString : pLoxString;
-begin
-  assert(assigned(Value), ' value for disposal is nil');
-  if value.IsString then
-  begin
-    assert(value.IsString = true, 'expected a lox object on disposal');
-    assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
-    LoxString := pLoxString(Value.LoxObject);
-    dispose(LoxString);
-  end;
-  dispose(Value);
-  value := nil;
-end;
-
 
 
 
@@ -703,127 +624,6 @@ begin
 end;
 
 
-
-procedure TValue.setNull(const value : Boolean);
-begin
-  FKind := lxNull;
-  fillchar(FValue,sizeof(FValue),#0);
-end;
-
-procedure TValue.setObject(const value : pLoxObject);
-begin
-  FKind := lxObject;
-  Move(Longint(value),FValue[0], SizeOf(Value));
-end;
-
-procedure TValue.SetString(const value: String);
-var
-  Obj : pLoxObject;
-begin
-  Assert(getIsStringObject = true, 'Value is not a string object');
-  Obj := GetObject;
-  if Obj <> nil then
-    pLoxString(Obj).Chars := Value;
-end;
-
-function TValue.getObject : pLoxObject;
-begin
-  result := nil;
-  if FKind = lxObject then
-    Move(FValue[0], Result, SizeOf(Result));
-end;
-
-function TValue.GetString: String;
-var
-  Obj : pLoxObject;
-begin
-  case FKind of
-   lxObject : begin
-       Obj := GetObject;
-       case Obj.Kind of
-         OBJ_STRING : begin
-           result := pLoxString(obj).Chars;
-         end;
-       end;
-   end;
-
-
-   lxBoolean : begin
-     result := BoolToStr(getBoolean,true);
-   end;
-
-   lxNumber : begin
-     result := floatToStr(GetNumber);
-   end;
-
-   lxNull  : begin
-     result := 'null';
-   end;
-  end;
-end;
-
-function TValue.getBoolean : Boolean;
-begin
-  result := false;
-  if FKind = lxObject then
-  begin
-    result := getNumber <=0;
-    exit;
-  end;
-  Move(FValue[0], Result, SizeOf(Result))
-end;
-
-procedure TValue.setBoolean(const value : Boolean);
-begin
-  assert(FKind <> lxObject,'value is an object, and you are trying to set it to false'); //this is not cool to set the bytes of an existing pointer?
-  FKind := lxBoolean;
-  FillChar(FValue,Sizeof(FValue),#0);
-  Move(value, FValue[0], SizeOf(Value))
-end;
-
-function TValue.getIsNull: Boolean;
-begin
-  result := FKind = lxNull;
-end;
-
-function TValue.getIsNumber: Boolean;
-begin
-  result := FKind = lxNumber;
-end;
-
-function TValue.getIsObject: Boolean;
-begin
-   result := (fKind = lxObject)
-end;
-
-function TValue.getIsStringObject: Boolean;
-begin
-  result := getisobject and (getObject.Kind = OBJ_STRING);
-end;
-
-Function TValue.getNull: boolean;
-begin
-  result := fKind = lxNull;
-end;
-
-function TValue.getNumber : TNumber;
-var
-  l : Longint;
-begin
-  if FKind = lxObject then
-  begin
-    Move(FValue[0], l, SizeOf(l));
-    result := l;
-    exit;
-  end;
-  Move(FValue[0], Result, SizeOf(Result))
-end;
-
-procedure TValue.SetNumber(const value : TNumber);
-begin
-   Fkind := lxNumber;
-   Move(value,FValue[0], SizeOf(Value))
-end;
 
 
 (*

@@ -3,7 +3,7 @@ unit Addition;
 
 interface
 uses
-  LoxTypes;
+  values;
 
 type
 

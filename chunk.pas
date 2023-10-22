@@ -5,6 +5,7 @@ interface
 uses
   Loxtypes,
   ValueList,
+  Values,
   IntegerArray,
   ByteArray;
 
@@ -14,22 +15,18 @@ const
 
 type
 
-  TConstantChunk = record
-    OpCode    : TOpCodes;
-    constant  : TValue;
-  end;
 
   TChunks = record
   private
     FConstantCount : integer;
-    FBytes       : TBytes;
+    FBytes       : TDynamicBytes;
     FConstants   : TValueList;
     // FLine      : TIntegers;
   public
     function Constants : TValueList;
-    function OpCodes : TBytes;
-    Function emitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
-    function emitBytes(const byte1, byte2 : byte) : Integer;overload;
+    function OpCodes : TDynamicBytes;
+    Function EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
+    function EmitBytes(const byte1, byte2 : byte) : Integer;overload;
     function EmitByte(const value : byte) : integer; overload;
     function EmitByte(const Operand : TOpCodes) : integer;overload;
     function MakeConstant(const value : pValue) : integer;
@@ -42,7 +39,7 @@ type
    // Function AddGET_LOCAL : Integer;
     Function AddSET_LOCAL : Integer;
     Function AddGET_GLOBAL(const index  : Integer) : integer;
-    function AddDEFINE_GLOBAL(const index : integer): Integer;
+    function AddDEFINE_GLOBAL(const index : byte): Integer;
     Function AddSET_GLOBAL(const index : integer):  Integer;
     Function AddGET_UPVALUE : Integer;
     Function AddSET_UPVALUE : Integer;
@@ -77,26 +74,6 @@ type
     procedure finalize;
   end;
  
-  //use for dissasembly? Maybe useful
-  TInstructionPointer = record
-  private
-    FBytes      : TBytes;
-    FConstants  : TValueList;
-    FIndex      : integer;
-    FCurrent    : pByte;
-    FPrevious   : pByte;
-  public
-    function Move(const index : integer) : boolean;
-    function ByteCount : integer;
-    function ConstantCount : integer;
-    function value(const Index : byte) : pValue;
-    function ByteAt(const Index : integer) : pByte;
-    function Index : integer;
-    function Current : pByte;
-    function Next : pByte;
-    function PeekNext : pByte;
-    procedure Init(const Chunks: TChunks);
-  end;
 
 
 
@@ -131,13 +108,13 @@ begin
 end;
 
 
-Function TChunks.emitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;
+Function TChunks.EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;
 begin
   result := emitByte(byte(Operand));
   emitByte(byte2);
 end;
 
-Function TChunks.emitBytes(const byte1, byte2 : byte) : integer;
+Function TChunks.EmitBytes(const byte1, byte2 : byte) : integer;
 begin
   result := emitByte(byte1);
   emitByte(byte2);
@@ -150,7 +127,7 @@ begin
   inc(FConstantCount);
 end;
 
-function TChunks.OpCodes: TBytes;
+function TChunks.OpCodes: TDynamicBytes;
 begin
   result := FBytes;
 end;
@@ -164,7 +141,7 @@ begin
   result := EmitBytes(OP_CONSTANT,MakeConstant(Value));
 end;
 
-function TChunks.AddDEFINE_GLOBAL(const index : integer) : Integer; //index of the global constant
+function TChunks.AddDEFINE_GLOBAL(const index : byte) : Integer; //index of the global constant
 begin
   assert(index < FConstantCount, 'index for get global is out of range');
   result := EmitBytes(OP_DEFINE_GLOBAL,index);
@@ -368,80 +345,6 @@ begin
 end;
 
 
-{ TInstructionPointer }
-
-function TInstructionPointer.ByteCount: integer;
-begin
-  result := FBytes.Count;
-end;
-
-function TInstructionPointer.value(const Index : byte) : pValue;
-begin
-  assert(index >= 0, 'Index for value is < 0');
-  assert(index < FConstants.count, 'index is > than FConstants Count');
-  result := FConstants.Item[Index];
-end;
-
-function TInstructionPointer.ConstantCount: integer;
-begin
-  result := FConstants.Count;
-end;
-
-function TInstructionPointer.ByteAt(const Index : integer) : pByte;
-begin
-  assert((index >= 0) and (index < FBytes.count));
-  result := FBytes.Item[FIndex];
-end;
-
-function TInstructionPointer.Current: pByte;
-begin
-  result := ByteAt(FIndex);//TOpCodes(FBytes.Item(FIndex)^);
-end;
-
-function TInstructionPointer.Index: integer;
-begin
-  result := FIndex;
-end;
-
-procedure TInstructionPointer.Init(const Chunks: TChunks);
-begin
-  FCurrent := nil;
-  FPrevious := nil;
-  FBytes := Chunks.FBytes;
-  FConstants := chunks.FConstants;
-  FIndex := -1;
-end;
-
-function TInstructionPointer.Move(const index: integer): boolean;
-begin
-  result := false;
-  if (index >= 0) and (index < FBytes.Count) then
-  begin
-    FIndex := Index;
-    result := true;
-  end;
-end;
-
-function TInstructionPointer.Next: pByte;
-begin
-  result := nil;
-  if FBytes.count = 0 then exit;
-
-  inc(FIndex);
-  if FIndex = FBytes.count then exit;
-  result := Current;
-end;
-
-function TInstructionPointer.PeekNext: pByte;
-var
-  i : integer;
-begin
-  result := nil;
-  if FBytes.count = 0 then exit;
-  i := FIndex;
-  inc(i);
-  if i = FBytes.count then exit;
-  result :=  FBytes.Item[i];
-end;
+ 
 
 end.

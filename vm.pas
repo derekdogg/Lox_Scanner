@@ -4,7 +4,7 @@ interface
 
 uses
   sysutils,classes,Chunk,Stacks,
-  LOXTypes, Table, ValueList, objectFunction;
+  LOXTypes, Table, ValueList, objectFunction, values;
 
 const
    Frames_Max = 128;
@@ -99,9 +99,9 @@ begin
   while FInstructionPointer.Next <> nil do
   begin
 
-    //ByteCode.Operation := TOpCodes(FInstructionPointer.Current^);
+    //ByteCode.Operation := TOpCodes(FInstructionPointer.CurrentByte^);
 
-    Case TOpCodes(FInstructionPointer.Current^) of
+    Case TOpCodes(FInstructionPointer.CurrentByte^) of
 
       OP_CONSTANT : begin
          DoConstant;
@@ -231,7 +231,7 @@ var
 begin
    Log('DoConstant');
    MoveNext;
-   constantIndex := FInstructionPointer.Current^;
+   constantIndex := FInstructionPointer.CurrentByte^;
    value := FInstructionPointer.value(constantIndex);
    FStack.Push(value);
 end;
@@ -243,7 +243,7 @@ var
 begin
   Log('greater');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_GREATER));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_GREATER));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -264,7 +264,7 @@ var
 begin
   Log('less');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_LESS));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_LESS));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -285,7 +285,7 @@ begin
   result := nil;
   Log('Add');
   //we assume here we're sitting on an OP_ADDITION in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -324,7 +324,7 @@ var
 begin
   Log('Subtract');
 
-  Assert(FInstructionPointer.Current^ = byte(OP_SUBTRACT));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_SUBTRACT));
   try
     R := FStack.Pop;
     L := FStack.Pop;
@@ -371,7 +371,7 @@ var
 begin
   Log('Multiply');
   //we assume here we're sitting on an OP_MULTIPLY in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_MULTIPLY));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -417,7 +417,7 @@ end;
 procedure TVirtualMachine.Print;
 begin
   Log('Print');
-  Assert(FInstructionPointer.Current^ = byte(OP_PRINT));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_PRINT));
   FResults.Add('PRINT:' + FStack.Pop.ToString);
 end;
 
@@ -466,7 +466,7 @@ var
   R : pValue;
 begin
   Log('Negate');
-  Assert(FInstructionPointer.Current^ = byte(OP_NEGATE));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -492,7 +492,7 @@ var
 begin
   Log('Divide');
   //we assume here we're sitting on an OP_DIVIDE in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_DIVIDE));
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -525,7 +525,7 @@ var
   
 begin
   Log('NotEqual');
-  Assert(FInstructionPointer.Current^ = byte(OP_NOT), 'Current instruction is <> NOT');
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
     result := NewBool(isFalsey(FStack.pop));
     FStack.Push(Result);
@@ -541,7 +541,7 @@ var
 begin
    Log('DoEqual');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.Current^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
+  Assert(FInstructionPointer.CurrentByte^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := FStack.Pop;
@@ -592,9 +592,9 @@ var
   slot : Integer;
 begin
   Log('DoSetLocal');
-  assert(FInstructionPointer.Current^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+  assert(FInstructionPointer.CurrentByte^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
   moveNext;
-  Slot := FInstructionPointer.Current^;
+  Slot := FInstructionPointer.CurrentByte^;
   FStack[slot] := FStack.peek(0);
 end;
 
@@ -606,9 +606,9 @@ var
 
 begin
   Log('DoGetLocal');
-  assert(FInstructionPointer.Current^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+  assert(FInstructionPointer.CurrentByte^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
   moveNext;
-  Slot := FInstructionPointer.Current^;
+  Slot := FInstructionPointer.CurrentByte^;
  //  value := FStack.peek(FStack.Count-1-PeekIdx);
   value := FStack.Item[slot];
   //Log(format('fetched value %s from stack for local using idx %d',[value.tostring, slot]));
@@ -624,9 +624,9 @@ var
 
 begin
   Log('DoGetGlobal');
-  assert(FInstructionPointer.Current^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+  assert(FInstructionPointer.CurrentByte^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
   MoveNext;
-  constantIndex := FInstructionPointer.Current^;
+  constantIndex := FInstructionPointer.CurrentByte^;
   name := FInstructionPointer.Value(constantIndex);
   NameValue := FGlobals.Find(name.tostring);
   Assert(NameValue <> nil, 'expected value does not exist in globals');
@@ -645,10 +645,10 @@ var
   // bcode : pByteCode;
 begin
   Log('DoSetGlobal');
-  assert(FInstructionPointer.Current^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
+  assert(FInstructionPointer.CurrentByte^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
   MoveNext;
-  constantIndex := FInstructionPointer.Current^;
+  constantIndex := FInstructionPointer.CurrentByte^;
   name := FInstructionPointer.Value(constantIndex);
   value := FStack.Peek(0);
   assert(name.IsString, 'name is not a string object');
@@ -702,9 +702,9 @@ var
 
 begin
   Log('Entering DoGlobal');
-  assert(FInstructionPointer.Current^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+  assert(FInstructionPointer.CurrentByte^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
-  constantIndex := FInstructionPointer.Current^;
+  constantIndex := FInstructionPointer.CurrentByte^;
   name := FInstructionPointer.Value(constantIndex);
   value := FStack.Peek(0);
   assert(name.IsString, 'name is not a string object');
