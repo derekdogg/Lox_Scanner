@@ -1,3 +1,16 @@
+//weird edge case, so expecting outer printed twice
+{
+  var a = "outer";
+  {
+    var a = a;
+    print a;
+  }
+  print a;
+}
+
+
+
+
 var global = "global 1" ;
 {
    var a = "1a";

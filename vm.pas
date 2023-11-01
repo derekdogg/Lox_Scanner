@@ -3,8 +3,14 @@ unit vm;
 interface
 
 uses
-  sysutils,classes,Chunk,Stacks,
-  LOXTypes, Table, ValueList, objectFunction, values;
+  sysutils,
+  classes,
+  Chunk,
+  LOXTypes,
+  Table,
+  values,
+  opcodes,
+  natives;
 
 const
    Frames_Max = 128;
@@ -15,29 +21,27 @@ type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
 
-  TFrames = array[0..Frames_Max-1] of TCallFrame;
+
 
 
   TVirtualMachine = record
   private
-    FLog : TStrings;
-    FFrameCount : integer;
-    FFrames : TFrames;
+    FNatives : TNatives;
+    FFrames : TCallFrames;
+    FFrame : TCallFrame;
 
-
-
-    FInstructionPointer  : TInstructionPointer; //pointer to instructions
     FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
-    FStack  : TValueStack; //byte code stack
+    //FStack  : TValueStack; //byte code stack
     FGlobals : TValuePairs;
 
 
 
 
     FResults : TStrings;
+
     procedure ClearLog;
     procedure Log(Const txt : string);
-    procedure PopStack;
+    function PopStack : pValue;
     procedure MoveNext;
     procedure DoConstant;
     Procedure DoAdd;
@@ -56,6 +60,7 @@ type
     procedure DoNil;
     procedure DoGlobal;
     procedure DoGetGlobal;
+    procedure RegisterNatives;
     procedure DoSetGlobal;
     procedure DoPOP;
     procedure DoGetLocal;
@@ -63,14 +68,27 @@ type
     procedure HandleRunTimeError(const E: Exception);
     procedure JumpFalse;
     procedure Jump;
+    function Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
+    procedure DoCall;
+    procedure DoReturn;
+    function CallValue(const callee : pValue; ArgCount : integer) : boolean;
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : pValue ; const Value : pValue);
 
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
-    procedure init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
-    procedure finalize;
+
+    procedure init(
+       //const Natives     : TNatives;
+       const Constants   : TValueList;
+       const Globals     : TValueList;
+       const LoxFunction : pLoxFunction;
+       const results : TStrings);
+     procedure finalize;
+
+
+
   end;
 
 implementation
@@ -82,8 +100,8 @@ uses
 { TVirtualMachine }
 (*function TVirtualMachine.Result: TByteCode;
 begin
-  assert(FStack.Count = 1, 'stack is empty');
-  result := FStack.Pop;
+  assert(FFrames.Stack.Count = 1, 'stack is empty');
+  result := FFrames.Stack.Pop;
 end;*)
 
 function TVirtualMachine.Run : TInterpretResult;
@@ -95,13 +113,13 @@ begin
 
   Log('Run');
   Result := INTERPRET_NONE;
-  if FInstructionPointer.ByteCount = 0 then exit;
-  while FInstructionPointer.Next <> nil do
+  if FFrames.Frame.InstructionPointer.Count = 0 then exit;
+  while FFrames.Frame.InstructionPointer.Next <> nil do
   begin
 
-    //ByteCode.Operation := TOpCodes(FInstructionPointer.CurrentByte^);
+    //ByteCode.Operation := TOpCodes(FFrames.Frame.InstructionPointer.CurrentByte^);
 
-    Case TOpCodes(FInstructionPointer.CurrentByte^) of
+    Case TOpCodes(FFrames.Frame.InstructionPointer.CurrentByte^) of
 
       OP_CONSTANT : begin
          DoConstant;
@@ -207,13 +225,25 @@ begin
         Jump;
       end;
 
-      
+
        OP_LOOP:
        begin
          loop;
        end;
+
+      OP_CALL :
+      begin
+         DoCall; //note here this will create a new stack frame, create a new IP. Something to be aware of.
+      end;
+
+
+      OP_Return :
+      begin
+        DoReturn;
+      end;
+
     end;
-    
+
   end;
   Result := INTERPRET_OK;
 end;
@@ -231,9 +261,9 @@ var
 begin
    Log('DoConstant');
    MoveNext;
-   constantIndex := FInstructionPointer.CurrentByte^;
-   value := FInstructionPointer.value(constantIndex);
-   FStack.Push(value);
+   constantIndex := FFrames.Frame.InstructionPointer.CurrentByte^;
+   value := FFrames.Frame.InstructionPointer.Constant[constantIndex];
+   FFrames.Stack.Push(value);
 end;
 
 
@@ -243,14 +273,14 @@ var
 begin
   Log('greater');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_GREATER));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_GREATER));
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
 
     Result := NewBool(l.Number > r.Number);
-    FStack.Push(result);
+    FFrames.Stack.Push(result);
     FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
@@ -264,13 +294,13 @@ var
 begin
   Log('less');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_LESS));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_LESS));
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
     Result := NewBool(l.Number < r.Number);
-    FStack.Push(Result);
+    FFrames.Stack.Push(Result);
     FStackResults.Add(Result);
  except on E:exception do
      HandleRunTimeError(e);
@@ -285,14 +315,14 @@ begin
   result := nil;
   Log('Add');
   //we assume here we're sitting on an OP_ADDITION in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
 
     result := TAddition.Add(L,R);
-    if assigned(result) then FStack.Push(result);
+    if assigned(result) then FFrames.Stack.Push(result);
 
   except on E:exception do
      HandleRunTimeError(e);
@@ -324,29 +354,29 @@ var
 begin
   Log('Subtract');
 
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_SUBTRACT));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_SUBTRACT));
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
 
     if (L.IsNumber) and (R.IsNumber) then
     begin
       L.number := L.Number - R.Number;
-      FStack.Push(L);
+      FFrames.Stack.Push(L);
       exit;
     end;
 
     if (L.IsString) and (R.IsString) then
     begin
       L.Str := SubtractStrings(L.toString,R.ToString);//StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
-      FStack.Push(L);
+      FFrames.Stack.Push(L);
       exit;
     end;
 
     if (L.IsString) and (R.IsNumber) then
     begin
       L.Str := Copy(L.Str,0, Length(L.Str) - round(R.Number));
-      FStack.Push(L);
+      FFrames.Stack.Push(L);
       exit;
     end;
 
@@ -362,7 +392,7 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.Multiply;
+procedure TVirtualMachine.Multiply;      
 var
   L,R : pValue;
   i : integer;
@@ -371,17 +401,17 @@ var
 begin
   Log('Multiply');
   //we assume here we're sitting on an OP_MULTIPLY in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_MULTIPLY));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
 
     if (L.IsNumber) and (R.IsNumber) then
     begin
 
       L.Number := L.Number * R.Number;
-      FStack.Push(L);
+      FFrames.Stack.Push(L);
       exit;
     end;
 
@@ -393,7 +423,7 @@ begin
          s := s + L.Str
        end;
        L.Str := s;
-       FStack.Push(L);
+       FFrames.Stack.Push(L);
      end;
 
      if (R.IsString) and (L.IsNumber) then
@@ -404,7 +434,7 @@ begin
          s := s + R.Str
        end;
        R.Str := s;
-       FStack.Push(R);
+       FFrames.Stack.Push(R);
      end;
 
      //code duplication
@@ -415,21 +445,81 @@ begin
 end;
 
 procedure TVirtualMachine.Print;
+var
+  value : pValue;
 begin
   Log('Print');
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_PRINT));
-  FResults.Add('PRINT:' + FStack.Pop.ToString);
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_PRINT));
+  //value := FFrames.Stack.Pop;
+  value := FFrames.Stack.Pop;
+   
+  FResults.Add('PRINT:' + Value.ToString);
 end;
+
+
+
+
+function TVirtualMachine.Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
+begin
+  result := false;
+
+  if not (argCount = func.Arity) then
+      raise exception.create('param mismatch');
+
+  FFrame := FFrames.Add(Func);
+
+  Result := True;
+
+end;
+
+
+function TVirtualMachine.CallValue(const callee : pValue; ArgCount : integer) : boolean;
+var
+  value : pValue;
+
+begin
+  result := false;
+  if Callee.IsFunction then
+  begin
+    result := call(callee.Loxfunction, argCount);
+    exit;
+  end;
+
+  if Callee.isNative then
+  begin
+    value := Callee.NativeFunction.Native(ArgCount,FFrames.Stack);
+    FFrames.Stack.Push(value);
+    result := true;
+
+  end;
+
+end;
+
+
+
+procedure TVirtualMachine.DoCall;
+var
+  ArgCount : byte;
+  callee : pValue;
+begin
+  ArgCount := FFrames.Frame.InstructionPointer.Next^; //read byte
+  callee := FFrames.Stack.peek(ArgCount);
+  if not callValue(Callee,ArgCount) then
+  begin
+     raise exception.create('do call mismatch');
+  end;
+end;
+
 
 procedure TVirtualMachine.Loop;
 var
   a,b : pbyte;
   offset : integer;
 begin
-   a := FInstructionPointer.Next;
-   b := FInstructionPointer.Next;
+   a := FFrames.Frame.InstructionPointer.Next;
+   b := FFrames.Frame.InstructionPointer.Next;
    offset := a^ shl 8 + b^;
-   assert(FInstructionPointer.Move(FInstructionPointer.Index - offset) = true, 'failed to move to loop offset');
+   assert(FFrames.Frame.InstructionPointer.Move(FFrames.Frame.InstructionPointer.Index - offset) = true, 'failed to move to loop offset');
 end;
 
 
@@ -438,10 +528,10 @@ var
   a,b : pbyte;
   offset : integer;
 begin
-  a := FInstructionPointer.Next;
-  b := FInstructionPointer.Next;
+  a := FFrames.Frame.InstructionPointer.Next;
+  b := FFrames.Frame.InstructionPointer.Next;
   offset := a^ shl 8 + b^;
-  assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump offset');
+  assert(FFrames.Frame.InstructionPointer.Move(FFrames.Frame.InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
 procedure TVirtualMachine.JumpFalse;
@@ -450,14 +540,14 @@ var
   offset : integer;
 begin
    Log('JumpFalse');
-   a := FInstructionPointer.Next;
-   b := FInstructionPointer.Next;
+   a := FFrames.Frame.InstructionPointer.Next;
+   b := FFrames.Frame.InstructionPointer.Next;
    assert(a <> nil, 'a is nil can''t jump');
    assert(b <> nil, 'b is nil can''t jump');
    offset := a^ shl 8 + b^;
-   if (isFalsey(FStack.peek(0))) then
+   if (isFalsey(FFrames.Stack.peek(0))) then
    begin
-     assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
+     assert(FFrames.Frame.InstructionPointer.Move(FFrames.Frame.InstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
    end;
 end;
 
@@ -466,16 +556,16 @@ var
   R : pValue;
 begin
   Log('Negate');
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_NEGATE));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
+    R := FFrames.Stack.Pop;
     //Assert(R.Operation = OP_CONSTANT); //??
 
     if (R.IsNumber) then
     begin
       R.Number := - R.Number;
-      FStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+      FFrames.Stack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
 
@@ -492,14 +582,14 @@ var
 begin
   Log('Divide');
   //we assume here we're sitting on an OP_DIVIDE in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_DIVIDE));
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
+    R := FFrames.Stack.Pop;
     Assert(R.Number <> 0); //divide by zero exceptions.
-    L := FStack.Pop;
+    L := FFrames.Stack.Pop;
     L.Number := L.Number / R.Number;
-    FStack.Push(L);
+    FFrames.Stack.Push(L);
   except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -525,10 +615,10 @@ var
   
 begin
   Log('NotEqual');
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_NOT), 'Current instruction is <> NOT');
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
-    result := NewBool(isFalsey(FStack.pop));
-    FStack.Push(Result);
+    result := NewBool(isFalsey(FFrames.Stack.pop));
+    FFrames.Stack.Push(Result);
     FStackResults.Add(Result);
    except on E:exception do
      HandleRunTimeError(e);
@@ -541,14 +631,14 @@ var
 begin
    Log('DoEqual');
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FInstructionPointer.CurrentByte^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
+  Assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
   try
-    R := FStack.Pop;
-    L := FStack.Pop;
+    R := FFrames.Stack.Pop;
+    L := FFrames.Stack.Pop;
 
     Result := NewBool(r.ToString = l.ToString);
-    FStack.Push(result);
+    FFrames.Stack.Push(result);
     FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
@@ -562,7 +652,7 @@ var
 begin
   Log('DoTrue');
   value := newBool(true);
-  FStack.Push(value);
+  FFrames.Stack.Push(value);
 end;
 
 
@@ -572,7 +662,7 @@ var
 begin
   Log('DoFalse');
   Value := NewBool(False);
-  FStack.Push(Value);
+  FFrames.Stack.Push(Value);
 end;
 
 procedure TVirtualMachine.DoNil;
@@ -582,7 +672,7 @@ begin
   Log('DoNil');
   new(Value);
   Value.Null := true;
-  FStack.Push(value);
+  FFrames.Stack.Push(value);
 end;
 
 
@@ -592,10 +682,10 @@ var
   slot : Integer;
 begin
   Log('DoSetLocal');
-  assert(FInstructionPointer.CurrentByte^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+  assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
   moveNext;
-  Slot := FInstructionPointer.CurrentByte^;
-  FStack[slot] := FStack.peek(0);
+  Slot := FFrames.Frame.InstructionPointer.CurrentByte^;
+  FFrames.Stack[slot] := FFrames.Stack.peek(0);
 end;
 
 procedure TVirtualMachine.DoGetLocal;
@@ -606,13 +696,47 @@ var
 
 begin
   Log('DoGetLocal');
-  assert(FInstructionPointer.CurrentByte^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+  assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
   moveNext;
-  Slot := FInstructionPointer.CurrentByte^;
- //  value := FStack.peek(FStack.Count-1-PeekIdx);
-  value := FStack.Item[slot];
+  Slot := FFrames.Frame.InstructionPointer.CurrentByte^;
+ //  value := FFrames.Stack.peek(FFrames.Stack.Count-1-PeekIdx);
+  value := FFrames.Stack.Item[slot];
   //Log(format('fetched value %s from stack for local using idx %d',[value.tostring, slot]));
-  FStack.Push(value);
+  FFrames.Stack.Push(value);
+
+end;
+
+
+//suppose we expect 3 values;
+function Foo(const ArgCount: Integer;const Values : TValueStack): pValue;
+var
+  v1,v2,v3 : pValue;
+begin
+  v1 := values.Peek(2);
+  v2 := values.Peek(1);
+  v3 := Values.Peek(0);
+
+  result := newString(v1.toString + v2.ToString + v3.ToString);
+end;
+
+
+
+procedure TVirtualMachine.RegisterNatives;
+var
+  name  : pValue;
+  value : pValue;
+  i : integer;
+begin
+  //built in natives here
+  name := newString('foo');
+  AddGlobal(name,NewNative(foo));
+
+
+  name := newString('DateTime');
+  AddGlobal(name,NewNative(DateTime));
+
+
+  //any others from the list
 
 end;
 
@@ -624,17 +748,17 @@ var
 
 begin
   Log('DoGetGlobal');
-  assert(FInstructionPointer.CurrentByte^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+  assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
   MoveNext;
-  constantIndex := FInstructionPointer.CurrentByte^;
-  name := FInstructionPointer.Value(constantIndex);
+  constantIndex := FFrames.Frame.InstructionPointer.CurrentByte^;
+  name := FFrames.Frame.InstructionPointer.global[constantIndex];
   NameValue := FGlobals.Find(name.tostring);
   Assert(NameValue <> nil, 'expected value does not exist in globals');
-  FStack.push(NameValue.Value);
+  FFrames.Stack.push(NameValue.Value);
 
-  //FInstructionPointer.Next;
+  //FFrames.Frame.InstructionPointer.Next;
 end;
- 
+
 
 procedure TVirtualMachine.DoSetGlobal;
 var
@@ -645,12 +769,12 @@ var
   // bcode : pByteCode;
 begin
   Log('DoSetGlobal');
-  assert(FInstructionPointer.CurrentByte^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
+  assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
   MoveNext;
-  constantIndex := FInstructionPointer.CurrentByte^;
-  name := FInstructionPointer.Value(constantIndex);
-  value := FStack.Peek(0);
+  constantIndex := FFrames.Frame.InstructionPointer.CurrentByte^;
+  name := FFrames.Frame.InstructionPointer.global[constantIndex];
+  value := FFrames.Stack.Peek(0);
   assert(name.IsString, 'name is not a string object');
   NameValue := FGlobals.Find(name.tostring);
   assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
@@ -662,7 +786,7 @@ end;
 procedure TVirtualMachine.DoPOP;
 begin
   Log('Pop');
-  FStack.pop;
+  FFrames.Stack.pop;
 end;
 
 
@@ -674,24 +798,24 @@ end;
 
 procedure TVirtualMachine.ClearLog;
 begin
-  FLog.Clear;
+
 end;
 
 procedure TVirtualMachine.Log(Const txt : string);
 begin
-  FLog.Add(txt);
+
 end;
 
 procedure TVirtualMachine.MoveNext;
 begin
   Log('MoveNext');
-  Assert(FInstructionPointer.Next <> nil,'Expected constant value following constant operation');
+  Assert(FFrames.Frame.InstructionPointer.Next <> nil,'Expected constant value following constant operation');
 end;
 
-procedure TVirtualMachine.PopStack;
+function TVirtualMachine.PopStack : pValue;
 begin
   Log('PopStack');
-  FStack.Pop;
+  result := FFrames.Stack.Pop;
 end;
 
 procedure TVirtualMachine.DoGlobal;
@@ -702,46 +826,85 @@ var
 
 begin
   Log('Entering DoGlobal');
-  assert(FInstructionPointer.CurrentByte^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+  assert(FFrames.Frame.InstructionPointer.CurrentByte^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
-  constantIndex := FInstructionPointer.CurrentByte^;
-  name := FInstructionPointer.Value(constantIndex);
-  value := FStack.Peek(0);
+  constantIndex := FFrames.Frame.InstructionPointer.CurrentByte^;
+  name := FFrames.Frame.InstructionPointer.global[constantIndex];
+  value := FFrames.Stack.Peek(0);
   assert(name.IsString, 'name is not a string object');
   AddGlobal(name,value);
   popStack;
   Log('Exiting DoGlobal');
 end;
 
+ 
 
-
-procedure TVirtualMachine.init(const IP : TInstructionPointer; const results : TStrings; const log : TStrings);
+procedure TVirtualMachine.DoReturn;
+var
+  result : pValue;
 begin
+    //showmessage('entered emit return');
+
+    // Get the result and decrement frame count
+    result := popStack;
+
+
+    // Check if this is the top-level frame
+    if FFrames.Count = 0 then
+    begin
+      // Handle the top-level frame
+      popStack;
+      //Exit(INTERPRET_OK); what goes here?
+    end
+    else
+    begin
+       FFrames.Stack.Push(result);
+
+       FFrames.Remove(FFrames.Frame);
+
+    end;
+end;
+
+
+
+
+
+
+procedure TVirtualMachine.init(
+  //const Natives     : TNatives;
+  const Constants   : TValueList;
+  const Globals     : TValueList;
+  const LoxFunction : pLoxFunction;
+  const results : TStrings);
+var
+  Value : pValue;
+begin
+
+
   assert(Assigned(results),'No way to display results as no string storage passed in');
-  assert(assigned(log), 'no log for vm');
-  FLog := log;
-  FLog.clear;
+
   FResults := results;
-  FInstructionPointer := IP;
-  FStack.Init;
+
   FGlobals.Init;
-  FStackResults.Init(true);
 
-  //frames
-  FFrameCount := 0;
+  RegisterNatives;
 
-(*   We’ve moved ip out of the VM struct and into
-     CallFrame. We need to fix every line of code in the VM that touches ip to
-     handle that. Also, the instructions that access local variables by stack slot
-     need to be updated to do so relative to the current CallFrame’s slots field. *)
+
+
+  FStackResults := TValueList.Create(true);
+
+  FFrames := TCallFrames.create(Constants,Globals);
+
+  call(loxfunction, 0);
+
 end;
 
 
 procedure TVirtualMachine.finalize;
 begin
-  FStack.Finalize;
+  FFrames.Stack.Free;
   FGlobals.Finalize;
-  FStackResults.Finalize;
+  FStackResults.free;
 end;
 
 

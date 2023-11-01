@@ -23,6 +23,8 @@ type
   pLocals = ^TLocals;
   TLocals = array[0..MAX_CAPACITY - 1] of pLocal;
 
+
+  pLocalList = ^TLocalList;
   TLocalList = record
   private
     FOwnValues     : Boolean;

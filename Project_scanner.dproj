@@ -37,22 +37,20 @@
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
     <DCCReference Include="Addition.pas" />
-    <DCCReference Include="ByteArray.pas" />
-    <DCCReference Include="ByteCodesArray.pas" />
     <DCCReference Include="Chunk.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="CompilerRules.pas" />
     <DCCReference Include="Exceptions.pas" />
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
+    <DCCReference Include="Natives.pas" />
+    <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>Form1</Form>
     </DCCReference>
-    <DCCReference Include="Stacks.pas" />
     <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />
-    <DCCReference Include="ValueArray.pas" />
-    <DCCReference Include="ValueList.pas" />
+    <DCCReference Include="Values.pas" />
     <DCCReference Include="vm.pas" />
   </ItemGroup>
 </Project>

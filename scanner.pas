@@ -272,6 +272,12 @@ begin
   begin
     ln.chars.Move(-1);
   end;
+
+  (*text := FScanner.ln.items[Token.Line].text;
+  text := copy(text,token.Start,token.length);
+*)
+
+  result.txt := copy(ln.text,result.start,result.length);
 end;
 
 

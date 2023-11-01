@@ -3,34 +3,36 @@ unit Chunk;
 interface
 
 uses
-  Loxtypes,
-  ValueList,
-  Values,
-  IntegerArray,
-  ByteArray;
+  classes,OpCodes;
 
-
-const
-  MAX_JUMP =  65535;
+ 
 
 type
 
-
-  TChunks = record
+  TChunks = class
   private
-    FConstantCount : integer;
-    FBytes       : TDynamicBytes;
-    FConstants   : TValueList;
+    //FConstantCount : integer;
+    FBytes     :    TList;
+    function getValue(const index: integer): pByte;
+
+
+
     // FLine      : TIntegers;
   public
-    function Constants : TValueList;
-    function OpCodes : TDynamicBytes;
+    function Count : Integer;
+
     Function EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
     function EmitBytes(const byte1, byte2 : byte) : Integer;overload;
     function EmitByte(const value : byte) : integer; overload;
     function EmitByte(const Operand : TOpCodes) : integer;overload;
-    function MakeConstant(const value : pValue) : integer;
-    function EmitConstant(const Value: pValue) : Integer; //rename to check all instances
+
+    function AddDEFINE_GLOBAL(const index : byte) : Integer;
+    function AddGET_GLOBAL(const Index : integer) : Integer;
+    function AddSET_GLOBAL(const Index : integer): Integer;
+
+
+
+//    function EmitConstant(const Value: pointer) : Integer; //rename to check all instances
     function AddReturn : integer;
     Function AddNIL : Integer;
     Function AddTRUE : Integer;
@@ -38,9 +40,6 @@ type
     Function AddPOP : Integer;
    // Function AddGET_LOCAL : Integer;
     Function AddSET_LOCAL : Integer;
-    Function AddGET_GLOBAL(const index  : Integer) : integer;
-    function AddDEFINE_GLOBAL(const index : byte): Integer;
-    Function AddSET_GLOBAL(const index : integer):  Integer;
     Function AddGET_UPVALUE : Integer;
     Function AddSET_UPVALUE : Integer;
     Function AddGET_PROPERTY : Integer;
@@ -70,8 +69,11 @@ type
 //    Function AddCLASS : Integer;
     Function AddINHERIT : Integer;
     Function AddMETHOD  : Integer;
-    procedure init;
-    procedure finalize;
+    constructor Create;
+    destructor destroy;override;
+    function BytesToString : TStrings;
+
+    property Item[const index : integer] : pByte read getValue; default;
   end;
  
 
@@ -81,7 +83,7 @@ type
 
 implementation
 uses
-  Exceptions;
+  Sysutils, Exceptions;
 
 
 function NewOpCode(const OPCode : TOpCodes) : pByte;
@@ -121,41 +123,38 @@ begin
 end;
 
 
-function TChunks.MakeConstant(const value : pValue) : integer;
+
+function TChunks.getValue(const index: integer): pByte;
 begin
-  result := FConstants.Add(Value);
-  inc(FConstantCount);
+  result := FBytes[index];
 end;
 
-function TChunks.OpCodes: TDynamicBytes;
+(*function TChunks.OpCodes: TList;
 begin
   result := FBytes;
-end;
+end; *)
 
 //add constant opcode followed by index of constant in constants array
-function TChunks.EmitConstant(const Value: pValue) : Integer;
+(*function TChunks.EmitConstant(const Value: pointer) : Integer;
 begin
-  assert(Assigned(Value), 'Value for emission is nil.. please try again later. Have a nice day you are screwed');
-  if FConstantCount = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
-  inc(FConstantCount);
+  (*assert(Assigned(Value), 'Value for emission is nil.. please try again later. Have a nice day you are screwed');
+  if FConstants.Count = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
+  //inc(FConstantCount);
   result := EmitBytes(OP_CONSTANT,MakeConstant(Value));
-end;
+end;    *)
 
 function TChunks.AddDEFINE_GLOBAL(const index : byte) : Integer; //index of the global constant
 begin
-  assert(index < FConstantCount, 'index for get global is out of range');
   result := EmitBytes(OP_DEFINE_GLOBAL,index);
 end;
 
 function TChunks.AddGET_GLOBAL(const Index : integer) : Integer;
 begin
-  assert(index < FConstantCount, 'index for get global is out of range');
   result := EmitBytes(OP_GET_GLOBAL, index);
 end;
 
 function TChunks.AddSET_GLOBAL(const Index : integer): Integer;
 begin
-  assert(index < FConstantCount, 'index for set global is out of range');
   result := EmitBytes(OP_SET_GLOBAL,index);
 end;
 
@@ -327,22 +326,38 @@ begin
   result := EmitByte(OP_TRUE);
 end;
 
-function TChunks.Constants: TValueList;
+function TChunks.BytesToString: TStrings;
+var
+  i : integer;
 begin
-  result := FConstants;
+  result := TStringList.create;
+
+  for i := 0 to FBytes.Count-1 do
+  begin
+    result.add(Inttostr(pByte(FBytes[i])^));
+  end;
 end;
 
-procedure TChunks.finalize;
+
+
+function TChunks.Count: Integer;
 begin
-  FBytes.Finalize;
-  FConstants.Finalize;
+  result := FBytes.Count;
 end;
 
-procedure TChunks.init;
+constructor TChunks.Create;
 begin
-   FBytes.Init(true);
-   FConstants.Init(true); //list ownership of pointers
+  FBytes := TList.create;//FBytes.Init(true);
+  //FConstants := constants;//TList.create; //.Init(true); //list ownership of pointers
 end;
+
+destructor TChunks.destroy;
+begin
+  FBytes.Free;
+  inherited;
+end;
+
+
 
 
  

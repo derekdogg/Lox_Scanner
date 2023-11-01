@@ -39,7 +39,7 @@ type
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
-
+ pTokenIterator = ^TTokenIterator;
  TTokenIterator = record
  private
    FIndex : integer;

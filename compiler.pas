@@ -2,14 +2,14 @@ unit compiler;
 
 interface
 
-uses classes,LOXTypes, TokenArray, Scanner, Chunk, locals, objectFunction,values;
+uses classes,LOXTypes, TokenArray, Scanner, locals,values, opCodes;
 
 
 type
 
  TParseFn = procedure(const canAssign : boolean) of object;
 
- 
+
 
 
   pParseRule = ^TParseRule;
@@ -21,28 +21,137 @@ type
 
   TParseRules = array[tknull..tkEOF] of pParseRule;
 
+
+
+
+  TCompiler = class;
+
+
+
   TCompiler = class
   private
+    FGlobals : TValueList;   //scope wide
+    FConstants : TValueList;
+
+    FCurrent : TCompiler;
 
     FFunc : pLoxFunction;
     FFunctionKind : TFunctionKind;
 
     FParseRules : TParseRules;
 
-    FLogging : TStrings;
+
     FScopeDepth : integer;
 //    FLocalCount : integer;
-    Flocals : TLocalList;
-    FChunks : TChunks;
+    Flocals : pLocalList;
+   // FChunks : TChunks;
 
-    FTokens : TTokenIterator;
+    FTokens : pTokenIterator;
     FScanner : TScanner;
-//    procedure emitConstant(value : TValue);
- //   function NumberVal(num: Integer): TValue;
- //   function NumToValue(num: Double): TValue;
+    //---------------------Compiler rules --------------------------------------
+procedure  CreateRulesForOpenBrace;
+
+
+procedure  CreateRulesForCloseBrace;
+
+
+procedure  CreateRulesForClose_Bracket;
+
+
+procedure  CreateRuleForOpen_bracket;
+
+
+
+procedure  CreateRulesForBang;
+
+
+procedure  CreateRulesForComment;
+
+
+procedure  CreateRulesForDivide;
+
+
+procedure  CreateRulesForNil;
+
+
+procedure  CreateRulesForNotEqual;
+
+
+procedure  CreateRulesForNumber;
+
+
+
+procedure  CreateRulesForEqualEqual;
+
+
+
+procedure  CreateRulesForFalse;
+
+
+procedure  CreateRulesForTrue;
+
+
+procedure  CreateRulesForWhile;
+
+
+procedure  CreateRulesForGreaterThan;
+
+
+procedure  CreateRulesForGreaterThanEqual;
+
+procedure  CreateRulesForIdentifier;
+
+procedure  CreateRulesForIF;
+
+
+procedure  CreateRulesForLessThan;
+
+procedure  CreateRulesForLessThanEqual;
+
+
+procedure  CreateRulesForPlus;
+
+
+
+procedure  CreateRulesForPrint;
+
+
+
+procedure  CreateRulesForSemiColon;
+
+
+procedure  CreateRulesForString;
+
+
+procedure  CreateRulesForMinus;
+
+
+procedure  CreateRulesForMultiply;
+
+
+procedure  CreateRulesForElse;
+
+
+procedure  CreateRulesForEOF;
+
+
+procedure  CreateRulesForOR;
+
+
+procedure  CreateRulesForAnd;
+
+procedure CreateRulesForComma;
+
+
+procedure CreateRules;
 
 
     //--------------------------------------------------------------------------
+    procedure EmitReturn;
+    function EndCompiler: pLoxFunction;
+   procedure EmitConstant(const value : pValue);
+    procedure markInitialized();
+    procedure funDeclaration;
     procedure patchJump(const offset : integer);
     function emitJump(const instruction : TOpCodes) : integer;
     procedure ifStatement;
@@ -52,20 +161,17 @@ type
     function  checkKind(Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
     procedure whileStatement();
+    procedure returnStatement();
     procedure emitLoop(const loopStart : integer);
 
     Function resolveLocal(Token : pToken) : integer;
     procedure AddLocal(const Token: pToken);
     function  identifiersEqual(const a, b: PToken): Boolean;
-    procedure declareVariable();
+    procedure declareLocalVariable();
     procedure Error(Const msg : String);
     function argumentList: Byte;
     procedure NamedVariable(const Token : pToken; const CanAssign : Boolean);
     function advance : boolean;
-
-
-
-
 
     procedure printStatement;
     procedure ExpressionStatement;
@@ -76,24 +182,11 @@ type
     Procedure statement;
     procedure declaration;
     procedure varDeclaration;
-    function identifierConstant(const token : pToken) : byte;
-    function parseVariable(const errorMessage : string) : byte;
-    procedure defineVariable(const constantidx : integer);
 
-    procedure parsePrecedence(precedence : TPrecedence);
-
-
-
-    procedure consume(const TokenKind : TTokenKind; const Message : String);
-    function GetParseRule(const TokenKind: TTokenKind): pParseRule;
-    procedure SetParseRule(const TokenKind: TTokenKind;
-      const Value: pParseRule);
-  public
     Procedure and_(const canAssign : boolean);
     Procedure or_(const canAssign : boolean);
     Procedure variable(const canAssign : boolean);
     procedure Strings(const canAssign: Boolean);
-    procedure EmitBytes(const Byte1,Byte2 : Byte);
     procedure Number(const canAssign : boolean);
     procedure Binary(const canAssign : boolean);
     procedure Unary(const canAssign : boolean);
@@ -101,15 +194,34 @@ type
     procedure literal(const CanAssign : boolean);
     procedure grouping(const canAssign : boolean);
 
-    function Chunks : TChunks;
+//    function Chunks : TChunks;
     procedure expression;
 
-    procedure DoCompile;
-    constructor Create(
+    function declareGlobalVariable(const token : pToken) : integer;
+    function parseVariable(const errorMessage : string) : integer;
+    procedure defineVariable(const constantidx : integer);
 
-        Const Scanner : TScanner;
-        Const logging : TStrings;
-        Const FunctionKind : TFunctionKind);
+    procedure parsePrecedence(precedence : TPrecedence);
+
+    procedure DoFunction (FunctionKind : TFunctionKind);
+
+    procedure consume(const TokenKind : TTokenKind; const Message : String);
+    function GetParseRule(const TokenKind: TTokenKind): pParseRule;
+    procedure SetParseRule(const TokenKind: TTokenKind;
+      const Value: pParseRule);
+  public
+    
+
+
+    function DoCompile : pLoxFunction;
+
+   constructor Create(
+       const Constants : TValueList;
+       const Globals : TValueList;
+       const Tokens  : pTokenIterator;
+       const Scanner : TScanner;
+       const FunctionKind : TFunctionKind);
+
     destructor destroy;override;
 
 
@@ -127,16 +239,24 @@ uses sysutils;
 
 function TCompiler.advance : boolean;
 begin
-  if FTokens.Current <> nil then
-    log('Before Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
+  //if FTokens.Current <> nil then
+  //  log('Before Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
   result := FTokens.MoveNext <> nil;
 
-  if FTokens.Current <> nil then
-    log('After Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
+  //if FTokens.Current <> nil then
+  //  log('After Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
 
 end;
 
 
+// note : when this reaches here for the expression for the print statement, suddenly we are in the toplevel compilre fun
+procedure TCompiler.EmitConstant(const value : pValue);
+var
+  constantIdx : integer;
+begin
+  constantIdx := FConstants.Add(value);
+  FFunc.Chunks.EmitBytes(OP_CONSTANT,ConstantIdx);
+end;
 
 procedure TCompiler.Number(const canAssign : boolean);
 var
@@ -144,6 +264,7 @@ var
   number : double;
   text : string;
   Value : pValue;
+
 begin
   Token := FTokens.Previous;
   if Token = nil then exit;
@@ -153,7 +274,7 @@ begin
 
   Value := NewNumber(strToFloat(text));
 
-  FChunks.EmitConstant(Value);
+  EmitConstant(Value);
 end;
 
 
@@ -167,9 +288,9 @@ end;
 procedure TCompiler.literal(const CanAssign: boolean);
 begin
   case  FTokens.Previous.Kind of
-    tkFalse : FChunks.AddFALSE;
-    tknil   : FChunks.AddNil;
-    tkTrue  : FChunks.AddTrue;
+    tkFalse : FFunc.Chunks.AddFALSE;
+    tknil   : FFunc.Chunks.AddNil;
+    tkTrue  : FFunc.Chunks.AddTrue;
   end;
 end;
 
@@ -180,8 +301,8 @@ begin
   TokenKind := FTokens.previous.Kind;
   parsePrecedence(PREC_UNARY);
   case TokenKind of
-    tkMinus : FChunks.AddNEGATE;
-    tkBang  : FChunks.ADDNOT;
+    tkMinus : FFunc.Chunks.AddNEGATE;
+    tkBang  : FFunc.Chunks.ADDNOT;
   end;
 
 end;
@@ -203,7 +324,7 @@ end;
 
 procedure TCompiler.Log(const txt : String);
 begin
-  FLogging.add(txt);
+
 end;
 
 
@@ -216,7 +337,7 @@ begin
   endJump := emitJump(OP_JUMP);
 
   patchJump(elseJump);
-  FChunks.ADDPOP;
+  FFunc.Chunks.ADDPOP;
 
   parsePrecedence(PREC_OR);
   patchJump(endJump);
@@ -229,7 +350,7 @@ var
   endJump : integer;
 begin
   endJump := emitJump(OP_JUMP_IF_FALSE);
-  FChunks.AddPOP;
+  FFunc.Chunks.AddPOP;
   parsePrecedence(PREC_AND);
   patchJump(endJump);
 end;
@@ -239,14 +360,14 @@ procedure TCompiler.printStatement;
 begin
   expression;
   consume(tkSemiColon, 'Expect ";" after value.');
-  FChunks.ADDPRINT;
+  FFunc.Chunks.ADDPRINT;
 end;
 
 procedure TCompiler.ExpressionStatement;
 begin
   Expression;
   Consume(tkSemiColon, 'Expect ";" after value.');
-  FChunks.ADDPOP;
+  FFunc.Chunks.ADDPOP;
 end;
 
 
@@ -262,7 +383,7 @@ end;
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
   } else {
-    arg = identifierConstant(&name);
+    arg = declareGlobalVariable(&name);
     getOp = OP_GET_GLOBAL;
     setOp = OP_SET_GLOBAL;
 *)
@@ -283,7 +404,7 @@ begin
 
   for i := FLocals.Count-1 downto 0 do
   begin
-    Local := Flocals[i];
+    Local := Flocals^[i];
     if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
     b := FScanner.ln.items[Local.Token.Line].text;
     b := copy(b,local.token.Start,local.token.length);
@@ -312,9 +433,9 @@ end;
 
 procedure TCompiler.NamedVariable(const Token : pToken;const CanAssign : Boolean);
 var
-  getOp,setOp : TOpCodes;
-  Idx : integer;
-  arg : integer;
+   getOp,setOp : TOpCodes;
+   Idx : integer;
+   arg : integer;
 begin
 
   Idx := resolveLocal(Token);
@@ -325,32 +446,28 @@ begin
     setOp := OP_SET_LOCAL;
   end
   else
-  begin
-    Log(format('local for %s not found in scope. Must be global',[TokenName(Token)]));
+  begin //local not found in scope must be global
 
-    Idx := identifierConstant(Token);
+
+    Idx := declareGlobalVariable(Token); //index of global
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
   end;
 
   if canAssign and (match(tkEqual)) then
   begin
-     Log(format('Entering expression evaluation for assignable var',[TokenName(Token)]));
-
      expression();
-     Log(format('Exited expression evaluation for assignable var',[TokenName(Token)]));
 
-     //FChunks.AddSET_GLOBAL(global);
-     FChunks.emitBytes(byte(setOp), Idx);
+     //FFunc.Chunks.AddSET_GLOBAL(global);
+     FFunc.Chunks.emitBytes(byte(setOp), Idx);
 
-     Log(format('Adding byte for opcode %s, pointing to idx : %d',[opCodeToStr(setOp), idx]));
    end
    else
    begin
-     //FChunks.AddGET_GLOBAL(global);
-     Log('non assignable token');
-     FChunks.emitBytes(byte(getOp), Idx);
-     Log(format('Adding byte for opcode %s, pointing to index : %d ',[opCodeToStr(getOp), idx]));
+     //FFunc.Chunks.AddGET_GLOBAL(global);
+
+     FFunc.Chunks.emitBytes(byte(getOp), Idx);
+
    end;
 end;
 
@@ -360,21 +477,37 @@ begin
 end;
 
 
+procedure TCompiler.markInitialized();
+begin
+  if FScopeDepth = 0 then exit;
+  FLocals^[FLocals.Count-1].Depth := FScopeDepth;
+
+end; {
+
+  if (current->scopeDepth == 0) return;
+
+  current->locals[current->localCount - 1].depth =
+      current->scopeDepth;
+}
+
+
+
+
+
 procedure TCompiler.defineVariable(const constantIdx : integer);
 begin
   log('define variable');
-  if (FscopeDepth > 0) then
+  if (FscopeDepth > 0) then  // If we're in a nested scope, mark the variable as initialized locally.
   begin
     log('scope depth is > 0 therefore not global');
+    MarkInitialized;
     exit;
   end;
 
+  // If we're in the outermost scope, define the variable as a global.
   log('define global variable');
-  FChunks.AddDEFINE_GLOBAL(constantidx);
-end; {
-  emitBytes(OP_DEFINE_GLOBAL, global);
-}
-
+  FFunc.Chunks.AddDEFINE_GLOBAL(constantidx);
+end;
 
 procedure TCompiler.parsePrecedence(precedence : TPrecedence);
 var
@@ -417,30 +550,39 @@ begin
 end;
 
 
-function TCompiler.identifierConstant(const token : pToken) : byte;
+function TCompiler.declareGlobalVariable(const token : pToken) : integer;
 var
   value : pValue;
   text : string;
+
 begin
   assert(token <> nil,'Name is nil, cannot add identified constant');
   text := FScanner.ln.items[Token.Line].text;
   text := copy(text,token.Start,token.length);
   Value :=  NewString(Text);//StringValue(text);
-  result := FChunks.MakeConstant(Value);
+
+  if FGlobals.IndexOf(Value) = -1 then
+  begin
+    result := FGlobals.Add(Value);
+  end;
 end;
 
 
-function TCompiler.parseVariable(const errorMessage : string) : byte;
+function TCompiler.parseVariable(const errorMessage : string) : integer;
 begin
   Log('Parse variable');
   consume(tkIdentifier, errorMessage);
-  DeclareVariable;
+
   if FScopeDepth > 0 then
   begin
+    declareLocalVariable;
     result := 0;
     exit;
   end;
-  result := identifierConstant(FTokens.previous); //index of the variable name in the constant table
+
+
+
+  result := declareGlobalVariable(FTokens.previous); //index of the variable name in the constant table
 end;
 
 
@@ -478,14 +620,17 @@ begin
   end;
   new(Local);
   Local.Token := Token;
-  local.depth := FScopeDepth;
+  local.depth := -1 ; //declare undefined
   Local.isCaptured := False; //presumably for future captures
   FLocals.Add(Local);
   Log(format('Adding new local %s, %s. Current local count : %d',[TokenKindToStr(Token.Kind),TokenName(Token),FLocals.Count]));
 end;
 
+ 
 
-procedure TCompiler.declareVariable();
+
+
+procedure TCompiler.declareLocalVariable();
 var
   i: Integer;
   token: pToken; // Assuming PToken is a pointer to the Token struct.
@@ -498,13 +643,13 @@ begin
 
   for i := Flocals.Count - 1 downto 0 do
   begin
-    local := Flocals[i];
+    local := Flocals^[i];
     if (local.depth <> -1) and (local.depth < FScopeDepth) then
     begin
       Break;
     end;
 
-    if identifiersEqual(token, Flocals[i].token) then
+    if identifiersEqual(token, Flocals^[i].token) then
     begin
       error('Already a variable with this name in this scope.');
       exit;
@@ -522,13 +667,16 @@ begin
 
   constantIdx := parseVariable('Expect variable name.');
 
+
+
+
   if (match(tkequal)) then
   begin
     expression();
   end
   else
   begin
-    FChunks.ADDNil;
+    FFunc.Chunks.ADDNil;
   end;
   consume(tkSemiColon,'Expect ";" after variable declaration.');
 
@@ -572,10 +720,10 @@ begin
 
   while (Flocals.Count > 0) and (FLocals.Last.depth > FscopeDepth) do
   begin
-    FChunks.AddPOP;
+    FFunc.Chunks.AddPOP;
     Local := FLocals.Remove(FLocals.Count-1);
     Dispose(Local);
-    Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
+    //Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
   end;
 end;
 
@@ -584,28 +732,71 @@ var
   Jump: Integer;
 begin
   // -2 to adjust for the bytecode for the jump offset itself.
-  Jump := FChunks.OPCodes.Count - OffSet - 2;
+  Jump := FFunc.Chunks.Count - OffSet - 2;
 
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
 
-  FChunks.OpCodes.Item[OffSet]^   := (Jump shr 8) and $FF;
-  FChunks.OpCodes.Item[OffSet+1]^ := Jump and $FF;
+  pbyte(FFunc.Chunks[OffSet])^   := (Jump shr 8) and $FF;
+  pByte(FFunc.Chunks[OffSet+1])^ := Jump and $FF;
 end;
 
 function TCompiler.emitJump(const instruction : TOpCodes) : integer;
 begin
-  FChunks.emitByte(Byte(instruction));
-  FChunks.emitByte($FF);
-  FChunks.emitByte($FF);
-  result :=  FChunks.OpCodes.count - 2;
+  FFunc.Chunks.emitByte(Byte(instruction));
+  FFunc.Chunks.emitByte($FF);
+  FFunc.Chunks.emitByte($FF);
+  result :=  FFunc.Chunks.count - 2;
 end;
+
+
+(*
+
+  Consume(TOKEN_LEFT_PAREN, 'Expect "(" after "if".');
+
+  if Match(TOKEN_VAR) then
+    begin
+      BeginScope;
+      VarDeclaration;
+      VarDeclared := True;
+    end;
+
+  Expression;
+  Consume(TOKEN_RIGHT_PAREN, 'Expect ")" after condition.');
+
+  ThenJump := EmitJump(op_Jump_If_False);
+  EmitByte(op_Pop);
+  Statement;
+
+  ElseJump := EmitJump(op_Jump);
+  PatchJump(ThenJump);
+  EmitByte(op_Pop);
+
+  if Match(TOKEN_ELSE) then
+    Statement;
+  PatchJump(ElseJump);
+
+  if VarDeclared then
+    EndScope;
+
+
+
+*)
 
 procedure TCompiler.ifStatement;
 var
   thenJump,elseJump : integer;
+  vardeclared : boolean;
 begin
   consume(tkOpenBracket,'Expect "(" after "if".');
+
+  if Match(tkvar) then
+    begin
+      BeginScope;
+      VarDeclaration;
+      VarDeclared := True;
+    end;
+
   expression();
   consume(tkCloseBracket, 'Expect ")" after condition.');
 
@@ -619,6 +810,9 @@ begin
   if (match(tkElse)) then statement();
 
   patchJump(elseJump);
+
+  if VarDeclared then
+    EndScope;
 end;
 
 
@@ -627,32 +821,92 @@ procedure TCompiler.emitLoop(const loopStart : integer);
 var
   offset : integer;
 begin
-  FChunks.emitByte(OP_LOOP);
+  FFunc.Chunks.emitByte(OP_LOOP);
 
-  offset := FChunks.OpCodes.count - loopStart + 2;
+  offset := FFunc.Chunks.count - loopStart + 2;
   if (offset > MAX_JUMP) then error('Loop body too large.');
 
-  FChunks.emitByte((offset shr 8) and $ff);
-  FChunks.emitByte(offset and $ff);
+  FFunc.Chunks.emitByte((offset shr 8) and $ff);
+  FFunc.Chunks.emitByte(offset and $ff);
 
 end;
+
+(*LoopStart := CurrentChunk^.Count;
+
+  Consume(TOKEN_LEFT_PAREN, 'Expect "(" after "while".');
+
+  if Match(TOKEN_VAR) then
+    begin
+      BeginScope;
+      VarDeclaration;
+      VarDeclared := True;
+    end;
+
+  Expression;
+  Consume(TOKEN_RIGHT_PAREN, 'Expect ")" after condition.');
+
+  ExitJump := EmitJump(op_Jump_If_False);
+
+  EmitByte(op_Pop);
+
+  Statement;
+
+  EmitLoop(LoopStart);
+
+  PatchJump(ExitJump);
+  EmitByte(op_Pop);
+
+  if VarDeclared then
+    EndScope;*)
 
 procedure TCompiler.whileStatement();
 var
   exitJump : integer;
   loopStart : integer;
+  vardeclared : boolean;
 begin
   
-  loopStart := FChunks.OpCodes.count;
+  loopStart := FFunc.Chunks.count;
   consume(tkOpenBracket, 'Expect "(" after while.');
+  if Match(tkVar) then
+    begin
+      BeginScope;
+      VarDeclaration;
+      VarDeclared := True;
+    end;
+
   expression();
   consume(tkCloseBracket, 'Expect ")" after condition.');
   exitJump := emitJump(OP_JUMP_IF_FALSE);
-  FChunks.addPOP;
+  FFunc.Chunks.addPOP;
   statement();
   emitLoop(loopStart);
   patchJump(exitJump);
-  FChunks.addPOP;
+  FFunc.Chunks.addPOP;
+  if VarDeclared then
+    EndScope
+end;
+
+
+
+
+procedure TCompiler.returnStatement();
+begin
+  
+  if (FFunc.FuncKind = TYPE_SCRIPT) then
+  begin
+    raise exception.create('Cant return from top-level code.');
+  end;
+
+  if match(tkSemiColon) then
+  begin
+    emitReturn;
+    exit;
+  end;
+
+  expression;
+  consume(tkSemiColon, 'Expect ";" after return value.');
+  FFunc.Chunks.AddReturn;
 end;
  
 procedure TCompiler.statement;
@@ -691,6 +945,14 @@ begin
   if (match(tkWhile)) then
   begin
     whileStatement();
+    exit;
+  end;
+
+
+  if (match(tkReturn)) then
+  begin
+    
+    returnStatement();
     exit;
   end;
 
@@ -743,6 +1005,9 @@ begin
 end;
 
 
+
+
+
 procedure TCompiler.Strings(const canAssign: Boolean);
 var
   Value : pValue;
@@ -753,36 +1018,17 @@ begin
   Text :=  FScanner.ln.items[Token.Line].text;
   text := copy(text,token.Start+1,token.length-2);
   Value := NewString(Text);
-  FChunks.EmitConstant(Value);
+  EmitConstant(Value);
 end;
 
-procedure TCompiler.EmitBytes(const Byte1,Byte2 : Byte);
-begin
-
-end;
 
 
 procedure TCompiler.call(const canAssign : boolean);
 var
   argCount : byte;
 begin
-  argCount := argumentList();
-  emitBytes(ord(OP_CALL), argCount);
-end;
-
-function TCompiler.Chunks: TChunks;
-begin
-  result := FChunks;
-end;
-
-//virtual machine calls compile from interpret...
-procedure TCompiler.DoCompile;
-begin
-  advance;
-  while not Match(tkEOF) do
-  begin
-    Declaration;
-  end;
+  argCount := argumentList;
+  FFunc.Chunks.emitBytes(ord(OP_CALL), argCount);
 end;
 
 (*//< Global Variables binary
@@ -800,264 +1046,616 @@ begin
 
 
   Case (TokenKind) of
-    TkPlus              : FChunks.AddADD;
-    TkMinus             : FChunks.AddSUBTRACT;
-    tkAsterisk          : FChunks.AddMULTIPLY;
-    tkEqualEqual        : FChunks.AddEQUAL;
-    tkBangEqual         : FChunks.AddNOTEqual;
-    tkLessThan          : FChunks.AddLess;
-    tkLessThanEqual     : FChunks.AddLESSTHANEQUAL;
-    tkGreaterThanEqual  : FChunks.AddGREATERTHANEQUAL;
-    tkgreaterthan       : FChunks.AddGREATER;
-    tkSlash             : FChunks.AddDivide;
+    TkPlus              : FFunc.Chunks.AddADD;
+    TkMinus             : FFunc.Chunks.AddSUBTRACT;
+    tkAsterisk          : FFunc.Chunks.AddMULTIPLY;
+    tkEqualEqual        : FFunc.Chunks.AddEQUAL;
+    tkBangEqual         : FFunc.Chunks.AddNOTEqual;
+    tkLessThan          : FFunc.Chunks.AddLess;
+    tkLessThanEqual     : FFunc.Chunks.AddLESSTHANEQUAL;
+    tkGreaterThanEqual  : FFunc.Chunks.AddGREATERTHANEQUAL;
+    tkgreaterthan       : FFunc.Chunks.AddGREATER;
+    tkSlash             : FFunc.Chunks.AddDivide;
     else
     begin
       raise exception.create('A token kind not catered for in a binary operation was encountered');
     end;
   end
 
-   {
-//> Types of Values comparison-operators
-    case TOKEN_BANG_EQUAL:    emitBytes(OP_EQUAL, OP_NOT); break;
-    case TOKEN_EQUAL_EQUAL:   emitByte(OP_EQUAL); break;
-    case TOKEN_GREATER:       emitByte(OP_GREATER); break;
-    case TOKEN_GREATER_EQUAL: emitBytes(OP_LESS, OP_NOT); break;
-    case TOKEN_LESS:          emitByte(OP_LESS); break;
-    case TOKEN_LESS_EQUAL:    emitBytes(OP_GREATER, OP_NOT); break;
-//< Types of Values comparison-operators
-    case TOKEN_PLUS:          emitByte(OP_ADD); break;
-    case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
-    case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
-    case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
-    default: return; // Unreachable.
-  }
 
 end;
+
+//virtual machine calls compile from interpret...
+function TCompiler.DoCompile : pLoxFunction;
+begin
+  advance;
+  while not Match(tkEOF) do
+  begin
+    Declaration;
+  end;
+
+  result := FFunc;
+end;
+
+ 
+procedure TCompiler.EmitReturn;
+begin
+  FFunc.Chunks.emitByte(byte(OP_NIL));
+  FFunc.Chunks.emitByte(byte(OP_RETURN));
+end;
+
+
+
+function TCompiler.EndCompiler: pLoxFunction;
+begin
+  EmitReturn;
+  Result := FFunc;
+ // current := current^.enclosing; we don't need to do this, I think, because it is already nested
+end;
+
+
+
+ procedure TCompiler.DoFunction (FunctionKind : TFunctionKind);
+ var
+   compiler: TCompiler;
+   functionObj: pLoxFunction;
+   value : pValue;
+   constantIdx : integer;
+begin
+ 
+   Compiler := TCompiler.Create(FConstants,FGlobals,FTokens,FScanner,FunctionKind);
+    
+   Compiler.FScopeDepth := FScopeDepth;
+   Compiler.FLocals := FLocals;   //this will mem leak currently
+   Compiler.BeginScope;
+   Compiler.Consume(tkOpenBracket,    'Expect ''('' after function name.');
+
+   if not CheckKind(tkCloseBracket) then
+   begin
+      repeat
+        Compiler.FFunc.arity := Compiler.FFunc.arity + 1;
+        if Compiler.FFunc.arity > 255 then
+        begin
+          raise exception.create('Cant have more than 255 parameters.');
+        end;
+        constantIdx := Compiler.ParseVariable('Expect parameter name.');
+        Compiler.DefineVariable(constantIdx);
+    until not Match(tkComma);
+  end;
+
+
+
+
+
+   Compiler.Consume(tkCloseBracket,   'Expect '')'' after parameters.');
+   Compiler.Consume(tkOpenBrace, 'Expect ''{'' before function body.');
+   Compiler.Block;
+
+   functionObj := Compiler.EndCompiler; //in the c version this makes current to previous one.
+
+   //EmitBytes(OP_CONSTANT, MakeConstant(OBJ_VAL(functionObj)));
+
+   Value := newValueFromFunction(functionObj);
+   //ConstantIdx := FFunc.Chunks.MakeConstant(Value);
+
+   //FFunc.Chunks.emitBytes(byte(OP_CONSTANT), ConstantIdx);
+   EmitConstant(Value);
+
+end;
+
+
+procedure TCompiler.funDeclaration;
+var
+  globalIdx : integer;
+begin
+  globalIdx := parseVariable('Expect function name.');
+  markInitialized();
+  DoFunction(TYPE_FUNCTION);
+  defineVariable(globalIdx);
+end;
+
 
 
 procedure TCompiler.declaration;
 begin
-   if match(tkVar) then
-     varDeclaration()
-   else
-     statement();
+  if match(tkfun) then
+  begin
+     funDeclaration;
+     exit;
+  end;
+
+  if match(tkVar) then
+  begin
+     varDeclaration;
+     exit;
+  end;
+
+  statement();
 end;
 
-constructor TCompiler.Create(
-  Const Scanner : TScanner;
-  Const logging : TStrings;
-  Const FunctionKind : TFunctionKind);
+
+procedure TCompiler.CreateRuleForOpen_bracket;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  ParseRule.Prefix := grouping;
+  ParseRule.Infix := call;
+  ParseRule.Precedence := PREC_CALL;
+  FParseRules[tkOpenbracket] := ParseRule;
+end;
+
+
+procedure TCompiler.CreateRulesForOpenBrace;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkOpenBrace] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForCloseBrace;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkCloseBrace] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForClose_Bracket;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkCloseBracket] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForBang;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  // [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE}
+  ParseRule.Prefix := unary;
+  ParseRule.Infix := nil;
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkBang] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForComma;
+var
+  parseRule : pParseRule;
+begin
+  //  [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
+  new(parseRule);
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkComma] := ParseRule;
+end; 
+
+procedure TCompiler.CreateRulesForComment;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+
+  ParseRule .Prefix := literal;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkComment] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForDivide;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+//  [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_FACTOR;
+  FParseRules[tkSlash] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForNil;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+   //[TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
+
+  ParseRule .Prefix := literal;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkNil] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForNotEqual;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+// [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_EQUALITY;
+  FParseRules[tkBangEqual] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForNumber;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  // [TOKEN_NUMBER]   = {number,   NULL,   PREC_NONE},
+
+  ParseRule .Prefix := number;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkNumber] := ParseRule;
+end;
+
+
+procedure TCompiler.CreateRulesForEqualEqual;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_EQUALITY;
+  FParseRules[tkEqualEqual] := ParseRule;
+end;
+
+
+procedure TCompiler.CreateRulesForFalse;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+ //[TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE}
+
+  ParseRule .Prefix := literal;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkFalse] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForTrue;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+   //[TOKEN_TRUE] = {literal,  NULL,   PREC_NONE}
+
+  ParseRule .Prefix := literal;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkTrue] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForWhile;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+//  [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkWhile] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForGreaterThan;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON}
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_COMPARISON;
+  FParseRules[tkGreaterthan] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForGreaterThanEqual;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_GREATER_EQUAL] = {NULL,     binary, PREC_COMPARISON},
+
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_COMPARISON;
+  FParseRules[tkGreaterthanequal] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForIdentifier;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+//   [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE}
+
+  ParseRule.Prefix := variable;
+  ParseRule.Infix := nil;
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkIdentifier] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForIF;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+//  [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
+
+  ParseRule.Prefix := nil;
+  ParseRule.Infix := nil;
+  ParseRule.Precedence := PREC_NONE;
+  FParseRules[tkIf] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForLessThan;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
+
+  ParseRule.Prefix := nil;
+  ParseRule.Infix := binary;
+  ParseRule.Precedence := PREC_COMPARISON;
+  FParseRules[tkLessThan] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForLessThanEqual;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
+
+  ParseRule.Prefix := nil;
+  ParseRule.Infix := binary;
+  ParseRule.Precedence := PREC_COMPARISON;
+  FParseRules[tkLessThanEqual] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForPlus;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
+
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_TERM;
+  FParseRules[tkPlus] := ParseRule;
+end;
+
+
+procedure TCompiler.CreateRulesForPrint;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+// [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE}
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkPrint] := ParseRule;
+end;
+
+
+procedure TCompiler.CreateRulesForSemiColon;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE}
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkSemiColon] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForString;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+   //[TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
+
+  ParseRule .Prefix := strings;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkQuotes] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForMinus;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+ // [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
+
+
+  ParseRule .Prefix := unary;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_TERM;
+  FParseRules[tkMinus] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForMultiply;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+// [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := binary;
+  ParseRule .Precedence := PREC_FACTOR;
+  FParseRules[tkAsterisk] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForElse;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkElse] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForEOF;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+// [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
+
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := nil;
+  ParseRule .Precedence := PREC_NONE;
+  FParseRules[tkEof] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForOR;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_OR]            = {NULL,     or_,    PREC_OR},
+
+  ParseRule .Prefix := nil;
+  ParseRule .Infix := Or_;
+  ParseRule .Precedence := PREC_OR;
+  FParseRules[tkOr] := ParseRule;
+end;
+
+procedure TCompiler.CreateRulesForAnd;
+var
+  parseRule : pParseRule;
+begin
+  new(parseRule);
+  //[TOKEN_AND]           = {NULL,     and_,   PREC_AND},
+
+  ParseRule .Prefix := nil;
+  ParseRule.Infix := and_;
+  ParseRule.Precedence := PREC_AND;
+  FParseRules[tkAnd] := ParseRule;
+end;
+
+
+
+
+procedure TCompiler.CreateRules ;
 begin
 
-  Assert(assigned(Logging), 'No logging injected');
-  FLogging := Logging;
-  FLogging.clear;
-  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
-  FChunks.Init;
-  FScanner := Scanner;
+  CreateRuleForOpen_bracket;
+  CreateRulesForClose_bracket;
+  CreateRulesForOpenBrace;
+  CreateRulesForCloseBrace;
+  CreateRulesForNumber;
+  CreateRulesForEqualEqual;
+  CreateRulesForNotEqual;
+  CreateRulesForLessThan;
+  CreateRulesForLessThanEqual;
+  CreateRulesForGreaterThan;
+  CreateRulesForGreaterThanEqual;
+  CreateRulesForPlus;
+  CreateRulesForMinus;
+  CreateRulesForMultiply;
+  CreateRulesForDivide;
+  CreateRulesForFalse;
+  CreateRulesForTrue;
+  CreateRulesForNil;
+  CreateRulesForBang;
+  CreateRulesForComment;
+  CreateRulesForString;
+  CreateRulesForSemiColon;
+  CreateRulesForPrint;
+  CreateRulesForIdentifier;
+  CreateRulesForIF;
+  CreateRulesForElse;
+  CreateRulesForAnd;
+  CreateRulesForOr;
+  CreateRulesForComma;
+  CreateRulesForWhile;
+  CreateRulesForEOF;
 
-  FTokens.Init(Scanner.Tokens);
-  //FTokens.MoveFirst; //is this needed? I think you have to be sitting on 1st token, but at the moment, I can't determine entry point to this compiler in c code-base
-  FillChar(FParseRules,sizeof(FParseRules),#0);
+end;
+
+
+
+constructor TCompiler.Create(
+  const Constants : TValueList;
+  const Globals : TValueList;
+  const Tokens  : pTokenIterator;
+  const Scanner : TScanner;
+  const FunctionKind : TFunctionKind);
+
+begin
+  createRules;
+  FConstants := Constants;
+  FGlobals := Globals;
+
+  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
+
+  FScanner := Scanner;
+  //  FTokens.Init(Scanner.Tokens);
+  FTokens := Tokens;
 
   FScopeDepth := 0;
 
+  new(FLocals);
   FLocals.Init(true);
-  //FLocals.Add; //add an empty local for later use internally.
-
-  (*
-
-  Local* local = &current->locals[current->localCount++];
-  local->depth = 0;
-  local->name.start = "";
-  local->name.length = 0;
-
-  *)
-
+  FLocals.Add; //add an empty local for later use internally.
 
   FFunctionKind := FunctionKind;
-  FFunc := newLoxFunction('TopLevelCompiler');
 
+  if not(FFunctionKind = TYPE_SCRIPT) then
+  begin
+    FFunc := newLoxFunction(FTokens.Previous.txt);
+    exit;
+  end;
+
+  FFunc := newLoxFunction('toplevelcompiler');
 end;
 
 
 
 destructor TCompiler.destroy;
 begin
-  FChunks.Finalize;
+  disposeFunction(FFunc);
   FLocals.Finalize;
+  FConstants.Free;
   inherited;
 end;
 
 
-
-
-
-
- 
-
 end.
-
- (*  this is really cool, until you try to assign functions from within records, or classes. It doesn't like it at all. There's probably a super dodgy way to do it with a pointer. but alas, it doesn't matter much to me
-  const
-
-  TParseRules: array[tknull..tkthis] of TParseRule = (
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tknull
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkNumber
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkQuotes
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkUnterminatedQuotes
-    (prefix: grouping; infix: call; precedence: PREC_CALL), //tkopen_bracket
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkclose_Bracket
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkAsterisk
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkPlus
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkComma
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkminus
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkBangEqual
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkBang
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkEqual
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkEqualEqual
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkLessThanEqual
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkLess_than
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkGreaterThanEqual
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkgreater_than
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkAnd
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkClass
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkElse
-    (prefix: nil; infix: nil; precedence: PREC_NONE), //tkFalse
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkFun
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkFor
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkIf
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkNil
-    (prefix: nil; infix: nil; precedence: PREC_NONE),// tkOr
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkPrint
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkReturn
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkTrue
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkVar
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkWhile
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkIdentifier
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkWhiteSpace
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkOpenBrace
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkCloseBrace
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkInteger
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkunderscore
-    (prefix: nil; infix: nil; precedence: PREC_NONE),//tkThis
-    (prefix: nil; infix: nil; precedence: PREC_NONE));
-
-
-
-    ParseRule rules[] = {
-/* Compiling Expressions rules < Calls and Functions infix-left-paren
-  [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
-*/
-//> Calls and Functions infix-left-paren
-  [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
-//< Calls and Functions infix-left-paren
-  [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE}, // [big]
-  [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
-/* Compiling Expressions rules < Classes and Instances table-dot
-  [TOKEN_DOT]           = {NULL,     NULL,   PREC_NONE},
-*/
-//> Classes and Instances table-dot
-  [TOKEN_DOT]           = {NULL,     dot,    PREC_CALL},
-//< Classes and Instances table-dot
-  [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
-  [TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
-  [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
-  [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
-/* Compiling Expressions rules < Types of Values table-not
-  [TOKEN_BANG]          = {NULL,     NULL,   PREC_NONE},
-*/
-//> Types of Values table-not
-  [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE},
-//< Types of Values table-not
-/* Compiling Expressions rules < Types of Values table-equal
-  [TOKEN_BANG_EQUAL]    = {NULL,     NULL,   PREC_NONE},
-*/
-//> Types of Values table-equal
-  [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
-//< Types of Values table-equal
-  [TOKEN_EQUAL]         = {NULL,     NULL,   PREC_NONE},
-
-//> Types of Values table-comparisons
-  [TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
-  [TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON},
-  [TOKEN_GREATER_EQUAL] = {NULL,     binary, PREC_COMPARISON},
-  [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
-  [TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
-//< Types of Values table-comparisons
-/* Compiling Expressions rules < Global Variables table-identifier
-  [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
-*/
-//> Global Variables table-identifier
-  [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE},
-//< Global Variables table-identifier
-/* Compiling Expressions rules < Strings table-string
-  [TOKEN_STRING]        = {NULL,     NULL,   PREC_NONE},
-*/
-//> Strings table-string
-  [TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
-//< Strings table-string
-  [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
-/* Compiling Expressions rules < Jumping Back and Forth table-and
-  [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
-*/
-//> Jumping Back and Forth table-and
-  [TOKEN_AND]           = {NULL,     and_,   PREC_AND},
-//< Jumping Back and Forth table-and
-  [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
-/* Compiling Expressions rules < Types of Values table-false
-  [TOKEN_FALSE]         = {NULL,     NULL,   PREC_NONE},
-*/
-//> Types of Values table-false
-  [TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE},
-//< Types of Values table-false
-  [TOKEN_FOR]           = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_FUN]           = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
-/* Compiling Expressions rules < Types of Values table-nil
-  [TOKEN_NIL]           = {NULL,     NULL,   PREC_NONE},
-*/
-//> Types of Values table-nil
-  [TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
-//< Types of Values table-nil
-/* Compiling Expressions rules < Jumping Back and Forth table-or
-  [TOKEN_OR]            = {NULL,     NULL,   PREC_NONE},
-*/
-//> Jumping Back and Forth table-or
-  [TOKEN_OR]            = {NULL,     or_,    PREC_OR},
-//< Jumping Back and Forth table-or
-  [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
-/* Compiling Expressions rules < Superclasses table-super
-  [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
-*/
-//> Superclasses table-super
-  [TOKEN_SUPER]         = {super_,   NULL,   PREC_NONE},
-//< Superclasses table-super
-/* Compiling Expressions rules < Methods and Initializers table-this
-  [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
-*/
-//> Methods and Initializers table-this
-  [TOKEN_THIS]          = {this_,    NULL,   PREC_NONE},
-//< Methods and Initializers table-this
-/* Compiling Expressions rules < Types of Values table-true
-  [TOKEN_TRUE]          = {NULL,     NULL,   PREC_NONE},
-*/
-//> Types of Values table-true
-  [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
-//< Types of Values table-true
-  [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
-};*)
-
-
-
-
-
 
