@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 749
-  ClientWidth = 1498
+  ClientHeight = 638
+  ClientWidth = 1101
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,17 +16,17 @@ object Form1: TForm1
   object BtnScan: TButton
     Left = 8
     Top = 8
-    Width = 75
+    Width = 137
     Height = 25
-    Caption = 'Scan'
+    Caption = 'Compile and run'
     TabOrder = 0
     OnClick = BtnScanClick
   end
   object memEdit: TMemo
     Left = 8
     Top = 39
-    Width = 1482
-    Height = 402
+    Width = 369
+    Height = 387
     Color = clMenuText
     Font.Charset = ANSI_CHARSET
     Font.Color = clMoneyGreen
@@ -34,17 +34,20 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     Lines.Strings = (
-      'fun sum(a, b, c) {'
-      '  return a + b + c;'
+      ''
+      'fun fib(n) {'
+      '  if (n < 2) return n;'
+      '  return fib(n - 2) + fib(n - 1);'
       '}'
       ''
-      'print sum(5, 6, 7);')
+      ' '
+      'print fib(10);')
     ParentFont = False
     TabOrder = 1
     WantTabs = True
   end
   object chkRun: TCheckBox
-    Left = 135
+    Left = 223
     Top = 8
     Width = 42
     Height = 17
@@ -54,7 +57,7 @@ object Form1: TForm1
     TabOrder = 2
   end
   object chkEmit: TCheckBox
-    Left = 89
+    Left = 177
     Top = 8
     Width = 40
     Height = 17
@@ -62,7 +65,7 @@ object Form1: TForm1
     TabOrder = 3
   end
   object btnClear: TButton
-    Left = 183
+    Left = 271
     Top = 8
     Width = 75
     Height = 17
@@ -71,10 +74,10 @@ object Form1: TForm1
     OnClick = btnClearClick
   end
   object MemRun: TMemo
-    Left = 8
-    Top = 447
-    Width = 1482
-    Height = 234
+    Left = 383
+    Top = 39
+    Width = 369
+    Height = 387
     Color = clMenuText
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clAqua
@@ -85,5 +88,37 @@ object Form1: TForm1
       '')
     ParentFont = False
     TabOrder = 5
+  end
+  object MemCodes: TMemo
+    Left = 758
+    Top = 39
+    Width = 321
+    Height = 387
+    Color = clMenuText
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clAqua
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    Lines.Strings = (
+      '')
+    ParentFont = False
+    TabOrder = 6
+  end
+  object MemLocals: TMemo
+    Left = 8
+    Top = 432
+    Width = 369
+    Height = 209
+    Color = clMenuText
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clAqua
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    Lines.Strings = (
+      '')
+    ParentFont = False
+    TabOrder = 7
   end
 end

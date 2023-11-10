@@ -15,8 +15,9 @@ type
     chkEmit: TCheckBox;
     btnClear: TButton;
     MemRun: TMemo;
+    MemCodes: TMemo;
+    MemLocals: TMemo;
     procedure BtnScanClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
@@ -40,7 +41,7 @@ uses
   charIterator,
   LineIterator,
   scanner,
-  chunk,
+
   TokenArray,
   compiler,
   vm,
@@ -57,16 +58,32 @@ begin
   memEdit.Lines.clear;
 end;
 
+
+function sum(var a : integer) : integer;
+begin
+  a := a + 1;
+
+  if (a > 20) then
+  begin
+    result :=  a;
+    exit;
+  end;
+
+  result := sum(a) + sum(a) +  10;
+end;
+
+
+
 procedure TForm1.BtnScanClick(Sender: TObject);
 var
   Scanner : TScanner;
   i,j : integer;
-  Token : pToken;
+  Token : TToken;
   p : pChar;
   text : string;
   ln : String;
-  Compiler : TCompiler;
-  Tokens : pTokenIterator;
+  Compiler : TCompilerController;
+  Tokens : TTokenIterator;
   InstructionPointer :  TInstructionPointer;
   constantIndex : byte;
   value : pValue; //represents a constant
@@ -79,9 +96,12 @@ var
 
   globals : TValueList;
   constants : TValueList;
-
+  
 
 begin
+  i := 0;
+ // showmessage(inttostr(sum(i)));
+
   try
   //MemTokens.lines.clear;
 
@@ -90,7 +110,7 @@ begin
   //MemTokens.Lines.BeginUpdate;
   for i := 0 to Scanner.TokenCount-1  do
   begin
-     token := Scanner.Tokens.getItem(i);
+     token := Scanner.Tokens[i];
 
      text := Scanner.ln.items[Token.Line].text;
      text := copy(text,token.Start,token.length);
@@ -124,27 +144,38 @@ begin
    if not chkRun.Checked then exit;
 
 //   MemRun.lines.add('-------------------------------');
-   new(tokens);
+
    Tokens.Init(Scanner.Tokens);
 
 
    globals := TValueList.create(true);
    constants := TValueList.create(true);
-   Compiler := TCompiler.Create(constants,globals,Tokens,Scanner,TYPE_SCRIPT);
+   Compiler := TCompilerController.Create(globals,Tokens,Scanner,TYPE_SCRIPT);
    try
      LoxFunction := Compiler.DoCompile;
 
 
      //instructionPointer.Init(LoxFunction);
      MemRun.Lines.clear;
-     VM.Init(Constants,Globals,LoxFunction,MemRun.Lines);
+     MemCodes.Lines.clear;
+     MemLocals.Lines.clear;
+
+     Compiler.LocalsToString(MemLocals.Lines);
+
+     for i := 0 to Compiler.Count-1 do
+     begin
+        Compiler[i].ToString(MemRun.lines);
+
+     end;
+
+     VM.Init(LoxFunction,MemRun.Lines, MemCodes.Lines);
      VM.Run;
      // = INTERPRET_OK then
      //  MemRun.Lines.Add('result := ' + VM.Result.Value.ToString);
 
-   
+
    finally
-      VM.Finalize;
+     Compiler.free;
 
    end;
 
@@ -157,31 +188,5 @@ begin
 
 end;
 
-
-procedure TForm1.Button1Click(Sender: TObject);
-var
-  Locals : TLocalList;
-  i : integer;
-  a,b,c,d  : pLocal;
-begin
-  Locals.Init(true);
-
-  new(a);
-  new(b);
-  new(c);
-  Locals.Add(a);
-  Locals.Add(b);
-  Locals.Add(c);
-
-
-  for i := locals.Count-1 downto 0 do
-  begin
-    d := locals[i];
-  end;
-
-
-
-  Locals.Finalize;
-end;
 
 end.
