@@ -3,7 +3,7 @@ unit locals;
 interface
 
 uses
-  LOXTypes;
+  classes,LOXTypes;
 
 Const
   MAX_LOCALS = 256;
@@ -14,216 +14,171 @@ Const
 
 type
 
-  pLocal = ^TLocal;
-  TLocal = record
-    Token : pToken;
-    Depth : integer;
-    IsCaptured : Boolean;
-  end;
-  pLocals = ^TLocals;
-  TLocals = array[0..MAX_CAPACITY - 1] of pLocal;
 
-
-  pLocalList = ^TLocalList;
-  TLocalList = record
+  TLocal = class
   private
-    FOwnValues     : Boolean;
-    FResizeCount   : integer;
-    FIndex         : integer;
-    FCount         : integer;
-    FPrevcapacity  : integer;
-    FCapacity      : integer;
-    FItems         : pLocals;
-    procedure AllocateArray(var Items : pLocals; const size : integer);
-    Procedure GrowArray;
-    procedure GrowCapacity;
-    function  ItemSize : integer;
-    function InBounds(const index : integer; const capacity : Integer) : boolean;
+    FName  : String;
+    FIndex : integer;
+    FToken : TToken;
+    FDepth : integer;
+    FIsCaptured : Boolean;
+    function getToken: TToken;
+    procedure setToken(const Value: TToken);
+  protected
+
   public
-    function Last : pLocal;
-    function SlotCount : integer;
-    function Remove(const index : integer) : pLocal;
-    function Capacity : integer;
-    function IsFull : boolean;
-    function ResizeCount : integer;
-    function FreeSlots : integer;
-    function Count : integer;
-    function Add(const value : pLocal) : integer; overload;
-    function add : pLocal; overload;
-    function  GetItem(const index : integer) : pLocal;
-    constructor init(Const OwnValues : Boolean);
-    procedure finalize; //<-- no destructor allowed, seems weird.
-    property item[const index : integer] : pLocal read Getitem; default;
- end;
+    Constructor Create(Const Name : String; const token : TToken);
+    procedure ToStrings(const strings : TStrings);
+    property Token : TToken read getToken;// write setToken;
+    property Index : Integer read FIndex;
+    property Depth : integer read FDepth write FDepth;
+    property IsCaptured : Boolean read FIsCaptured write FIsCaptured;
+    property Name : string read fName;
+  end;
+
+
+  TLocals = class
+  private
+    FItems : TList;
+    function getLocal(const index: integer): TLocal;
+    procedure setLocal(const index: integer; const Value: TLocal);
+    function getCount: integer;
+    function getLast: TLocal;
+
+  protected
+
+
+  public
+    procedure ToString(const Strings : TStrings);
+    procedure Remove(const Index : integer);
+    function Add(const name : String; const token : TToken) : TLocal;
+    Constructor create;
+    Destructor Destroy; override;
+    property Item[const index : integer] : TLocal read getLocal write setLocal;default;
+    property Last : TLocal read getLast;
+    property Count : integer read getCount;
+  end;
+
+
 
 
 
 implementation
+uses
+ sysutils;
 
-function DisposeLocal(value : pLocal) : boolean;
+function DisposeLocal(value : TLocal) : boolean;
 begin
   assert(assigned(Value), ' value for disposal is nil');
-  dispose(Value);
-  value := nil;
+  Value.Free;
+
 end;
 
 
-function TLocalList.add : pLocal;
+
+
+{ TLocals }
+
+function TLocals.Add(Const Name : String; const token : TToken): TLocal;
 begin
-  new(result);
-  fillchar(result^,sizeof(result^),#0);
-  add(result);
+  assert(assigned(token), 'token added to local is nil');
+  result := TLocal.Create(Name,token);
+  result.FName := Name;
+  result.FIndex := Count;
+  FItems.Add(result);
 end;
 
-function TLocalList.Add(const value: pLocal): integer;
+constructor TLocals.create;
 begin
-  assert(assigned(Value), 'Value being inserted is nil');
-  assert(assigned(FItems),'Locals storage is nil');
-  FItems[FCount] := value;
-  inc(FCount);
-  result := FCount-1;
+  FItems := TList.create;
 end;
 
-
-(*
-1 2 3 4 5 6 7 8 9 0
-    *
-
-
-*)
-function TLocalList.Remove(const index : integer) : pLocal;
-
+destructor TLocals.Destroy;
 begin
-  assert(InBounds(Index,FCapacity),'index of removal outside bounds');
-  assert(Index < FCount, 'removed index is > than count');
-  result := FItems^[Index];
-  assert(Result <> nil, 'removed index is not nil');
-  dec(FCount);
-  Move(FItems^[Index + 1], FItems[Index], (FCount - Index) * SizeOf(pLocal));
+  FItems.Free;
+  inherited;
 end;
 
-procedure TLocalList.AllocateArray(var Items : pLocals; const size : integer);
+function TLocals.getCount: integer;
 begin
-  assert(Items = nil);
-  getMem(Items,size);
-  fillchar(Items^,size,#0);
+  result := FItems.count;
 end;
 
-function TLocalList.Capacity: integer;
+function TLocals.getLast: TLocal;
 begin
-  result := FCapacity;
+  result := FItems[Count-1];
 end;
 
-function TLocalList.Count: integer;
+function TLocals.getLocal(const index: integer): TLocal;
 begin
-  result := FCount;
+  result := FItems[Index];
 end;
 
-procedure TLocalList.finalize;
+procedure TLocals.ToString(const Strings: TStrings);
 var
   i : integer;
-  p : pLocal;
+  Local : TLocal;
 begin
-  if FOwnValues then
+  assert(Assigned(Strings),'no strings assigned for print to');
+  for i := 0 to FItems.Count-1 do
   begin
-    for i := 0 to FCount-1 do
-    begin
-      p := GetItem(i);
-      assert(p <> nil, 'finalize value item expected non nil value');
-      DisposeLocal(p);
-    end;
-  end;
-  if assigned(FItems) then
-  begin
-    freeMem(FItems);
-    FItems := nil;
+    Local := FItems[i];
+
+    Local.ToStrings(Strings);
   end;
 end;
 
-function TLocalList.FreeSlots: integer;
-begin
-  result := 0;
-  if FCapacity = 0 then exit;
-  result := (FCapacity - (FCount * ItemSize)) div ItemSize;
-end;
-
-
-procedure TLocalList.GrowArray;
+procedure TLocals.Remove(const Index: integer);
 var
-  pCopyItems : pLocals;
+  Local : TLocal;
 begin
-  pCopyItems := nil;
-  GrowCapacity;
-  AllocateArray(pCopyItems,FCapacity);
-
-  Move(FItems^, pCopyItems^, FPrevCapacity);
-
-  FreeMem(FItems);                           //free the old memory
-  FItems := nil;                             //make the old memory nil
-  FItems := pCopyItems;                      // set the old memory to the new memory;
-
-  inc(FResizeCount); //<-- used for debug checking.
-
+  Local := FItems[Index];
+  FItems.Delete(index);
+  DisposeLocal(Local);
 end;
 
-function  TLocalList.ItemSize : integer;
+procedure TLocals.setLocal(const index: integer; const Value: TLocal);
 begin
-  result := Sizeof(pLocal);
+  FItems[Index] := Value;
 end;
 
-function TLocalList.Last: pLocal;
+{ TLocal }
+
+constructor TLocal.Create(const name : string; const token: TToken);
 begin
-  result := GetItem(FCount-1);
+  inherited create;
+  FName  := name;
+  FToken := Token;
+  FDepth := 0;
+  FIsCaptured := False;
 end;
 
-procedure TLocalList.GrowCapacity;
+function TLocal.getToken: TToken;
 begin
-  FPrevCapacity := FCapacity;
-  FCapacity := FCapacity  * GROWTH_FACTOR;
-  assert(FCapacity mod itemSize = 0);
-  assert(FCapacity < MAX_CAPACITY,'Max size reached')
+  result := FToken;
 end;
 
-constructor TLocalList.init(Const OwnValues : Boolean);
+procedure TLocal.setToken(const Value: TToken);
 begin
-  FOwnValues := OwnValues;
-  FresizeCount := 0;
-  FItems := nil;
-  Fcount := 0;
-  Fcapacity := NUM_SLOTS * sizeof(pLocal);
-  Fprevcapacity := Fcapacity;
-
-  AllocateArray(FItems,FCapacity);
-end;
-
-function TLocalList.IsFull: boolean;
-begin
-  result := (FCount * ItemSize) = FCapacity;
-end;
-
-function TLocalList.InBounds(const index : integer; const capacity : Integer) : boolean;
-begin
-   result := Index * ItemSize <= capacity;
-end;
-
-function TLocalList.GetItem(const index: integer): pLocal;
-begin
-  assert(FCapacity > 0);
-  assert(FItems <> nil);
-  assert(InBounds(index,FCapacity), 'index out of bounds for locals');
-  result := FItems[index];
-end;
-
-function TLocalList.ResizeCount: integer;
-begin
-  result := FResizeCount;
-end;
-
-function TLocalList.SlotCount: integer;
-begin
-  result := FCapacity div ItemSize;
+  assert(assigned(value), 'token is nil for setting a local');
+  FToken := Value;
 end;
 
 
+procedure TLocal.ToStrings(const strings : TStrings);
+const s = 'Index : %s, Depth = %s, IsCaptured : %s';
+var
+  txt : string;
+begin
+  (*
+      Token : TToken;
+    Depth : integer;
+    IsCaptured : Boolean;
+  *)
+  txt := format(s,[inttostr(index),inttostr(depth),booltostr(IsCaptured)]);
+  strings.add(txt);
+  //Token.ToStrings(strings);
+
+end;
 
 end.

@@ -3,7 +3,6 @@ program Project_scanner;
 uses
   Forms,
   Scanner_Project in 'Scanner_Project.pas' {Form1},
-  Chunk in 'Chunk.pas',
   LoxTypes in 'LoxTypes.pas',
   Exceptions in 'Exceptions.pas',
   vm in 'vm.pas',
@@ -14,7 +13,8 @@ uses
   Addition in 'Addition.pas',
   scanner in 'scanner.pas',
   Values in 'Values.pas',
-  Natives in 'Natives.pas';
+  Natives in 'Natives.pas',
+  subtraction in 'subtraction.pas';
 
 {$R *.res}
 

@@ -2,7 +2,8 @@ unit LoxTypes;
 
 interface
 uses
-  Chunk;
+  classes;
+
 
 const
 
@@ -265,13 +266,14 @@ TTokenKind = (
 
 type
 
-  pToken = ^TToken;
-  TToken = record
+
+  TToken = class
     kind: TTokenKind;
     start: word;
     length: word;
     line: word;
     txt : string;
+    procedure toStrings(const strings : TStrings);
   end;
 
 //  TTokens = Array[0..cMaxTokens] of TToken;
@@ -345,14 +347,7 @@ type field from it. *)
     procedure Init;
   end;
 
-  pLoxFunction = ^TLoxFunction;
-  TLoxFunction = record
-    LoxObject : TLoxObject;
-    FuncKind  : TFunctionKind;
-    Arity     : integer; // The arity field stores the number of parameters the function expects.
-    Name      : String;
-    Chunks    : TChunks;
-  end;
+
 
 
 
@@ -376,7 +371,7 @@ type field from it. *)
 
   function NewLoxString(Const str : string) : pLoxString;
 
-  function newLoxFunction(const Name : String) : pLoxFunction;
+
 
   function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
  
@@ -385,30 +380,14 @@ type field from it. *)
 
    function TokenKindToStr(const TokenKind : TTokenKind) : string;
 
-   procedure disposeFunction(LoxFunction : pLoxFunction);
+
  
 
 
 implementation
 
 uses typinfo, sysUtils;
-
-procedure disposeFunction(LoxFunction : pLoxFunction);
-begin
-  LoxFunction.Chunks.Free;
-  dispose(LoxFunction);
-end;
-
-function newLoxFunction(const Name : String) : pLoxFunction;
-begin
-    new(result);
-    result.LoxObject.Kind := OBJ_FUNCTION;
-    result.LoxObject.Next := nil;
-    result.FuncKind := Type_Function;
-    result.Arity := 0;
-    result.Name := Name;
-    result.Chunks := TChunks.Create;//(Constants); //.Init;
-end;
+ 
 
 
 function TokenKindToStr(const TokenKind : TTokenKind) : string;
@@ -574,5 +553,17 @@ const
 
 
 
+
+{ TToken }
+
+procedure TToken.toStrings(const strings: TStrings);
+const
+  ln = 'Kind : %s, Start: %s, Length : %s, Line : %s';
+var
+  txt : string;
+begin
+  txt := Format(ln,[TTokenName[Kind], inttostr(Start),inttostr(Length),inttostr(Line)]);
+  strings.add(txt);
+end;
 
 end.

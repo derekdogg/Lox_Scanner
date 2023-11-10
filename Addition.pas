@@ -3,7 +3,7 @@ unit Addition;
 
 interface
 uses
-  values;
+  dialogs,values, sysutils;
 
 type
 
@@ -129,6 +129,8 @@ begin
 
   result := AddStrings(L,R);
   if assigned(result) then exit;
+  showmessage('er');
+  //raise exception.create('cant add');
 end;
 
 

@@ -6,7 +6,6 @@ type
 
 TOpCodes = (
         OP_NULL,
-        OP_CONSTANT,
         OP_NIL,
         OP_TRUE,
         OP_FALSE,
@@ -42,15 +41,16 @@ TOpCodes = (
         OP_RETURN,
         OP_CLASS,
         OP_INHERIT,
-        OP_METHOD
+        OP_METHOD,
+        OP_CONSTANT
 );
 
 const
 
-  TOP_Code_name : Array[OP_NULL..OP_METHOD] of string  = (
+  TOP_Code_name : Array[OP_NULL..OP_CONSTANT] of string  = (
    'OP_NULL',
 //> op-constant
-  'OP_CONSTANT',
+
 //< op-constant
 //> Types of Values literal-ops
   'OP_NIL',
@@ -138,7 +138,8 @@ const
   'OP_INHERIT',
 //< Superclasses inherit-op
 //> Methods and Initializers method-op
-  'OP_METHOD'
+  'OP_METHOD' ,
+  'OP_CONSTANT'
 //< Methods and Initializers method-op;
 );
 

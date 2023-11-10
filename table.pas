@@ -20,8 +20,8 @@ type
 
 
 
-  pNameValueItems = ^TValuePairItems;
-  TValuePairItems = array[0..MAX_CAPACITY - 1] of pNameValue;
+  pNameValueItems = ^pValuePairItems;
+  pValuePairItems = array[0..MAX_CAPACITY - 1] of pNameValue;
 
 
   TValuePairs = record
@@ -63,7 +63,7 @@ type
 
  (*
 
- TValuePairIterator = record
+ pValuePairIterator = record
  private
    FIndex : integer;
    FValuePairs : TValuePairs;
@@ -89,12 +89,12 @@ type
 
 implementation
 
-function TValuePairs.AddNameValue(name : pValue; value : pValue) : pNameValue;
+function TValuePairs.AddNameValue(name : pvalue; value : pValue) : pNameValue;
 begin
   assert(assigned(Name),  'Name is nil');
-  assert(assigned(value), 'value is nil');
+//  assert(assigned(value), 'value is nil');
   result := nil;
-  assert(Find(Name.ToString) = nil,' var exists already in hash table'); //already exists
+  assert(Find(Name.ToString) = nil,format('%s exists already in hash table',[name.toString])); //already exists
   new(result);
   result.name := name;
   result.Value := Value;
@@ -312,7 +312,7 @@ var
 begin
   assert(assigned(Value),'value is nil');
   assert(assigned(Value.name), 'name is nil');
-  assert(assigned(Value.value),'value is nil');
+//  assert(assigned(Value.value),'value is nil');
 
   pItem := nil;
   result := false;
@@ -423,115 +423,5 @@ begin
   AllocateArray(FItems,Fcapacity);
 end;
 
-
-  (*function TValuePairIterator.Count : integer;
-  begin
-    result := FValuePairs.Count;
-  end;
-
-  function TValuePairIterator.MoveFirst : pNameValue;
-  begin
-    result := nil;
-    if not FValuePairs.Count > 0 then exit;
-    FIndex := 0;
-    FCurrent := FValuePairs.GetItem(FIndex);
-    FPrevious := nil;
-    result := FCurrent;
-  end;
-
-  function TValuePairIterator.MoveLast  : pNameValue;
-  begin
-    result := nil;
-    if not FValuePairs.Count > 0 then exit;
-    FIndex := FValuePairs.Count-1;
-    FCurrent := FValuePairs.GetItem(FIndex);
-    FPrevious := PeekPrev;
-    result := FCurrent;
-  end;
-
-  function TValuePairIterator.MoveNext  : pNameValue;
-  begin
-    result := nil;
-    if not FValuePairs.Count > 0 then exit;
-
-    if FIndex = -1 then
-    begin
-      result := MoveFirst;
-      //FPrevious := Current;
-      exit;
-    end;
-
-    inc(FIndex);
-    if FIndex < FValuePairs.Count then
-    begin
-      FPrevious := FCurrent;
-      FCurrent := FValuePairs.GetItem(FIndex);
-      result := FCurrent;
-    end;
-  end;
-
-  function TValuePairIterator.MovePrev  : pNameValue;
-  begin
-    result := nil;
-    if not FValuePairs.Count > 0 then exit;
-    if FIndex > 0 then
-    begin
-      dec(FIndex);
-      FCurrent := FValuePairs.GetItem(FIndex);
-      FPrevious := PeekPrev;
-      result := FCurrent;
-    end;
-  end;
-
-
-  function TValuePairIterator.peekNext : pNameValue;
-  var
-    i : integer;
-  begin
-    result := nil;
-    i := FIndex;
-    inc(i);
-    if i < FValuePairs.Count then
-    begin
-      result := FValuePairs.GetItem(i);
-    end;
-  end;
-
-  function TValuePairIterator.PeekPrev : pNameValue;
-  var
-    i : integer;
-  begin
-    result := nil;
-    i := FIndex;
-    dec(i);
-    if i >= 0 then
-    begin
-      result := FValuePairs.GetItem(i);
-    end;
-  end;
-
-
-    function TValuePairIterator.Previous : pNameValue;
-    begin
-       result := FPrevious;
-    end;
-
-   function TValuePairIterator.Current : pNameValue;
-   begin
-     result := FCurrent;
-   end;
-
-    function TValuePairIterator.Index : integer;
-    begin
-      result := FIndex;
-    end;
-
-  procedure TValuePairIterator.init(const Tokens : TValuePairs);
-  begin
-    FValuePairs := Tokens;
-    FIndex := -1;
-    FCurrent := nil;
-    FPrevious := nil;
-  end; *)
 
 end.

@@ -69,7 +69,7 @@ implementation
     ln.BuildIndex(Text);
     TokenIndex := -1;
     TokenCount := 0;
-    tokens.Init;
+    tokens := TTokens.Create;
   end;
 
 
@@ -191,7 +191,7 @@ var
   start,
   idx : integer;
 begin
-  result := nullToken;
+  result := nil;
 
   if not Match(Quotes) then exit;
 
@@ -207,6 +207,7 @@ begin
   if Match(Quotes) then
   begin
      //result.text := result.text + ln.chars.current;
+     result := TToken.Create;
      result.kind := tkQuotes;
      result.start := start;
      result.length := (idx+1)-result.Start+1;
@@ -251,12 +252,13 @@ function TScanner.MakeWordToken: TToken;
 var
   CurrentChar : Char;
 begin
-  result := nullToken;
+  result := nil;
 
   currentChar := ln.chars.current;  //grab the current char
 
   if not (allowableWordChar(currentChar)) then exit;  //check to see if it's allowed
 
+  result := TToken.create;
   result.kind := tkIdentifier; //set the current result to a word
   result.start := ln.chars.index; //set the result current index to current char index;
   result.length := 1;
@@ -268,6 +270,8 @@ begin
       //result.Text := Result.Text + ln.chars.current;
   end;
 
+  result.txt := copy(ln.chars.text,result.start,result.length);
+
   if (result.length >= 1) and (MatchSpecialChar(ln.chars.current) or CurrentCharIsNumber ) then
   begin
     ln.chars.Move(-1);
@@ -277,19 +281,19 @@ begin
   text := copy(text,token.Start,token.length);
 *)
 
-  result.txt := copy(ln.text,result.start,result.length);
+  //result.txt := copy(ln.text,result.start,result.length);
 end;
 
 
 function TScanner.GetReserverdWordToken(const TokenKind : TTokenKind) : TToken;
 begin
-  result := NullToken;
+  result := nil;
 
   if not MatchKeyWord(TTokenName[TokenKind]) then exit;
   //if not checkKeyWord(TTokenName[TokenKind]) then exit;   I think this was my initial attempt at checking the text for errors.
   // but it doesn't quite work correctly. i.e. (true==false) will not pass the test, therefore I have removed it temporarily.
 
-
+    result := TToken.create;
     result.start := ln.chars.index;
     result.length := length(TTokenName[TokenKind]);
     result.line := ln.LineIndex;
@@ -302,7 +306,7 @@ end;
 function TScanner.MakeReservedOrNormalWordToken(tokenKind : TTokenKind) : TToken;
 begin
   result := GetReserverdWordToken(tokenKind); //try and make a reserved word, 1st.  Get reserved word doesn't touch the index.
-  if result.kind <> tkNull then
+  if result <> nil then
   begin
     //move the index to the end of the reserved word;
     //we need to move the index to
@@ -333,7 +337,7 @@ end;
 
 procedure TScanner.finalize;
 begin
-  tokens.Finalize;
+  tokens.free;
 end;
 
 function TScanner.charIsNumber(const c : char) : boolean;
@@ -355,10 +359,11 @@ function TScanner.MakeNumberToken : TToken;
   end;
 
 begin
-  result := nullToken;
+  result := nil;
   if not currentCharIsNumber then exit;
 
   //result.text := ln.chars.current;
+  result := TToken.Create;
   result.Kind := tkNumber;
   result.start:= ln.chars.index;
   result.line:= ln.lineindex;
@@ -383,6 +388,7 @@ end;
 
 function TScanner.MakeEOFToken;
 begin
+   result := TToken.Create;
    result.Kind := TkEOF;
    result.start:= ln.chars.TextLength+1;  //because whatever the current length is we will add this onto it.
    result.length:= 1;
@@ -391,6 +397,7 @@ end;
 
 function TScanner.MakeSingleToken(const Kind : TTokenKind) : TToken;
 begin
+   result := TToken.Create;
    result.Kind := Kind;
    result.start:= ln.chars.index;
    result.length:= 1;
@@ -400,6 +407,7 @@ end;
 
 function TScanner.MakeGreaterThanOrEqualToToken : TToken;
 begin
+  result := TToken.Create;
   result.Kind := tkGreaterThanEqual;
   result.start:= ln.chars.index;
   result.length:= 2;
@@ -409,6 +417,7 @@ end;
 
 function TScanner.MakeLessThanOrEqualToken : TToken;
 begin
+  result := TToken.Create;
   result.Kind := tkLessThanEqual;
   result.start:= ln.chars.index;
   result.length:= 2;
@@ -418,6 +427,7 @@ end;
 
 function TScanner.MakeEqualEqualToken : TToken;
 begin
+  result := TToken.Create;
   result.Kind := tkEqualEqual;
   result.start:= ln.chars.index;
   result.length:= 2;
@@ -427,6 +437,7 @@ end;
 
 function TScanner.MakeBangEqualToken : TToken;
 begin
+  result := TToken.Create;
   result.Kind := tkBangEqual;
   result.start:= ln.chars.index;
   result.length:= 2;
@@ -437,6 +448,7 @@ end;
 
 function TScanner.MakeCommentToken: TToken;
 begin
+  result := TToken.Create;
   result.Kind := tkComment;
   result.Start := ln.Chars.Index;
   result.Length := ln.Chars.TextLength-result.start+1;
@@ -447,7 +459,8 @@ function TScanner.MakeToken : TToken;
   var
     Token : TToken;
   begin
-     token := nullToken;
+
+     token := nil;
      try
         if not CharInAsiiSubset then exit;
 
@@ -646,11 +659,15 @@ function TScanner.MakeToken : TToken;
 
         end;
 
+
+
+
         ord(lowercase_t), ord(uppercase_t) :
         begin
            case ord(ln.chars.PeekNext) of
             ord(lowercase_h),ord(uppercase_h) : Token := MakeReservedOrNormalWordToken(tkThis);
             ord(lowercase_r),ord(uppercase_r) : Token := MakeReservedOrNormalWordToken(tkTrue);
+
            end;
         end;
 
@@ -665,6 +682,7 @@ function TScanner.MakeToken : TToken;
         end;
 
         ord(space) : begin
+            Token := TToken.create;
             Token.Kind := tkWhiteSpace;
         end
         else
@@ -673,8 +691,8 @@ function TScanner.MakeToken : TToken;
         end;
      end;
 
-
-     Token.line:=  ln.LineIndex;
+     if Token <> nil then
+       Token.line:=  ln.LineIndex;
 
      finally
        result := Token;
@@ -699,6 +717,8 @@ end;
     while ln.chars.Next <> cNull do
     begin
       Token := MakeToken;
+      if Token <> nil then
+      begin
 
         if Token.Kind = tkWhiteSpace then
         begin
@@ -712,6 +732,7 @@ end;
           Tokens.add(Token);
           inc(TokenCount);
         end;
+      end;
     end;
 
   end;

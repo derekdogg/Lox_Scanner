@@ -1,4 +1,5 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{40de080b-dfbe-48ee-96bd-d43dd9ae179f}</ProjectGuid>
     <MainSource>Project_scanner.dpr</MainSource>
@@ -37,7 +38,6 @@
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
     <DCCReference Include="Addition.pas" />
-    <DCCReference Include="Chunk.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="CompilerRules.pas" />
     <DCCReference Include="Exceptions.pas" />
@@ -48,6 +48,7 @@
     <DCCReference Include="Scanner_Project.pas">
       <Form>Form1</Form>
     </DCCReference>
+    <DCCReference Include="subtraction.pas" />
     <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="Values.pas" />
