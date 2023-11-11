@@ -561,10 +561,10 @@ begin
 
   if Callee.isNative then
   begin
-  (*  value := Callee.NativeFunction.Native(ArgCount,VmStack);
-    VMStack.Push(value);
-    result := true;
-    //exit; *)
+     value := Callee.NativeFunction.Native(ArgCount,VmStack);
+     VMStack.Push(value);
+     result := true;
+     exit;
   end;
 //   frame->slots = vm.stackTop - argCount - 1;
   // FFrames.Remove(FCurrentFrame);
@@ -873,32 +873,19 @@ function Foo(const ArgCount: Integer;const Values : TValueStack): pValue;
 var
   v1,v2,v3 : pValue;
 begin
-(*  v1 := values.Peek(2);
+  v1 := values.Peek(2);
   v2 := values.Peek(1);
   v3 := Values.Peek(0);
 
-  result := newString(v1.toString + v2.ToString + v3.ToString); *)
+  result := newString(v1.toString + v2.ToString + v3.ToString);
 end;
 
 
 
 procedure TVirtualMachine.RegisterNatives;
-var
-  name  : pValue;
-  value : pValue;
-  i : integer;
 begin
-  //built in natives here
-
-(*  AddGlobal('foo',NewNative(foo));
-
-
-
-  AddGlobal('DateTime',NewNative(DateTime));
-
-
-  //any others from the list    *)
-
+   AddGlobal(newString('foo'),NewNative(foo));
+   AddGlobal(newString('DateTime'),NewNative(DateTime));
 end;
 
 function TVirtualMachine.VMStack : TValueStack;
