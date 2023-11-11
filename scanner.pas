@@ -209,8 +209,8 @@ begin
      //result.text := result.text + ln.chars.current;
      result := TToken.Create;
      result.kind := tkQuotes;
-     result.start := start;
-     result.length := (idx+1)-result.Start+1;
+     result.start := start + 1;
+     result.length := (idx+1)-result.Start;
 
      exit;  //<=== exit here
   end;

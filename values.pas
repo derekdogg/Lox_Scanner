@@ -5,16 +5,6 @@ interface
 uses classes, LoxTypes, OpCodes;
 
 
-Const
-
-  MAX_CAPACITY = 10000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
-
-  INCREMENT_CAPACITY_BY = 2;
-
-  NUM_SLOTS = 8;
-
-  GROWTH_FACTOR  = 2;
-
 type
 
   pValue = ^TValue;
@@ -56,8 +46,6 @@ type
 
 
   TOnChunk = procedure(const Operand : TOpCodes) of object;
-
-
 
 
   TConstants = class
@@ -230,7 +218,7 @@ type
  TValueStack = class
  private
 
-    FItems       : TValueList;
+    FItems  : TValueList;
     function getCount: integer;
 
  protected
@@ -1323,9 +1311,9 @@ end;
 constructor TChunks.Create(const FunctionName : String);
 begin
   FName := Functionname;
-  FBytes := TList.create;//FBytes.Init(true);
+  FBytes := TList.create;
   FConstants := TConstants.Create(Fname);
-  //FConstants := constants;//TList.create; //.Init(true); //list ownership of pointers
+
 end;
 
 destructor TChunks.destroy;

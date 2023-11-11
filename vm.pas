@@ -227,12 +227,12 @@ begin
 
       OP_MULTIPLY : begin
          Log(OP_MULTIPLY);
-        Multiply;
+         Multiply;
       end;
 
       OP_NEGATE : begin
          Log(OP_NEGATE);
-        Negate;
+         Negate;
       end;
 
       OP_PRINT  : begin
@@ -245,7 +245,7 @@ begin
 
       begin
          Log(OP_JUMP_IF_FALSE);
-        JumpFalse;
+         JumpFalse;
       end;
 
 
@@ -694,29 +694,32 @@ end;
 
 procedure TVirtualMachine.Negate;
 var
+  Result : pValue;
   R : pValue;
 begin
-  (*
+
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
-    //Assert(R.Operation = OP_CONSTANT); //??
 
     if (R.IsNumber) then
     begin
-      R.Number := - R.Number;
-      VMStack.Push(R);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+      Result := newNumber(- R.Number);
+      VMStack.Push(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
 
 
   except on E:exception do
      HandleRunTimeError(e);
-  end; *)
+  end;
 end;
 
 
+//it's very important when working with the stack as it is pointer based,
+// and what you might push back on is actually a global var in altered form.
+//therefore, for now, always use a result, and pop off old vals
 procedure TVirtualMachine.Divide;
 var
   L,R : pValue;
@@ -836,7 +839,7 @@ begin
 
   index := FCurrentFrame.InstructionPointer.CurrentByte^ ;
 
-  value :=  VMStack.Peek(0);   //frame->slots[slot] = peek(0);
+  value :=  VMStack.Peek(0);
 
   FCurrentFrame.Value[FCurrentFrame.StackTop + index] := Value;
 
@@ -859,9 +862,6 @@ begin
   Index :=  FCurrentFrame.InstructionPointer.CurrentByte^ ;
 
   value := FCurrentFrame.Value[FCurrentFrame.StackTop + index];
-
-//  Log(OP_GET_LOCAL,Index, value);
-
 
   VMStack.Push(Value);  // push(frame->slots[slot]);
 
@@ -909,13 +909,8 @@ begin
   NameValue := FGlobals.Find(name.tostring);
   Assert(NameValue <> nil, 'expected value does not exist in globals');
 
-
-
   VMStack.push(NameValue.value);
 
-
-
-  //FCurrentFrame.InstructionPointer.Next;
 end;
 
 
