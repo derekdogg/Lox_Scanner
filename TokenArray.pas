@@ -10,7 +10,7 @@ type
 
  TTokens = class
  private
-   FItems : TList;
+    FItems : TList;
     function Count: integer;
     function getToken(const index: integer): TToken;
     procedure setToken(const index: integer; const Value: TToken);
@@ -77,7 +77,13 @@ begin
 end;
 
 destructor TTokens.destroy;
+var
+  i : integer;
 begin
+  for i := FItems.Count-1 downto 0 do
+  begin
+    TToken(FItems[i]).free;
+  end;
   FItems.Free;
   inherited;
 end;

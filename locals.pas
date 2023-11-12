@@ -28,6 +28,7 @@ type
 
   public
     Constructor Create(Const Name : String; const token : TToken);
+    destructor destroy; override;
     procedure ToStrings(const strings : TStrings);
     property Token : TToken read getToken;// write setToken;
     property Index : Integer read FIndex;
@@ -94,7 +95,14 @@ begin
 end;
 
 destructor TLocals.Destroy;
+var
+  i : integer;
 begin
+
+  for i := FItems.Count-1 downto 0 do
+  begin
+    TLocal(FItems[i]).free;
+  end;
   FItems.Free;
   inherited;
 end;
@@ -151,6 +159,12 @@ begin
   FToken := Token;
   FDepth := 0;
   FIsCaptured := False;
+end;
+
+destructor TLocal.destroy;
+begin
+
+  inherited;
 end;
 
 function TLocal.getToken: TToken;

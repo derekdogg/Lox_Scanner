@@ -722,6 +722,7 @@ end;
 
         if Token.Kind = tkWhiteSpace then
         begin
+          Token.Free;
           //if SkipWhiteSpace then ln.chars.move(-1);
         end
         else

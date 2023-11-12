@@ -27,7 +27,7 @@ type
   TValuePairs = record
   const
     // MAX_CAPACITY   = cMaxTokens;
-    NUM_SLOTS      = 100;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
+    NUM_SLOTS      = 64;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
     GROWTH_FACTOR  = 2;  //<== 4,8,16,32,64,128 etc
   private
     FResizeCount   : integer;

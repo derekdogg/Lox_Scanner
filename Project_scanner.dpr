@@ -1,6 +1,7 @@
 program Project_scanner;
 
 uses
+
   Forms,
   Scanner_Project in 'Scanner_Project.pas' {Form1},
   LoxTypes in 'LoxTypes.pas',

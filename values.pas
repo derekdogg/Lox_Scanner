@@ -27,8 +27,6 @@ type
   end;
 
 
-
-
   PLoxNative = ^TLoxNative;
   TLoxNative = record
     LoxObject : TLoxObject;
@@ -80,21 +78,24 @@ type
 
 
     // FLine      : TIntegers;
+
+
+
   public
+     Function EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
+    function EmitBytes(const byte1, byte2 : byte) : Integer;overload;
+    function EmitByte(const value : byte) : integer; overload;
+    function EmitByte(const Operand : TOpCodes) : integer;overload;
     procedure DoChunk(const Operand : TOpCodes);
 
     function Count : Integer;
 
-    Function EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
-    function EmitBytes(const byte1, byte2 : byte) : Integer;overload;
-    function EmitByte(const value : byte) : integer; overload;
-    function EmitByte(const Operand : TOpCodes) : integer;overload;
 
     function AddDEFINE_GLOBAL(const index : byte) : Integer;
     function AddGET_GLOBAL(const Index : integer) : Integer;
     function AddSET_GLOBAL(const Index : integer): Integer;
 
-    procedure EmitConstant(const value : pValue);
+    function EmitConstant(const value : pValue) : integer;
 
 //    function EmitConstant(const Value: pointer) : Integer; //rename to check all instances
     function AddReturn : integer;
@@ -428,7 +429,7 @@ end;
 function NewString(const str : String) : pValue;
 begin
   new(result);
-  result.LoxObject :=  pLoxObject(NewLoxString(str));//( LoxObjectFrom(NewLoxString(str));
+  result.LoxObject :=  pLoxObject(NewLoxString(str)); 
 end;
 
 function NewBool(const Bool : Boolean) : pValue;
@@ -654,7 +655,7 @@ end;
 
 constructor TValueStack.create;
 begin
-  FItems := TValueList.Create(true);
+  FItems := TValueList.Create(false);
 end;
 
 destructor TValueStack.Destroy;
@@ -771,7 +772,7 @@ var
   i : integer;
   p : pValue;
 begin
-
+  p := nil;
   if FOwnValues then
   begin
     for i := 0 to FItems.Count-1 do
@@ -779,6 +780,7 @@ begin
       p := Item[i];
       assert(p <> nil, 'finalize value item expected non nil value');
       DisposeValue(p);
+      p := nil;
     end;
   end;
   FItems.Free;
@@ -969,10 +971,11 @@ constructor TCallFrame.create(
 begin
 
    FObjectFunction     := ObjectFunction;
+
    FInstructionPointer := TInstructionPointer.Create(LoxFunction);
 
-
    FStack := Stack;
+
    FStackTop := StackTop;
 
 end;
@@ -999,12 +1002,12 @@ end;
 
 function TCallFrame.getValue(const index: integer): pValue;
 begin
-  result := FStack[index];
+  result := FStack[StackTop + index];
 end;
 
 procedure TCallFrame.setValue(const index: integer; const Value: pValue);
 begin
-   FStack[index] := Value;
+   FStack[StackTop + index] := Value;
 end;
 
 { TNatives }
@@ -1292,12 +1295,10 @@ begin
 end;
 
 
-procedure TChunks.EmitConstant(const value : pValue);
-var
-  constantIdx : integer;
+function TChunks.EmitConstant(const value : pValue) : integer;
 begin
-  constantIdx := Constants.Add(value);
-  EmitBytes(OP_CONSTANT,ConstantIdx);
+  result := Constants.Add(value);
+  EmitBytes(OP_CONSTANT,result);
 end;
 
 

@@ -19,14 +19,9 @@ const
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
-
-
-
-
   TVirtualMachine = record
   private
     FCurrentFrame : TCallFrame;
-    FInstructionPointer : TInstructionPointer;
 
     FHalt    : boolean;
     FNatives : TNatives;
@@ -34,7 +29,7 @@ type
 
 
     FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
-    //FStack  : TValueStack; //byte code stack
+
     FGlobals : TValuePairs;
 
     FResults : TStrings;
@@ -90,15 +85,10 @@ type
     function Run : TInterpretResult;
 
     procedure init(
-       //const Natives     : TNatives;
-
-
        const LoxFunction : pLoxFunction;
        const results : TStrings;
        const Log     : TStrings);
      procedure finalize;
-
-
 
   end;
 
@@ -334,7 +324,7 @@ procedure TVirtualMachine.Less;
 var
   L,R, Result : pValue;
 begin
-   
+
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_LESS));
   //this also means we assume the correct values are sitting in Stack...
@@ -355,7 +345,7 @@ var
   Result : pValue;
 begin
 //  result := nil;
-   
+
   //we assume here we're sitting on an OP_ADDITION in the IP
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
@@ -365,7 +355,7 @@ begin
 
     result := TAddition.Add(L,R);
 //    if assigned(result) then
-   VMStack.Push(result);
+    VMStack.Push(result);
 
   except on E:exception do                     
      HandleRunTimeError(e);
@@ -378,6 +368,7 @@ end;
 procedure TVirtualMachine.Log(
   const OpCode : TOpCodes; const L,R : pValue);
 begin
+  if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + '. LEFT : ' + L.ToString + ' RIGHT:' + R.ToString);
 
 end;
@@ -388,50 +379,16 @@ var
 
 begin
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_SUBTRACT));
-  
-    R := VMStack.Pop;
-    L := VMStack.Pop;
 
-    Log(OP_SUBTRACT,L,R);
+  R := VMStack.Pop;
+  L := VMStack.Pop;
 
-    result := TSubtraction.Subtract(L,R);
+  Log(OP_SUBTRACT,L,R);
 
-    VMStack.Push(result);
+  result := TSubtraction.Subtract(L,R);
 
+  VMStack.Push(result);
 
-
-   (* if (L.IsNumber) and (R.IsNumber) then
-    begin
-      //result := NewNumber(L.Number - R.Number);
-      L.number := L.Number - R.Number;
-      VMStack.Push(L);
-      exit;
-    end;
-
-    if (L.IsString) and (R.IsString) then
-    begin
-      L.Str := SubtractStrings(L.toString,R.ToString);//StringReplace(l.tostring,r.tostring, '', [rfReplaceAll]);    //this is a bit of a curiosity, it doesn't just deduct 1 time, it does it multiple times...
-      VMStack.Push(L);
-      exit;
-    end;
-
-    if (L.IsString) and (R.IsNumber) then
-    begin
-      L.Str := Copy(L.Str,0, Length(L.Str) - round(R.Number));
-      VMStack.Push(L);
-      exit;
-    end;
-
-    if (L.IsNumber) and (R.IsString) then
-    begin
-      //What goes here?
-      raise exception.create('trying to subtract a string from a number'); //not sure yet what to put here.
-    end;
-
-
-  except on E:exception do
-     HandleRunTimeError(e);
-  end; *)
 end;
 
 procedure TVirtualMachine.Multiply;
@@ -497,7 +454,7 @@ begin
 
   FResults.Add('PRINT:' + Value.ToString);
 end;
- 
+
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
@@ -518,9 +475,6 @@ begin
   newStackTop := VMStack.Count-ArgCount-1;
 
   FCurrentFrame.StackTop := NewStackTop;
-
-
-  //Frame^.Stack := VM.StackTop-ArgCount-1;
 
   result := true;
 
@@ -566,31 +520,8 @@ begin
      result := true;
      exit;
   end;
-//   frame->slots = vm.stackTop - argCount - 1;
-  // FFrames.Remove(FCurrentFrame);
+
 end;
-
-
-
-(*op_Return:
-          begin
-            FuncResult := Pop;
-
-            CloseUpValues(Frame^.Slots);
-
-            Dec(VM.FrameCount);
-            if VM.FrameCount = 0 then
-              begin
-                Pop;
-                Exit(irInterpretOK);
-              end;
-
-            VM.StackTop := Frame^.Slots;
-            Push(FuncResult);
-
-            Frame := @VM.Frames[VM.FrameCount-1];
-          end;*)
-
 
 
 procedure TVirtualMachine.DoReturn;
@@ -631,23 +562,16 @@ procedure TVirtualMachine.DoCall;
 var
   ArgCount : byte;
   callee : pValue;
-
 begin
-//  Showmessage('Call : ' + inttostr(FFrames.Stack.Index));
-
-//  Showmessage('Call' + FCurrentFrame.InstructionPointer.Name);
 
   ArgCount := FCurrentFrame.InstructionPointer.Next^; //read byte
 
   callee := VMStack.peek(ArgCount);
 
- // Log(OpCodeToStr(OP_CALL) + '. Function = ' + Callee.LoxFunction.name);
-
   if not callValue(Callee,ArgCount) then
   begin
     raise exception.create('failed to complete call value');
   end;
-
 
 end;
 
@@ -708,8 +632,6 @@ begin
       Result := newNumber(- R.Number);
       VMStack.Push(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
-
-
 
   except on E:exception do
      HandleRunTimeError(e);
@@ -829,7 +751,7 @@ end;
 procedure TVirtualMachine.OPSetLocal;
 var
   index : Integer;
-  
+
   value : pValue;
 begin
 
@@ -841,7 +763,7 @@ begin
 
   value :=  VMStack.Peek(0);
 
-  FCurrentFrame.Value[FCurrentFrame.StackTop + index] := Value;
+  FCurrentFrame.Value[index] := Value;
 
 end;
 
@@ -861,7 +783,7 @@ begin
 
   Index :=  FCurrentFrame.InstructionPointer.CurrentByte^ ;
 
-  value := FCurrentFrame.Value[FCurrentFrame.StackTop + index];
+  value := FCurrentFrame.Value[index];
 
   VMStack.Push(Value);  // push(frame->slots[slot]);
 
@@ -879,6 +801,8 @@ begin
 
   result := newString(v1.toString + v2.ToString + v3.ToString);
 end;
+
+
 
 
 
@@ -961,6 +885,7 @@ procedure TVirtualMachine.Log(
   const operand : integer;
   const value   : pValue);
 begin
+  if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' .INDEX :' +  inttostr(operand) + '. VALUE:' + Value.ToString);
 end;
 
@@ -968,16 +893,19 @@ end;
 
 procedure TVirtualMachine.Log(Const opCOde : TopCodes; const operand : integer);
 begin
+  if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' = ' +  inttostr(operand));
 end;
 
 procedure TVirtualMachine.Log(Const value : String);
 begin
+  if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + Value);
 end;
 
 procedure TVirtualMachine.Log(Const opCOde : TopCodes);
 begin
+  if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode));
 end;
 
@@ -1035,12 +963,6 @@ frame := vm.frames[vm.frameCount - 1];
   *)
 
 
-
-
-
-
-
-
 procedure TVirtualMachine.init(
   const LoxFunction : pLoxFunction;
   const results : TStrings;
@@ -1049,8 +971,6 @@ var
   Value : pValue;
 begin
   FLog := Log;
-
-
 
   FHalt    := false;
 
@@ -1062,15 +982,11 @@ begin
 
   RegisterNatives;
 
-
-
   FStackResults := TValueList.Create(true);
 
   FFrames := TCallFrames.create;
 
   vmStack.Push(newValueFromFunction(LoxFunction));
-
-  //FFrames.Stack.Push(Value); //I don't think it matters what is pushed here tbh?
 
   call(loxfunction, 0);
 
@@ -1080,8 +996,9 @@ end;
 procedure TVirtualMachine.finalize;
 begin
 //  FCurrentFrame.Stack.Free;
-
+  FFrames.free;
   FStackResults.free;
+  FGlobals.finalize;
 end;
 
 

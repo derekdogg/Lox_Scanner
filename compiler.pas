@@ -26,6 +26,7 @@ type
 
   TCompiler = class
   private
+    FInternal       : TToken;
     FName           : String;
     FEnclosing      : TCompiler;
     Flocals         : TLocals;
@@ -198,8 +199,6 @@ type
     function DoCompile : pLoxFunction;
 
    constructor Create(
-
-       const Globals : TValueList;
        const Tokens  : TTokenIterator;
        const Scanner : TScanner;
        const FunctionKind : TFunctionKind);
@@ -448,10 +447,7 @@ begin
    end
    else
    begin
-
-
      Current.Func.Chunks.emitBytes(byte(getOp), Idx);
-
    end;
 end;
 
@@ -1531,8 +1527,6 @@ begin
 end;
 
 
-
-
 procedure TCompilerController.SetRules ;
 begin
   SetRuleForOpen_bracket;
@@ -1573,7 +1567,6 @@ end;
 
 
 constructor TCompilerController.Create(
-  const Globals : TValueList;
   const Tokens  : TTokenIterator;
   const Scanner : TScanner;
   const FunctionKind : TFunctionKind);
@@ -1586,13 +1579,11 @@ begin
   Current := FCompilers.add('toplevelcompiler',FunctionKind,nil);
 
   SetRules;
-//  FFunc.Chunks.Constants := Constants;
-//  FGlobals := Globals;
 
   Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
 
   FScanner := Scanner;
-  //  FTokens.Init(Scanner.Tokens);
+
   FTokens := Tokens;
 
 end;
@@ -1603,7 +1594,7 @@ destructor TCompilerController.destroy;
 begin
   //disposeFunction(FFunc);
   //FLocals.Finalize;
-
+  FCompilers.free;
   inherited;
 end;
 
@@ -1842,8 +1833,7 @@ constructor TCompiler.Create(
   const Name : string;
   const FunctionKind : TFunctionKind;
   const Enclosing    : TCompiler);
-var
-  Token : TToken;
+
 
 begin
   FLocals := TLocals.Create;
@@ -1854,16 +1844,17 @@ begin
   FName := Name;
   FFunc := newLoxFunction(FName);
 
-  Token := TToken.Create;
-  Token.Kind := tkNull;
-  Locals.Add('',Token); //add an empty local for later use internally by the VM.   *)
-
+  FInternal := TToken.Create;
+  FInternal.Kind := tkNull;
+  Locals.Add('',FInternal); //add an empty local for later use internally by the VM.   *)
 
 end;
 
 destructor TCompiler.destroy;
 begin
-  DisposeFunction(FFunc);
+  FInternal.free;
+  Flocals.Free;
+  //DisposeFunction(FFunc);
   inherited;
 end;
 
