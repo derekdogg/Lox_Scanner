@@ -535,7 +535,8 @@ begin
     Result := PopStack;
     Frame :=  FCurrentFrame;
     FFrames.Remove(FCurrentFrame);
-
+    Frame.Free;
+    
     FCurrentFrame := FFrames.Frame;
 
     if FFrames.Count = 0 then
@@ -553,6 +554,7 @@ begin
 
 
     VMStack.Push(result);
+
 
 
 end;
