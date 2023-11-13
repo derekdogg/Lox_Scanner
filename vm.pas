@@ -640,9 +640,9 @@ end;
 //therefore, for now, always use a result, and pop off old vals
 procedure TVirtualMachine.Divide;
 var
-  L,R : pValue;
+  L,R, Result : pValue;
 begin
-  (*
+
   //we assume here we're sitting on an OP_DIVIDE in the IP
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
@@ -650,11 +650,13 @@ begin
     R := VMStack.Pop;
     Assert(R.Number <> 0); //divide by zero exceptions.
     L := VMStack.Pop;
-    L.Number := L.Number / R.Number;
-    VMStack.Push(L);
+
+    Result := NewNumber(L.Number / R.Number);
+
+    VMStack.Push(Result);
   except on E:exception do
      HandleRunTimeError(e);
-  end;  *)
+  end;
 end;
 
 Function TVirtualMachine.isFalsey(value : pValue) : Boolean;
@@ -675,22 +677,22 @@ var
   result : pValue;
 
 begin
-  (*
+
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_NOT), 'Current instruction is <> NOT');
   try
     result := NewBool(isFalsey(VMStack.pop));
     VMStack.Push(Result);
-    FStackResults.Add(Result);
+   // FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
-  end;  *)
+  end;
 end;
 
 procedure TVirtualMachine.Equal;
 var
   L,R, Result : pValue;
 begin
- (*
+
   //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
@@ -700,10 +702,10 @@ begin
 
     Result := NewBool(r.ToString = l.ToString);
     VMStack.Push(result);
-    FStackResults.Add(Result);
+  //  FStackResults.Add(Result);
   except on E:exception do
      HandleRunTimeError(e);
-  end;  *)
+  end;
 end;
 
 
@@ -711,9 +713,9 @@ procedure TVirtualMachine.DoTrue;
 var
   value : pValue;
 begin
-  (*
+
   value := newBool(true);
-  VMStack.Push(value);*)
+  VMStack.Push(value);
 end;
 
 
@@ -721,19 +723,19 @@ procedure TVirtualMachine.DoFalse;
 var
   Value : pValue;
 begin
- (*
+
   Value := NewBool(False);
-  VMStack.Push(Value); *)
+  VMStack.Push(Value);
 end;
 
 procedure TVirtualMachine.DoNil;
 var
   value : pValue;
 begin
-  (*
+
   new(Value);
   Value.Null := true;
-  VMStack.Push(value); *)
+  VMStack.Push(value);
 end;
 
 
@@ -806,6 +808,8 @@ procedure TVirtualMachine.RegisterNatives;
 begin
    AddGlobal(newString('foo'),NewNative(foo));
    AddGlobal(newString('DateTime'),NewNative(DateTime));
+   AddGlobal(newString('FileExists'),NewNative(FileExists));
+   AddGlobal(newString('LoadFromFile'),NewNative(LoadStringFromFile));
 end;
 
 function TVirtualMachine.VMStack : TValueStack;

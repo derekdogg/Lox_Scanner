@@ -8,7 +8,8 @@ uses classes, LoxTypes, OpCodes;
 type
 
   pValue = ^TValue;
-    TValueRecord = record
+
+  TValueRecord = record
     case Kind: TLoxKind of
       lxBoolean      :   (Bool: Boolean);
       lxNumber       :   (Number: Double);
@@ -197,7 +198,7 @@ type
     property Kind           : TLoxKind read getKind write setKind;
     property Number         : TNumber read getNumber write SetNumber;
     property Boolean        : Boolean read getBoolean write setBoolean;
-   // property Str            : String read getString write setString;
+    property Str            : String read getString write setString;
     property LoxObject      : pLoxObject read getObject write setObject;
     property Loxfunction    : pLoxFunction read getFunction write SetFunction;
     property NativeFunction : pLoxNative read getNative write setNative;

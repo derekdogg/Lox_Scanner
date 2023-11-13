@@ -1,4 +1,4 @@
-//weird edge case, so expecting outer printed twice
+//weird edge case, so expecting outer printed twice - this should except " can't read initializer in its own scope"
 {
   var a = "outer";
   {

@@ -82,8 +82,10 @@ var
   VM :  TVirtualMachine;
   LoxFunction : pLoxFunction;
   i : integer;
+  value : pValue;
 
 begin
+ 
   //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
   MemCodes.Lines.clear;

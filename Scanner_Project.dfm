@@ -25,7 +25,7 @@ object Form1: TForm1
   object memEdit: TMemo
     Left = 8
     Top = 39
-    Width = 369
+    Width = 1071
     Height = 387
     Color = clMenuText
     Font.Charset = ANSI_CHARSET
@@ -75,7 +75,7 @@ object Form1: TForm1
   end
   object MemRun: TMemo
     Left = 383
-    Top = 39
+    Top = 432
     Width = 369
     Height = 387
     Color = clMenuText
@@ -91,7 +91,7 @@ object Form1: TForm1
   end
   object MemCodes: TMemo
     Left = 758
-    Top = 39
+    Top = 432
     Width = 321
     Height = 387
     Color = clMenuText
