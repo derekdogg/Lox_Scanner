@@ -350,11 +350,10 @@ type field from it. *)
 
 
 
+  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject, lxString, lxFunction, lxNative);
 
 
 
-
-  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject);
   TNumber = Double;
 
 

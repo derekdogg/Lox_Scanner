@@ -533,10 +533,11 @@ var
 begin
 
     Result := PopStack;
+
     Frame :=  FCurrentFrame;
+
     FFrames.Remove(FCurrentFrame);
-    Frame.Free;
-    
+
     FCurrentFrame := FFrames.Frame;
 
     if FFrames.Count = 0 then
@@ -545,18 +546,11 @@ begin
       exit;
     end;
 
-
     VMStack.StackTop := Frame.StackTop;
-
-
-//    VMStack.Pop(VMStack.StCount - FCurrentFrame.OffSet);
-
-
 
     VMStack.Push(result);
 
-
-
+    Frame.free;
 end;
 
 
@@ -829,10 +823,15 @@ var
 begin
 
   assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+
   MoveNext;
+
   constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
+
   name := FCurrentFrame.InstructionPointer.global[constantIndex];
+
   NameValue := FGlobals.Find(name.tostring);
+
   Assert(NameValue <> nil, 'expected value does not exist in globals');
 
   VMStack.push(NameValue.value);
@@ -1001,6 +1000,7 @@ begin
   FFrames.free;
   FStackResults.free;
   FGlobals.finalize;
+  //FCurrentFrame.free; ??
 end;
 
 

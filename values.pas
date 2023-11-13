@@ -8,6 +8,15 @@ uses classes, LoxTypes, OpCodes;
 type
 
   pValue = ^TValue;
+    TValueRecord = record
+    case Kind: TLoxKind of
+      lxBoolean      :   (Bool: Boolean);
+      lxNumber       :   (Number: Double);
+      lxObject       :   (Obj: Pointer);
+  end;
+
+
+
 
   TValueStack = class;
 
@@ -36,7 +45,7 @@ type
 
   TEightBytes = array[0..7] of byte;
 
-  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject, lxFunction, lxNative);
+
 
   TNumber = Double;
 
@@ -152,10 +161,7 @@ type
   end;
 
   TValue = record
-  private
-
-    FKind  : TLoxKind;
-    FValue : TEightBytes;
+    ValueRecord : TValueRecord;
     function getNumber  : TNumber;
     procedure SetNumber(const value : TNumber);
     function BoolToString : String;
@@ -177,6 +183,10 @@ type
     function getIsNative: Boolean;
     function getNative: pLoxNative;
     procedure setNative(const Value: pLoxNative);
+  private
+    function getKind: TLoxKind;
+    procedure setKind(const Value: TLoxKind);
+
   public
     property IsFunction     : Boolean read getIsFunction;
     property IsObject       : Boolean read getisobject;
@@ -184,17 +194,21 @@ type
     property IsNative       : Boolean read getIsNative;
     property IsNumber       : Boolean read getIsNumber;
     property IsNull         : Boolean read getIsNull;
-    property Kind           : TLoxKind read FKind write FKind;
+    property Kind           : TLoxKind read getKind write setKind;
     property Number         : TNumber read getNumber write SetNumber;
     property Boolean        : Boolean read getBoolean write setBoolean;
-    property Str            : String read getString write setString;
-    property Bytes          : TEightBytes read FValue;
+   // property Str            : String read getString write setString;
     property LoxObject      : pLoxObject read getObject write setObject;
     property Loxfunction    : pLoxFunction read getFunction write SetFunction;
     property NativeFunction : pLoxNative read getNative write setNative;
     property ToString       : string read getString;
     property Null           : boolean read getNull write setNull;
   end;
+
+
+
+
+
 
   TValueList = class
   private
@@ -396,8 +410,9 @@ end;
 function newValueFromFunction(const fn : pLoxFunction) : pValue;
 begin
   new(result);
-  result.LoxFunction := fn;
-  result.Kind := lxFunction;
+  result.ValueRecord.Kind := lxFunction;
+  result.ValueRecord.Obj := fn;
+
 end;
 
 function NewFunction(const name : string; const Kind :  TFunctionKind) : pValue;
@@ -408,9 +423,8 @@ begin
   new(fn);
   fn.Name := name;
   fn.Chunks := TChunks.Create(name);
-  result.LoxFunction := fn;
-  result.Kind := lxFunction;
-
+  result.ValueRecord.Kind := lxFunction;
+  result.ValueRecord.Obj := fn;
 end;
 
 
@@ -422,26 +436,34 @@ begin
   new(loxNative);
   loxNative.Native := NativeFn;
 
-  result.NativeFunction := LoxNative;
+  result.ValueRecord.Kind := lxNative;
+  result.ValueRecord.Obj := LoxNative;
 end;
 
 
 function NewString(const str : String) : pValue;
+var
+  newstring : pLoxString;
 begin
   new(result);
-  result.LoxObject :=  pLoxObject(NewLoxString(str)); 
+  newstring := NewLoxString(str);
+  result.ValueRecord.Kind := lxString;
+
+  result.ValueRecord.Obj := newstring;
 end;
 
 function NewBool(const Bool : Boolean) : pValue;
 begin
   new(result);
-  result.Boolean := Bool;
+  result.ValueRecord.Kind := lxBoolean;
+  result.ValueRecord.Bool := Bool;
 end;
 
 function NewNumber(const number : TNumber) : pValue;
 begin
   new(result);
-  result.Number := Number;
+  result.ValueRecord.Kind := lxNumber;
+  result.ValueRecord.Number := Number;
 end;
 
 function DisposeValue(value : pValue) : boolean;
@@ -453,7 +475,7 @@ begin
   assert(assigned(Value), ' value for disposal is nil');
   if value.IsString then
   begin
-    assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
+    //assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
     LoxString := pLoxString(Value.LoxObject);
     dispose(LoxString);
   end;
@@ -480,20 +502,21 @@ end;
 
 procedure TValue.setNative(const Value: pLoxNative);
 begin
-  fKind := lxNative;
-  Move(Longint(value),FValue[0], SizeOf(Value));
+  ValueRecord.Kind := lxNative;
+  ValueRecord.Obj := Value;
+//  Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
 procedure TValue.setNull(const value : Boolean);
 begin
-  FKind := lxNull;
-  fillchar(FValue,sizeof(FValue),#0);
+  ValueRecord.Kind := lxNull;
+//  fillchar(FValue,sizeof(FValue),#0);
 end;
 
 procedure TValue.setObject(const value : pLoxObject);
 begin
-  FKind := lxObject;
-  Move(Longint(value),FValue[0], SizeOf(Value));
+  ValueRecord.Kind := lxObject;
+ // Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
 procedure TValue.SetString(const value: String);
@@ -509,8 +532,11 @@ end;
 function TValue.getObject : pLoxObject;
 begin
   result := nil;
-  if (FKind = lxObject) then
-    Move(FValue[0], Result, SizeOf(Result));
+  if (ValueRecord.Kind = lxObject) or
+     (ValueRecord.Kind = lxString) or
+     (valuerecord.Kind = lxNative) or
+     (valueRecord.Kind = lxfunction) then
+    result := ValueRecord.Obj;
 end;
 
 
@@ -527,7 +553,7 @@ var
   Obj : pLoxObject;
   fun : pLoxFunction;
 begin
-  case FKind of
+  case  ValueRecord.Kind of
    lxObject : begin
        Obj := GetObject;
        case Obj.Kind of
@@ -555,6 +581,9 @@ begin
      result := 'null';
    end;
 
+   lxString : begin
+     result := pLoxString(ValueRecord.Obj).Chars;
+   end;
 
   end;
 end;
@@ -562,93 +591,94 @@ end;
 function TValue.getBoolean : Boolean;
 begin
   result := false;
-  if FKind = lxObject then
-  begin
-    result := getNumber <=0;
-    exit;
-  end;
-  Move(FValue[0], Result, SizeOf(Result))
+  if  ValueRecord.Kind = lxBoolean then result := ValueRecord.Bool;
+
 end;
 
 function TValue.getFunction: pLoxFunction;
 begin
   result := nil;
-  if FKind = lxFunction then
-    Move(FValue[0], Result, SizeOf(Result));
+  if  ValueRecord.Kind = lxFunction then
+     result := pLoxFunction(ValueRecord.Obj);
 end;
 
 procedure TValue.setBoolean(const value : Boolean);
 begin
-  assert(FKind <> lxObject,'value is an object, and you are trying to set it to false'); //this is not cool to set the bytes of an existing pointer?
-  FKind := lxBoolean;
-  FillChar(FValue,Sizeof(FValue),#0);
-  Move(value, FValue[0], SizeOf(Value))
+  ValueRecord.Kind := lxBoolean;
+  ValueRecord.Bool := Value;
 end;
 
 procedure TValue.setFunction(const value: pLoxFunction);
 begin
-  Move(Longint(value),FValue[0], SizeOf(Value));
+  ValueRecord.Kind := lxFunction;
+  ValueRecord.Obj := Value;
+end;
+
+procedure TValue.setKind(const Value: TLoxKind);
+begin
+  ValueRecord.Kind := Value;
 end;
 
 function TValue.getIsFunction: Boolean;
 begin
-   result := FKind = lxFunction;
+   result := ValueRecord.Kind = lxFunction;
 end;
 
 function TValue.getIsNative: Boolean;
 begin
-  result := fKind = lxNative;
+  result := ValueRecord.Kind = lxNative;
 end;
 
 function TValue.getIsNull: Boolean;
 begin
-  result := FKind = lxNull;
+  result := ValueRecord.Kind = lxNull;
 end;
 
 function TValue.getIsNumber: Boolean;
 begin
-  result := FKind = lxNumber;
+  result := ValueRecord.Kind = lxNumber;
 end;
 
 function TValue.getIsObject: Boolean;
 begin
-   result := (fKind = lxObject)
+   result := (ValueRecord.Kind = lxObject)
 end;
 
 function TValue.getIsStringObject: Boolean;
 begin
-  result := getisobject and (getObject.Kind = OBJ_STRING);
+  result :=  ValueRecord.Kind = lxString;//getisobject and (getObject.Kind = OBJ_STRING);
+end;
+
+function TValue.getKind: TLoxKind;
+begin
+  result := ValueRecord.Kind
 end;
 
 function TValue.getNative: pLoxNative;
 begin
   result := nil;
-  if FKind = lxNative then
-    Move(FValue[0], Result, SizeOf(Result));
+  if ValueRecord.Kind = lxNative then
+     result := pLoxNative(ValueRecord.Obj);
 end;
 
 Function TValue.getNull: boolean;
 begin
-  result := fKind = lxNull;
+  result := ValueRecord.Kind = lxNull;
 end;
 
 function TValue.getNumber : TNumber;
-var
-  l : Longint;
 begin
-  if FKind = lxObject then
+  result := -1;
+  if ValueRecord.Kind = lxNumber then
   begin
-    Move(FValue[0], l, SizeOf(l));
-    result := l;
-    exit;
+    result := ValueRecord.Number;
   end;
-  Move(FValue[0], Result, SizeOf(TNumber))
 end;
 
 procedure TValue.SetNumber(const value : TNumber);
 begin
-   Fkind := lxNumber;
-   Move(value,FValue[0], SizeOf(TNumber))
+   ValueRecord.Kind := lxNumber;
+   ValueRecord.Number := Value;
 end;
 
 
