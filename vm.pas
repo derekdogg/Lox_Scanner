@@ -78,7 +78,7 @@ type
     procedure DoReturn;
     function CallValue(const callee : pValue; ArgCount : integer) : boolean;
     Function isFalsey(value : pValue) : Boolean;
-    procedure AddGlobal(const name : pValue ; const Value : pValue);
+    procedure AddGlobal(const name : string ; const Value : pValue);
 
   public
 //    function Result : TByteCode;
@@ -806,10 +806,10 @@ end;
 
 procedure TVirtualMachine.RegisterNatives;
 begin
-   AddGlobal(newString('foo'),NewNative(foo));
-   AddGlobal(newString('DateTime'),NewNative(DateTime));
-   AddGlobal(newString('FileExists'),NewNative(FileExists));
-   AddGlobal(newString('LoadFromFile'),NewNative(LoadStringFromFile));
+   AddGlobal( ('foo'),NewNative(foo));
+   AddGlobal( ('DateTime'),NewNative(DateTime));
+   AddGlobal( ('FileExists'),NewNative(FileExists));
+   AddGlobal( ('LoadFromFile'),NewNative(LoadStringFromFile));
 end;
 
 function TVirtualMachine.VMStack : TValueStack;
@@ -874,7 +874,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.AddGlobal(const name : pvalue; const Value : pValue);
+procedure TVirtualMachine.AddGlobal(const name : string; const Value : pValue);
 begin
 
   assert(assigned(FGlobals.AddNameValue(Name,value)), 'failed to add to hash table');
@@ -934,7 +934,7 @@ end;
 procedure TVirtualMachine.DoGlobal;
 var
    ConstantIndex : integer;
-   Name   : pValue;
+   constant   : pValue;
    value  : pValue;
 
 begin
@@ -942,10 +942,10 @@ begin
   assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
   constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
-  name := FCurrentFrame.InstructionPointer.global[constantIndex];
+  constant := FCurrentFrame.InstructionPointer.global[constantIndex];
   value := VMStack.Peek(0);
-  assert(name.IsString, 'name is not a string object');
-  AddGlobal(name,value);
+  assert(constant.IsString, 'name is not a string object');
+  AddGlobal(constant.tostring,value);
   popStack;
 
 end;

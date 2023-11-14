@@ -4,19 +4,23 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls;
 
 type
 
-  TForm1 = class(TForm)
+  TfmScript = class(TForm)
+    Panel1: TPanel;
     BtnScan: TButton;
-    memEdit: TMemo;
-    chkRun: TCheckBox;
-    chkEmit: TCheckBox;
     btnClear: TButton;
+    Panel2: TPanel;
+    Panel3: TPanel;
+    Panel4: TPanel;
+    Panel5: TPanel;
+    MemLocals: TMemo;
     MemRun: TMemo;
     MemCodes: TMemo;
-    MemLocals: TMemo;
+    Panel6: TPanel;
+    memEdit: TRichEdit;
     procedure BtnScanClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
   private
@@ -31,7 +35,7 @@ type
 
 
 var
-  Form1: TForm1;
+  fmScript: TfmScript;
 
 implementation
 
@@ -53,7 +57,7 @@ uses
 
 
 
-procedure TForm1.btnClearClick(Sender: TObject);
+procedure TfmScript.btnClearClick(Sender: TObject);
 begin
   memEdit.Lines.clear;
 end;
@@ -74,7 +78,7 @@ end;
 
 
 
-procedure TForm1.BtnScanClick(Sender: TObject);
+procedure TfmScript.BtnScanClick(Sender: TObject);
 var
   Scanner : TScanner;
   cc : TCompilerController;

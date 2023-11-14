@@ -8,13 +8,13 @@ uses
   values;
 
 
-Const MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
+Const MAX_CAPACITY = 2000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
 
 type
 
   pNameValue = ^TNameValue;
   TNameValue = record
-     name   : pValue;
+     name   : string;
      value  : pValue;
   end;
 
@@ -45,6 +45,8 @@ type
     function  DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
     procedure InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
     function FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValueItems) : boolean;
+    function Add(const value : pNameValue) : boolean;
+
   public
     function Find(const name  : string) : pNameValue;
     function ItemSize : integer;
@@ -55,8 +57,7 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function Add(const value : pNameValue) : boolean;
-    function AddNameValue(name : pValue; value : pValue) : pNameValue;
+    function AddNameValue(name : string; value : pValue) : pNameValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
@@ -89,12 +90,12 @@ type
 
 implementation
 
-function TValuePairs.AddNameValue(name : pvalue; value : pValue) : pNameValue;
+function TValuePairs.AddNameValue(name : string; value : pValue) : pNameValue;
 begin
-  assert(assigned(Name),  'Name is nil');
+//  assert(assigned(Name),  'Name is nil');
 //  assert(assigned(value), 'value is nil');
   result := nil;
-  assert(Find(Name.ToString) = nil,format('%s exists already in hash table',[name.toString])); //already exists
+  assert(Find(Name) = nil,format('%s exists already in hash table',[name])); //already exists
   new(result);
   result.name := name;
   result.Value := Value;
@@ -204,7 +205,7 @@ begin
   begin
     prospect := GetItem(index,items);
 
-    if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
+    if assigned(prospect) and (GetHashString(prospect.name) = hash) then
     begin
       result := prospect;
       exit;
@@ -220,7 +221,7 @@ begin
     begin
       prospect := GetItem(index,items);
 
-      if assigned(prospect) and (GetHashString(prospect.name.tostring) = hash) then
+      if assigned(prospect) and (GetHashString(prospect.name) = hash) then
       begin
         result := prospect;
         exit;
@@ -311,13 +312,13 @@ var
   pItem : pNameValue;
 begin
   assert(assigned(Value),'value is nil');
-  assert(assigned(Value.name), 'name is nil');
+//  assert(assigned(Value.name), 'name is nil');
 //  assert(assigned(Value.value),'value is nil');
 
   pItem := nil;
   result := false;
 
-  pItem := DoFindEntry(value.name.ToString,FItems);
+  pItem := DoFindEntry(value.name,FItems);
   Assert(pItem = nil, 'Key violation, inserting the same Key into the hash table');
 
   if isfull then GrowArray;
@@ -328,7 +329,7 @@ end;
 procedure TValuePairs.InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
 begin
   assert(assigned(Value),'value is nil');
-  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.name),'name is nil');
 //  assert(assigned(Value.value),'value is nil');
   assert(InBounds(Index,FCapacity));
   Items[Index] := Value;
@@ -340,10 +341,10 @@ var
 
 begin
   assert(assigned(Value),'value is nil');
-  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.name),'name is nil');
 //  assert(assigned(Value.value),'value is nil');
   result := False;
-  newIdx := FindNewIndex(Value.name.ToString,items);
+  newIdx := FindNewIndex(Value.name,items);
   assert(newIdx <> -1,'new index is -1'); //this should not fail
   insertItem(NewIdx,value,Items);
   result := true;
@@ -352,7 +353,7 @@ end;
 function TValuePairs.DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
 begin
   assert(assigned(Value),'value is nil');
-  assert(assigned(Value.name),'name is nil');
+//  assert(assigned(Value.name),'name is nil');
 //  assert(assigned(Value.value),'value is nil');
   result := FindNewKeyAndAddValue(value,Items);
   Assert(result = true, 'Could not find a new key for insertion');

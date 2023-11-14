@@ -46,7 +46,7 @@
     <DCCReference Include="Natives.pas" />
     <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
-      <Form>Form1</Form>
+      <Form>fmScript</Form>
     </DCCReference>
     <DCCReference Include="subtraction.pas" />
     <DCCReference Include="table.pas" />

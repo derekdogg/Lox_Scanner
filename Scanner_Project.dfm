@@ -1,7 +1,7 @@
-object Form1: TForm1
+object fmScript: TfmScript
   Left = 0
   Top = 0
-  Caption = 'Form1'
+  Caption = 'Script'
   ClientHeight = 638
   ClientWidth = 1101
   Color = clBtnFace
@@ -13,112 +13,178 @@ object Form1: TForm1
   OldCreateOrder = False
   PixelsPerInch = 96
   TextHeight = 13
-  object BtnScan: TButton
-    Left = 8
-    Top = 8
-    Width = 137
-    Height = 25
-    Caption = 'Compile and run'
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 1101
+    Height = 41
+    Align = alTop
     TabOrder = 0
-    OnClick = BtnScanClick
+    ExplicitLeft = 272
+    ExplicitTop = 8
+    ExplicitWidth = 497
+    object BtnScan: TButton
+      Left = 8
+      Top = 8
+      Width = 137
+      Height = 25
+      Caption = 'Compile and run'
+      TabOrder = 0
+      OnClick = BtnScanClick
+    end
+    object btnClear: TButton
+      Left = 151
+      Top = 8
+      Width = 82
+      Height = 25
+      Caption = 'Clear'
+      TabOrder = 1
+      OnClick = btnClearClick
+    end
   end
-  object memEdit: TMemo
-    Left = 8
-    Top = 39
-    Width = 1071
-    Height = 387
-    Color = clMenuText
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clMoneyGreen
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    Lines.Strings = (
-      ''
-      'fun fib(n) {'
-      '  if (n < 2) return n;'
-      '  return fib(n - 2) + fib(n - 1);'
-      '}'
-      ''
-      ' '
-      'print fib(10);')
-    ParentFont = False
+  object Panel2: TPanel
+    Left = 0
+    Top = 472
+    Width = 1101
+    Height = 166
+    Align = alBottom
+    Caption = 'Panel2'
     TabOrder = 1
-    WantTabs = True
+    object Panel3: TPanel
+      Left = 1
+      Top = 1
+      Width = 440
+      Height = 164
+      Align = alLeft
+      Caption = 'Panel3'
+      TabOrder = 0
+      object MemLocals: TMemo
+        Left = 1
+        Top = 1
+        Width = 438
+        Height = 162
+        Align = alClient
+        Color = clMenuText
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clAqua
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        Lines.Strings = (
+          '')
+        ParentFont = False
+        TabOrder = 0
+        ExplicitLeft = 8
+        ExplicitTop = -45
+        ExplicitWidth = 369
+        ExplicitHeight = 209
+      end
+    end
+    object Panel4: TPanel
+      Left = 441
+      Top = 1
+      Width = 474
+      Height = 164
+      Align = alClient
+      Caption = 'Panel3'
+      TabOrder = 1
+      ExplicitLeft = 447
+      object MemRun: TMemo
+        Left = 1
+        Top = 1
+        Width = 472
+        Height = 162
+        Align = alClient
+        Color = clMenuText
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clAqua
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        Lines.Strings = (
+          '')
+        ParentFont = False
+        TabOrder = 0
+        ExplicitLeft = 105
+        ExplicitTop = -223
+        ExplicitWidth = 369
+        ExplicitHeight = 387
+      end
+    end
+    object Panel5: TPanel
+      Left = 915
+      Top = 1
+      Width = 185
+      Height = 164
+      Align = alRight
+      Caption = 'Panel3'
+      TabOrder = 2
+      ExplicitLeft = 536
+      ExplicitTop = 64
+      ExplicitHeight = 41
+      object MemCodes: TMemo
+        Left = 1
+        Top = 1
+        Width = 183
+        Height = 162
+        Align = alClient
+        Color = clMenuText
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clAqua
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        Lines.Strings = (
+          '')
+        ParentFont = False
+        TabOrder = 0
+        ExplicitLeft = -136
+        ExplicitTop = -223
+        ExplicitWidth = 321
+        ExplicitHeight = 387
+      end
+    end
   end
-  object chkRun: TCheckBox
-    Left = 223
-    Top = 8
-    Width = 42
-    Height = 17
-    Caption = 'run'
-    Checked = True
-    State = cbChecked
+  object Panel6: TPanel
+    Left = 0
+    Top = 41
+    Width = 1101
+    Height = 431
+    Align = alClient
+    Caption = 'Panel6'
     TabOrder = 2
-  end
-  object chkEmit: TCheckBox
-    Left = 177
-    Top = 8
-    Width = 40
-    Height = 17
-    Caption = 'emit'
-    TabOrder = 3
-  end
-  object btnClear: TButton
-    Left = 271
-    Top = 8
-    Width = 75
-    Height = 17
-    Caption = 'Clear'
-    TabOrder = 4
-    OnClick = btnClearClick
-  end
-  object MemRun: TMemo
-    Left = 383
-    Top = 432
-    Width = 369
-    Height = 387
-    Color = clMenuText
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clAqua
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    Lines.Strings = (
-      '')
-    ParentFont = False
-    TabOrder = 5
-  end
-  object MemCodes: TMemo
-    Left = 758
-    Top = 432
-    Width = 321
-    Height = 387
-    Color = clMenuText
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clAqua
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    Lines.Strings = (
-      '')
-    ParentFont = False
-    TabOrder = 6
-  end
-  object MemLocals: TMemo
-    Left = 8
-    Top = 432
-    Width = 369
-    Height = 209
-    Color = clMenuText
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clAqua
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    Lines.Strings = (
-      '')
-    ParentFont = False
-    TabOrder = 7
+    ExplicitLeft = 80
+    ExplicitTop = 128
+    ExplicitWidth = 185
+    ExplicitHeight = 41
+    object memEdit: TRichEdit
+      Left = 1
+      Top = 1
+      Width = 1099
+      Height = 429
+      Align = alClient
+      Color = clMenuText
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clMoneyGreen
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      Lines.Strings = (
+        ''
+        'fun fib(n) {'
+        '  if (n < 2) return n;'
+        '  return fib(n - 2) + fib(n - 1);'
+        '}'
+        ''
+        ' '
+        'print fib(10);')
+      ParentFont = False
+      TabOrder = 0
+      WantTabs = True
+      ExplicitLeft = 22
+      ExplicitTop = 44
+      ExplicitWidth = 1071
+      ExplicitHeight = 387
+    end
   end
 end

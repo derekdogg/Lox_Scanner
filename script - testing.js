@@ -1,3 +1,21 @@
+fun foo(a) {
+  a = a + 1;
+  print a;
+  if (a > 10) { 
+      
+      return a;
+
+  }	   
+  foo(a);
+  
+}
+
+print foo(1);
+
+
+
+
+
 fun sum(a, b, c) {
     return a + b + c;
   }

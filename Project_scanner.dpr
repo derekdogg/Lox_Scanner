@@ -1,9 +1,8 @@
 program Project_scanner;
 
 uses
-
   Forms,
-  Scanner_Project in 'Scanner_Project.pas' {Form1},
+  Scanner_Project in 'Scanner_Project.pas' {fmScript},
   LoxTypes in 'LoxTypes.pas',
   Exceptions in 'Exceptions.pas',
   vm in 'vm.pas',
@@ -23,6 +22,6 @@ begin
   reportmemoryleaksonshutdown := true;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TfmScript, fmScript);
   Application.Run;
 end.
