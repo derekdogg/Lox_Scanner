@@ -49,15 +49,17 @@ type
         const Name : String;
         const Kind : TFunctionKind) : pValue; overload;
 
-     function newNative(const NativeFn : TNativeFunction) : pValue;
+
     function NewList(const name : string) : pLoxList;
     function NewValues : TValueList;
-    function newValueList(const name : string) : pValue;
+
      function IndexOf(const value : pValue) : integer;
 
   public
+    function newValueFromFunction(functionObj : pLoxFunction) : pValue;
+    function newNative(const NativeFn : TNativeFunction) : pValue;
     function NewFunction(const name : string) : pValue; overload;
-
+    function newValueList(const name : string) : pValue;
     function newLoxFunction(const Name : String) : pLoxFunction;
     procedure Dispose(var value : pLoxFunction); overload;
     procedure Dispose(var value : pValue);overload;
@@ -278,6 +280,11 @@ function TValueManager.NewString(
 begin
   result := FValueFactory.NewString(txt);
   //FItems.add(result);
+end;
+
+function TValueManager.newValueFromFunction(functionObj: pLoxFunction): pValue;
+begin
+  result := FValueFactory.NewValueFromFunction(functionObj);
 end;
 
 function TValueManager.newValueList(

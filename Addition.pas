@@ -30,6 +30,8 @@ type
 
 
 implementation
+uses
+  ValueManager;
 
 
 class function TNullAddition.LeftNullAddition(const L,R : pValue) : pValue;
@@ -92,7 +94,7 @@ begin
   if not L.IsNumber then exit;
   if not R.IsNumber then exit;
 
-  result := NewNumber(L.Number + R.Number);
+  result := BorrowChecker.NewNumber(L.Number + R.Number);
 end;
 
 
@@ -143,7 +145,7 @@ begin
 
   if (L.IsNull) or (r.IsNull) then
   begin
-    result := newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(L.ToString + R.ToString);
   end;
 
 
@@ -157,13 +159,13 @@ begin
 
   if L.IsString then
   begin
-    result := newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(L.ToString + R.ToString);
     exit;
   end;
 
   if R.IsString then
   begin
-    result := newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(L.ToString + R.ToString);
     exit;
   end;
 end;
@@ -177,7 +179,7 @@ begin
   if not L.IsString then exit;
   if not R.IsString then exit;
 
-  result := NewString(L.ToString + R.ToString);
+  result := BorrowChecker.NewString(L.ToString + R.ToString);
 
 end;
 

@@ -16,13 +16,13 @@ uses
 
 implementation
 uses
-  Dialogs;
+  Dialogs, ValueManager;
 
   function OpenFileAndLoad(const ArgCount: Integer;const Values : TValueStack) : pValue;
   var
     dlg : TOpenDialog;
   begin
-    result := newString('');
+   (* result := BorrowChecker.newString('');
     dlg := TOpenDialog.Create(nil);
     try
       if dlg.execute then
@@ -33,7 +33,7 @@ uses
       end;
     finally
       dlg.free;
-    end;
+    end; *)
   end;
 
 
@@ -43,7 +43,7 @@ uses
     FileName : String;
 
   begin
-    result := newString('');
+    result := BorrowChecker.newString('');
     FileName := Values.Peek(0).toString;
     if not SysUtils.FileExists(Filename) then exit;
 
@@ -62,7 +62,7 @@ uses
     exists : Boolean;
   begin
     FileName := Values.Peek(0).toString;
-    result := newBool(False);
+    result := BorrowChecker.newBool(False);
 
     if SysUtils.FileExists(Filename) then result.Boolean := true;
 
@@ -70,7 +70,7 @@ uses
 
   function DateTime(const ArgCount: Integer;const Values : TValueStack): pValue;
   begin
-     result := newString(DateTimeToStr(Now));
+     result := BorrowChecker.newString(DateTimeToStr(Now));
   end;
 
 end.

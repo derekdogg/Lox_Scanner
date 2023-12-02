@@ -91,7 +91,7 @@ type
 implementation
 
 uses
-  dialogs, addition, subtraction;
+  dialogs, addition, subtraction, valueManager;
 
 function TVirtualMachine.Run : TInterpretResult;
 begin
@@ -340,7 +340,7 @@ begin
    assert(FCurrentFrame.InstructionPointer.current = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := FCurrentFrame.InstructionPointer.current;
-   value :=  NewValueFromList(NewList(''));
+   value :=  BorrowChecker.newValueList(''); //NewValueFromList(NewList(''));
 
    // Add items to list
    VMStack.Push(value); // So list isn't swept by GC in appendToList - [to do!!]
@@ -392,7 +392,7 @@ begin
     R := VmStack.Pop;
     L := VmStack.Pop;
 
-    Result := NewBool(l.Number > r.Number);
+    Result := BorrowChecker.NewBool(l.Number > r.Number);
     VMStack.Push(result);
    // FStackResults.Add(Result);
   except on E:exception do
@@ -412,7 +412,7 @@ begin
   try
     R := VMStack.pop;
     L := VMStack.Pop;
-    Result := NewBool(l.Number < r.Number);
+    Result := BorrowChecker.NewBool(l.Number < r.Number);
     VMStack.Push(Result);
     //FStackResults.Add(Result);
  except on E:exception do
@@ -674,7 +674,7 @@ begin
 
     if (R.IsNumber) then
     begin
-      Result := newNumber(- R.Number);
+      Result := BorrowChecker.newNumber(- R.Number);
       VMStack.Push(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
@@ -700,7 +700,7 @@ begin
     Assert(R.Number <> 0); //divide by zero exceptions.
     L := VMStack.Pop;
 
-    Result := NewNumber(L.Number / R.Number);
+    Result := BorrowChecker.NewNumber(L.Number / R.Number);
 
     VMStack.Push(Result);
   except on E:exception do
@@ -729,7 +729,7 @@ begin
 
   Assert(FCurrentFrame.InstructionPointer.current = byte(OP_NOT), 'Current instruction is <> NOT');
   try
-    result := NewBool(isFalsey(VMStack.pop));
+    result := BorrowChecker.NewBool(isFalsey(VMStack.pop));
     VMStack.Push(Result);
    // FStackResults.Add(Result);
   except on E:exception do
@@ -749,7 +749,7 @@ begin
     R := VMStack.Pop;
     L := VMStack.Pop;
 
-    Result := NewBool(r.ToString = l.ToString);
+    Result := BorrowChecker.NewBool(r.ToString = l.ToString);
     VMStack.Push(result);
   //  FStackResults.Add(Result);
   except on E:exception do
@@ -763,7 +763,7 @@ var
   value : pValue;
 begin
 
-  value := newBool(true);
+  value := BorrowChecker.newBool(true);
   VMStack.Push(value);
 end;
 
@@ -773,7 +773,7 @@ var
   Value : pValue;
 begin
 
-  Value := NewBool(False);
+  Value := BorrowChecker.NewBool(False);
   VMStack.Push(Value);
 end;
 
@@ -846,7 +846,7 @@ begin
   v2 := values.Peek(1);
   v3 := Values.Peek(0);
 
-  result := newString(v1.toString + v2.ToString + v3.ToString);
+  result := BorrowChecker.newString(v1.toString + v2.ToString + v3.ToString);
 end;
 
 procedure TVirtualMachine.Halt;
@@ -854,14 +854,12 @@ begin
   FHalt := true;
 end;
 
-
-
 procedure TVirtualMachine.RegisterNatives;
 begin
-   AddGlobal( ('foobar'),NewNative(foo));
-   AddGlobal( ('DateTime'),NewNative(DateTime));
-   AddGlobal( ('FileExists'),NewNative(FileExists));
-   AddGlobal( ('LoadFromFile'),NewNative(LoadStringFromFile));
+   AddGlobal( ('foobar'),BorrowChecker.NewNative(foo));
+   AddGlobal( ('DateTime'),BorrowChecker.NewNative(DateTime));
+   AddGlobal( ('FileExists'),BorrowChecker.NewNative(FileExists));
+   AddGlobal( ('LoadFromFile'),BorrowChecker.NewNative(LoadStringFromFile));
  
 end;
 
@@ -1026,9 +1024,9 @@ begin
 
   FFrames := TCallFrames.create;
 
-  vmStack.Push(newValueFromFunction(LoxFunction));
+  vmStack.Push(BorrowChecker.newValueFromFunction(LoxFunction));
 
-  call(loxfunction, 0);
+  call(loxfunction, 0); 
 
 end;
 

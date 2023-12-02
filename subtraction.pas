@@ -29,6 +29,8 @@ type
 
 
 implementation
+uses
+  ValueManager;
 
 
 class function TNullSubtraction.LeftNullSubtraction(const L,R : pValue) : pValue;
@@ -91,7 +93,7 @@ begin
   if not L.IsNumber then exit;
   if not R.IsNumber then exit;
 
-  result := NewNumber(L.Number - R.Number);
+  result := BorrowChecker.NewNumber(L.Number - R.Number);
 end;
 
 
@@ -165,7 +167,7 @@ begin
   if L.IsString then
   begin
     s := copy(L.ToString,0, Length(L.toString) -1 - round(R.Number));
-    result := NewString(s);
+    result := BorrowChecker.NewString(s);
     exit;
   end;
 
@@ -181,7 +183,7 @@ begin
   if not L.IsString then exit;
   if not R.IsString then exit;
 
-  result := NewString(Subtract(L.ToString,R.ToString));
+  result := BorrowChecker.NewString(Subtract(L.ToString,R.ToString));
 
 end;
 

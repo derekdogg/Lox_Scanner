@@ -317,17 +317,11 @@ type
  TCallFrame = class
  private
    FStartCount         : integer;
-
    FStackTop           : integer;
-
    FObjectFunction     : pLoxFunction;
-
    FInstructionPointer : TInstructionPointer;
-
    FFrameIndex         : integer;
-
    FStack              : TValueStack;
-
    function  getValue(const index: integer): pValue;
    procedure setValue(const index: integer; const Value: pValue);
     function getStackCount: integer;
@@ -373,19 +367,14 @@ type
 
   end;
 
-  function newNative(NativeFn : TNativeFunction) : pValue;
-  function newValueFromFunction(const fn : pLoxFunction) : pValue;
-  function NewFunction(const name : string; const Kind :  TFunctionKind) : pValue;
-  function NewString(const str : String) : pValue;
-  function NewNumber(Const number : TNumber) : pValue;
-  function NewBool(const Bool : Boolean) : pValue;
-   function NewList(const name : string) : pLoxList;
-  function newValueFromList(const list : pLoxList) : pValue;
-//  function DisposeValue(value : pValue) : boolean;
-
-
-//  function newLoxFunction(const Name : String) : pLoxFunction;
-  //procedure disposeFunction(LoxFunction : pLoxFunction);
+  //function newNative(NativeFn : TNativeFunction) : pValue;
+  //function newValueFromFunction(const fn : pLoxFunction) : pValue;
+  //function NewFunction(const name : string; const Kind :  TFunctionKind) : pValue;
+  //function NewString(const str : String) : pValue;
+  //function NewNumber(Const number : TNumber) : pValue;
+  //function NewBool(const Bool : Boolean) : pValue;
+  //function NewList(const name : string) : pLoxList;
+  //function newValueFromList(const list : pLoxList) : pValue;
 
 
 implementation
@@ -395,158 +384,21 @@ uses sysutils,
 
 
 
-procedure DisposeList(List : pValue);
-var
-  p : pLoxList;
-begin
-  p := pLoxList(List.ValueRecord.Obj);
-  p.Items.Free;
-  dispose(p);
-  dispose(List);
-end;
-
-
-
-
-
-function NewList(const name : string) : pLoxList;
-begin
-  new(result);
-  result.LoxObject.Kind := OBJ_LIST;
-  result.LoxObject.Next := nil;
-  result.Name := Name;
-
-  result.Items := TValueList.create(true);
-  //FItems.Add(result);
-end;
-
-function newValueFromList(const list : pLoxList) : pValue;
-begin
-  new(result);
-  result.ValueRecord.Kind := lxList;
-  result.ValueRecord.Obj := list;
-end;
-
-
-procedure disposeFunction(LoxFunction : pLoxFunction);
-begin
-  LoxFunction.Chunks.Free;
-  dispose(LoxFunction);
-end;
-
-
-
-
-function newValueFromFunction(const fn : pLoxFunction) : pValue;
-begin
-  new(result);
-  result.ValueRecord.Kind := lxFunction;
-  result.ValueRecord.Obj := fn;
-
-end;
-
-function NewFunction(const name : string; const Kind :  TFunctionKind) : pValue;
-var
-  fn : pLoxFunction;
-begin
-  new(result);
-  new(fn);
-  fn.Name := name;
-  fn.Chunks := TChunks.Create(name);
-  result.ValueRecord.Kind := lxFunction;
-  result.ValueRecord.Obj := fn;
-end;
-
-
-function newNative(NativeFn : TNativeFunction) : pValue;
-var
-  LoxNative : PLoxNative;
-begin
-  new(result);
-  new(loxNative);
-  loxNative.Native := NativeFn;
-
-  result.ValueRecord.Kind := lxNative;
-  result.ValueRecord.Obj := LoxNative;
-end;
-
-
-function NewString(const str : String) : pValue;
-var
-  newstring : pLoxString;
-begin
-  new(result);
-  newstring := NewLoxString(str);
-  result.ValueRecord.Kind := lxString;
-
-  result.ValueRecord.Obj := newstring;
-end;
-
-function NewBool(const Bool : Boolean) : pValue;
-begin
-  new(result);
-  result.ValueRecord.Kind := lxBoolean;
-  result.ValueRecord.Bool := Bool;
-end;
-
-function NewNumber(const number : TNumber) : pValue;
-begin
-  new(result);
-  result.ValueRecord.Kind := lxNumber;
-  result.ValueRecord.Number := Number;
-end;
-
-(*function DisposeValue(value : pValue) : boolean;
-var
-  loxString   : pLoxString;
-  loxFunction : pLoxFunction;
-  loxNative   : pLoxNative;
-begin
-  assert(assigned(Value), ' value for disposal is nil');
-  if value.IsString then
-  begin
-    //assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
-    LoxString := pLoxString(Value.Valuerecord.Obj);
-    dispose(LoxString);
-  end;
-
-  if value.IsNative then
-  begin
-    LoxNative := Value.NativeFunction;
-    dispose(LoxNative);
-  end;
-
-
-  if value.IsFunction then
-  begin
-    LoxFunction := pLoxFunction(Value.LoxFunction);
-    LoxFunction.Chunks.Free;
-    Dispose(LoxFunction);
-  end;
-
-  dispose(Value);
-  value := nil;
-end;
-*)
-
 
 procedure TValue.setNative(const Value: pLoxNative);
 begin
   ValueRecord.Kind := lxNative;
   ValueRecord.Obj := Value;
-//  Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
 procedure TValue.setNull(const value : Boolean);
 begin
   ValueRecord.Kind := lxNull;
-//  fillchar(FValue,sizeof(FValue),#0);
 end;
 
 procedure TValue.setObject(const value : pLoxObject);
 begin
   ValueRecord.Kind := lxObject;
- // Move(Longint(value),FValue[0], SizeOf(Value));
 end;
 
 procedure TValue.SetString(const value: String);
@@ -1002,7 +854,6 @@ function TCallFrames.Add(
   const ObjectFunction: pLoxFunction): TCallFrame;
 begin
   result := TCallFrame.Create(ObjectFunction,StackTop,Stack);
-
   FFrames.Add(result);
 end;
 

@@ -1110,7 +1110,7 @@ begin
 
    functionObj := EndCompiler; //in the c version this makes current to previous one.
 
-   Value := newValueFromFunction(functionObj);
+   Value := BorrowChecker.newValueFromFunction(functionObj);
 
    Current.Func.Chunks.EmitConstant(Value);
 
