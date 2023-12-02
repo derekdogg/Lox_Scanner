@@ -38,8 +38,10 @@ type
     PREC_TERM,        // + -
     PREC_FACTOR,      // * /
     PREC_UNARY,       // ! -
-    PREC_CALL,        // . ()
-    PREC_PRIMARY
+    PREC_CALL,
+    PREC_SUBSCRIPT,
+    PREC_PRIMARY        // . ()
+
 );
 
 
@@ -171,6 +173,8 @@ TTokenKind = (
   tkNumber,
   tkQuotes,
   tkUnterminatedQuotes,
+  tkOpenSquareBracket,
+  tkCloseSquareBracket,
   tkopenbracket,
   tkcloseBracket,
   tkAsterisk,
@@ -222,6 +226,8 @@ TTokenKind = (
   'Number',
   'Quotes',
   'UnterminatedQuotes',
+  'OpenSquareBracket',
+  'CloseSquareBracket',
   'open_bracket',
   'Close_Bracket',
   'Asterisk',
@@ -287,7 +293,6 @@ type
 
 Type
   TObjectKind = (
-
     //> Methods and Initializers obj-type-bound-method
     OBJ_BOUND_METHOD,
     //< Methods and Initializers obj-type-bound-method
@@ -308,7 +313,9 @@ Type
     //< Calls and Functions obj-type-native
     OBJ_STRING,
     //> Closures obj-type-upvalue
-    OBJ_UPVALUE
+    OBJ_UPVALUE,
+
+    OBJ_LIST
     //< Closures obj-type-upvalue
   );
 
@@ -317,17 +324,10 @@ Type
     Kind     : TObjectKind;
     IsMarked : Boolean;
     Next     : pLoxObject;
-
     procedure Init;
   end;
 
-  // Laid out in memory like
-  // [TLoxObject][Length][chars]
-  // so if you get a pointer (pLoxObject) to TLoxString address then increment it you will sit on the chars in memory)
 
-  //from book pp561.
-(*Given an ObjString*, you can safely cast it to Obj* and then access the
-type field from it. *)
 
   pLoxString = ^TLoxString;
   TLoxString = record
@@ -350,7 +350,7 @@ type field from it. *)
 
 
 
-  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject, lxString, lxFunction, lxNative);
+  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject, lxString, lxList,lxFunction, lxNative);
 
 
 
@@ -406,7 +406,7 @@ function NewLoxString(Const Str : String) : pLoxString;
 begin
   new(Result);
   result.init;
-  result.Chars := Copy(str,1,length(str));
+  result.Chars := str;
 end;
 
 

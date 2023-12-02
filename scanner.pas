@@ -236,6 +236,8 @@ begin
     ord(Quotes),
     ord(open_bracket),
     ord(Close_Bracket),
+    ord(Open_Square_Bracket),
+    ord(Close_Square_Bracket),
     ord(Asterisk),
     ord(Plus),
     ord(Comma),
@@ -470,6 +472,15 @@ function TScanner.MakeToken : TToken;
         ord(open_Bracket) : begin
           Token := MakeSingleToken(tkOpenBracket)
         end;
+
+        ord(Open_Square_Bracket) : begin
+          Token := MakeSingleToken(tkOpenSquareBracket)
+        end;
+
+        ord(Close_Square_Bracket) : begin
+          Token := MakeSingleToken(tkCloseSquareBracket)
+        end;
+
 
         ord(close_Bracket) : begin
           Token := MakeSingleToken(tkCloseBracket);

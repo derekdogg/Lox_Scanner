@@ -17,8 +17,6 @@ type
   end;
 
 
-
-
   TValueStack = class;
 
   TNativeFunction = function(const ArgCount: Integer; const Values : TValueStack): pValue;
@@ -63,57 +61,75 @@ type
     function getItem(const Index: integer): pValue;
     procedure setItem(const Index: integer; const Value: pValue);
     function getCount: integer;
+    function getOwnValues: boolean;
   protected
 
   public
     constructor create(const functionName : String); //to help with debugging stuff
     destructor destroy; override;
     function Add(const value : pValue) : integer;
+    property OwnValues : boolean read getOwnValues;
     property Item[const Index : integer] : pValue read getItem write setItem;default;
     property Count : integer read getCount;
   end;
 
+  TCodes = array of integer;
 
+  TOpCode = class
+  const OP_CODE_MULTIPLIER = 8;
+  private
+    FCodes : TCodes;
+    FCount : integer;
+    FCapacity : integer;
+    procedure GrowCapacity;
+    function getCapacity : integer;
+    function getCode(const index: integer): integer;
+    procedure setCode(const index, Value: integer);
+    function getCount: integer;
+  protected
 
+    function Add(const value : integer) : integer;
+
+  public
+    constructor create;
+    destructor destroy; override;
+    property Code[const index : integer] : integer read getCode write setCode; default;
+    property Count : integer read getCount;
+  end;
 
   TChunks = class
   private
     //FConstantCount : integer;
     FName : String;
     FOnChunk   : TOnChunk;
-    FBytes     : TList;
+    FCode      : TOpCode;
     FConstants : TConstants;
-    function getValue(const index: integer): pByte;
-
-
-
-    // FLine      : TIntegers;
-
-
+    function getCode(const index: integer): integer;
+    procedure setCode(const index, Value: integer);
+    function getConstant(const index: integer): pValue;
+    procedure setConstant(const index : integer; const Value: pValue);
+    function getConstantCount: integer;
+    function getOwnsValues: boolean;
 
   public
-     Function EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;overload;
-    function EmitBytes(const byte1, byte2 : byte) : Integer;overload;
-    function EmitByte(const value : byte) : integer; overload;
-    function EmitByte(const Operand : TOpCodes) : integer;overload;
-    procedure DoChunk(const Operand : TOpCodes);
+     function Emit(const Operand : TOpCodes; const  value : Integer) : integer;overload;
+     function Emit(const valueA, ValueB : Integer) : Integer;overload;
+     function Emit(const Value : Integer) : integer; overload;
+     function Emit(const Operand : TOpCodes) : integer;overload;
 
-    function Count : Integer;
+     function Count : Integer;
 
 
-    function AddDEFINE_GLOBAL(const index : byte) : Integer;
+    function AddDEFINE_GLOBAL(const index : integer) : Integer;
     function AddGET_GLOBAL(const Index : integer) : Integer;
     function AddSET_GLOBAL(const Index : integer): Integer;
-
+    function AddConstant(const value : pValue) : integer;
     function EmitConstant(const value : pValue) : integer;
-
-//    function EmitConstant(const Value: pointer) : Integer; //rename to check all instances
     function AddReturn : integer;
     Function AddNIL : Integer;
     Function AddTRUE : Integer;
     Function AddFALSE : Integer;
     Function AddPOP : Integer;
-   // Function AddGET_LOCAL : Integer;
     Function AddSET_LOCAL : Integer;
     Function AddGET_UPVALUE : Integer;
     Function AddSET_UPVALUE : Integer;
@@ -148,8 +164,11 @@ type
     destructor destroy;override;
     function BytesToString : TStrings;
 
-    property Item[const index : integer] : pByte read getValue; default;
-    property Constants : TConstants read FConstants;
+    property Code[const index : integer] : integer read getCode write setCode; default;
+    property Constant[const index : integer] : pValue read getConstant write setConstant;
+    property ConstantCount : integer read getConstantCount;
+    property OwnsValues : boolean read getOwnsValues;
+    //property Constants : TConstants read FConstants;
   end;
 
   pLoxFunction = ^TLoxFunction;
@@ -160,6 +179,9 @@ type
     Name      : String;
     Chunks    : TChunks;
   end;
+
+   pLoxList = ^TLoxList;
+
 
   TValue = record
     ValueRecord : TValueRecord;
@@ -178,7 +200,8 @@ type
     function GetString : String;
     function getIsNumber: Boolean;
     function getIsStringObject: Boolean;
-    function getIsObject : Boolean;
+    function getIsObject : Boolean;         
+
     function getIsFunction : Boolean;
     function getIsNull: Boolean;
     function getIsNative: Boolean;
@@ -187,19 +210,26 @@ type
   private
     function getKind: TLoxKind;
     procedure setKind(const Value: TLoxKind);
+    function getIsList: Boolean;
+    function getList: pLoxList;
+    function getIsBoolean: Boolean;
+    function getLoxString: pLoxString;
 
   public
     property IsFunction     : Boolean read getIsFunction;
     property IsObject       : Boolean read getisobject;
     property IsString       : Boolean read getIsStringObject;
+    property IsList         : Boolean read getIsList;
     property IsNative       : Boolean read getIsNative;
     property IsNumber       : Boolean read getIsNumber;
     property IsNull         : Boolean read getIsNull;
+    property isBoolean      : Boolean read getIsBoolean;
     property Kind           : TLoxKind read getKind write setKind;
     property Number         : TNumber read getNumber write SetNumber;
     property Boolean        : Boolean read getBoolean write setBoolean;
     property Str            : String read getString write setString;
-    property LoxObject      : pLoxObject read getObject write setObject;
+    property List           : pLoxList read getList;
+    property LoxString      : pLoxString read getLoxString;
     property Loxfunction    : pLoxFunction read getFunction write SetFunction;
     property NativeFunction : pLoxNative read getNative write setNative;
     property ToString       : string read getString;
@@ -226,9 +256,19 @@ type
     function Add(const value : pValue) : integer;
     constructor create(Const OwnValues : Boolean);
     destructor destroy;override;
+    property OwnsValues : boolean read FOwnValues;
     property Item[const Index : integer] : pValue read getItem write setItem;default;
  end;
 
+
+
+  TLoxList = record
+     LoxObject : TLoxObject;
+     Name      : string;
+     Items     : TValueList;
+  end;
+
+  
 
 
  TValueStack = class
@@ -270,34 +310,27 @@ type
   private
     FName     : String;
     FFunction : PLoxFunction;
-    FConstants  : TConstants;
-
     FIndex      : integer;
-    FCurrent    : pByte;
-    FPrevious   : pByte;
     function getCount: integer;
     function Getconstant(const Index : integer) : pValue;
     function Getglobal(const index : integer) : pValue;
     function getName: String;
     function getFunction: PLoxFunction;
-
-
   public
     function Move(const index : integer) : boolean;
     function OpCodeCount : integer;
-    function ConstantCount : integer;
-    function ByteAt(const Index : integer) : pByte;
+    function GetValue(const Index : integer) : Integer;
     function Index : integer;
-    function CurrentByte : pByte;
-    function Next : pByte;
-    function PeekNext : pByte;
+    function Current : Integer;
+    function Next : Integer;
+    function PeekNext : Integer;
     constructor create(
         const loxFunction : PLoxFunction);
     property count : integer read getCount;
 
     property constant[const index : integer] : pValue read getConstant;
     property global[const index : integer] : pValue read getGlobal;
-    property code[const index : integer] :  pByte read ByteAt;Default;
+    property code[const index : integer] :  integer read GetValue; Default;
     property Name : String read getName;
     property Func : PLoxFunction read getFunction;
   end;
@@ -377,25 +410,52 @@ type
   function NewString(const str : String) : pValue;
   function NewNumber(Const number : TNumber) : pValue;
   function NewBool(const Bool : Boolean) : pValue;
-  function DisposeValue(value : pValue) : boolean;
-  function newLoxFunction(const Name : String) : pLoxFunction;
-     procedure disposeFunction(LoxFunction : pLoxFunction);
+   function NewList(const name : string) : pLoxList;
+  function newValueFromList(const list : pLoxList) : pValue;
+//  function DisposeValue(value : pValue) : boolean;
+
+
+//  function newLoxFunction(const Name : String) : pLoxFunction;
+  //procedure disposeFunction(LoxFunction : pLoxFunction);
 
 
 implementation
 uses sysutils,
-     Exceptions;
+     Exceptions,
+     ValueManager;
 
 
-function newLoxFunction(const Name : String) : pLoxFunction;
+
+procedure DisposeList(List : pValue);
+var
+  p : pLoxList;
 begin
-    new(result);
-    result.LoxObject.Kind := OBJ_FUNCTION;
-    result.LoxObject.Next := nil;
-    result.FuncKind := Type_Function;
-    result.Arity := 0;
-    result.Name := Name;
-    result.Chunks := TChunks.Create(Name);//(Constants); //.Init;
+  p := pLoxList(List.ValueRecord.Obj);
+  p.Items.Free;
+  dispose(p);
+  dispose(List);
+end;
+
+
+
+
+
+function NewList(const name : string) : pLoxList;
+begin
+  new(result);
+  result.LoxObject.Kind := OBJ_LIST;
+  result.LoxObject.Next := nil;
+  result.Name := Name;
+
+  result.Items := TValueList.create(true);
+  //FItems.Add(result);
+end;
+
+function newValueFromList(const list : pLoxList) : pValue;
+begin
+  new(result);
+  result.ValueRecord.Kind := lxList;
+  result.ValueRecord.Obj := list;
 end;
 
 
@@ -467,7 +527,7 @@ begin
   result.ValueRecord.Number := Number;
 end;
 
-function DisposeValue(value : pValue) : boolean;
+(*function DisposeValue(value : pValue) : boolean;
 var
   loxString   : pLoxString;
   loxFunction : pLoxFunction;
@@ -477,7 +537,7 @@ begin
   if value.IsString then
   begin
     //assert(assigned(Value.LoxObject), 'Lox Object for disposal is not assigned');
-    LoxString := pLoxString(Value.LoxObject);
+    LoxString := pLoxString(Value.Valuerecord.Obj);
     dispose(LoxString);
   end;
 
@@ -498,7 +558,7 @@ begin
   dispose(Value);
   value := nil;
 end;
-
+*)
 
 
 procedure TValue.setNative(const Value: pLoxNative);
@@ -536,7 +596,8 @@ begin
   if (ValueRecord.Kind = lxObject) or
      (ValueRecord.Kind = lxString) or
      (valuerecord.Kind = lxNative) or
-     (valueRecord.Kind = lxfunction) then
+     (valueRecord.Kind = lxfunction) or
+     (valueRecord.Kind = lxList) then
     result := ValueRecord.Obj;
 end;
 
@@ -620,9 +681,19 @@ begin
   ValueRecord.Kind := Value;
 end;
 
+function TValue.getIsBoolean: Boolean;
+begin
+   result := ValueRecord.Kind = lxBoolean;
+end;
+
 function TValue.getIsFunction: Boolean;
 begin
    result := ValueRecord.Kind = lxFunction;
+end;
+
+function TValue.getIsList: Boolean;
+begin
+  result := ValueRecord.Kind = lxList;
 end;
 
 function TValue.getIsNative: Boolean;
@@ -653,6 +724,20 @@ end;
 function TValue.getKind: TLoxKind;
 begin
   result := ValueRecord.Kind
+end;
+
+function TValue.getList: pLoxList;
+begin
+  result := nil;
+  if valueRecord.Kind = lxList then
+    result := pLoxList(valueRecord.obj);
+end;
+
+function TValue.getLoxString: pLoxString;
+begin
+  result := nil;
+  if ValueRecord.Kind = lxString then
+    result := pLoxString(ValueRecord.obj);
 end;
 
 function TValue.getNative: pLoxNative;
@@ -770,7 +855,7 @@ end;
 
 
 
- 
+
 { TValueList }
 
 function TValueList.Add(const value: pValue): integer;
@@ -810,10 +895,11 @@ begin
     begin
       p := Item[i];
       assert(p <> nil, 'finalize value item expected non nil value');
-      DisposeValue(p);
+      BorrowChecker.Dispose(p);
       p := nil;
     end;
   end;
+
   FItems.Free;
   inherited;
 end;
@@ -849,9 +935,7 @@ end;
 
 function TInstructionPointer.Getglobal(const index: integer): pValue;
 begin
-  assert(index >= 0, 'Index for value is < 0');
-  assert(index < FConstants.count, 'index is > than FConstants Count');
-  result := FConstants[Index];
+   result := FFunction.Chunks.Constant[Index];
 end;
 
 
@@ -862,32 +946,28 @@ begin
   if not assigned(FFunction) then exit;
   result := FFunction.Name;
 end;
-
+                            (*
 function TInstructionPointer.ConstantCount: integer;
 begin
-  result := FConstants.Count;
-end;
+  result := FFunction.Chunks.ConstantCount;
+end;                          *)
 
 
 
-function TInstructionPointer.ByteAt(const Index : integer) : pByte;
+function TInstructionPointer.GetValue(const Index : integer) : integer;
 begin
   assert((index >= 0) and (index < FFunction.Chunks.count));
   result := FFunction.Chunks[FIndex];
 end;
 
-function TInstructionPointer.CurrentByte: pByte;
+function TInstructionPointer.Current: integer;
 begin
-  result := ByteAt(FIndex);//TOpCodes(FBytes.Item(FIndex)^);
+  result := getValue(FIndex);//TOpCodes(FBytes.Item(FIndex)^);
 end;
 
 function TInstructionPointer.Getconstant(const Index: integer): pValue;
 begin
-
-  assert(index >= 0, 'Index for value is < 0');
-  assert(index < FConstants.count, 'index is > than FConstants Count');
-  result := FConstants[Index];
-
+  result := FFunction.Chunks.Constant[Index];
 end;
 
 function TInstructionPointer.Index: integer;
@@ -902,10 +982,9 @@ begin
   FFunction := LoxFunction;
 
 
-  FCurrent := nil;
-  FPrevious := nil;
+
 //  FBytes := LoxFunction.Chunks.OpCodes;
-  FConstants := LoxFunction.Chunks.Constants;
+  //FConstants := LoxFunction.Chunks.Constants;
   FIndex := -1;
 end;
 
@@ -920,14 +999,14 @@ begin
 end;
 
 
-function TInstructionPointer.Next: pByte;
+function TInstructionPointer.Next: integer;
 begin
-  result := nil;
+  result := -1;
   if FFunction.Chunks.Count = 0 then exit;
 
   inc(FIndex);
   if FIndex = FFunction.Chunks.Count then exit;
-  result := CurrentByte;
+  result := Current;
 end;
 
 function TInstructionPointer.OpCodeCount: integer;
@@ -935,11 +1014,11 @@ begin
 
 end;
 
-function TInstructionPointer.PeekNext: pByte;
+function TInstructionPointer.PeekNext: Integer;
 var
   i : integer;
 begin
-  result := nil;
+  result := -1;
   if FFunction.Chunks.Count = 0 then exit;
   i := FIndex;
   inc(i);
@@ -1078,76 +1157,91 @@ begin
   result^ := value;
 end;
 
- function TChunks.EmitByte(const Operand : TOpCodes) : integer;
+ function TChunks.Emit(const Operand : TOpCodes) : integer;
  begin
-   DoChunk(Operand);
-   EmitByte(Byte(Operand));
+   result := FCode.Add(ord(Operand));
  end;
 
-function TChunks.EmitByte(const value : byte) : integer;
+function TChunks.Emit(const value : integer) : integer;
 begin
   //writeChunk(currentChunk(), byte, parser.previous.line);
 
-  result := FBytes.Add(newByte(value));
+  result := FCode.Add(value);
 end;
 
 
-Function TChunks.EmitBytes(const Operand : TOpCodes; const  byte2 : byte) : integer;
+Function TChunks.Emit(const Operand : TOpCodes; const  value : integer) : integer;
 begin
-  result := emitByte(byte(Operand));
-  emitByte(byte2);
+  result := emit(Operand);
+  emit(Value);
 end;
 
-Function TChunks.EmitBytes(const byte1, byte2 : byte) : integer;
+Function TChunks.Emit(const valueA, ValueB : Integer) : integer;
 begin
-  result := emitByte(byte1);
-  emitByte(byte2);
+  result := emit(ValueA);
+  emit(ValueB);
 end;
 
 
 
-function TChunks.getValue(const index: integer): pByte;
+function TChunks.getCode(const index: integer): integer;
 begin
-  result := FBytes[index];
+  result := FCode[index];
 end;
 
-(*function TChunks.OpCodes: TList;
+function TChunks.getConstant(const index: integer): pValue;
 begin
-  result := FBytes;
-end; *)
+  result := FConstants[Index];
+end;
 
-//add constant opcode followed by index of constant in constants array
-(*function TChunks.EmitConstant(const Value: pointer) : Integer;
+function TChunks.getConstantCount: integer;
 begin
-  (*assert(Assigned(Value), 'Value for emission is nil.. please try again later. Have a nice day you are screwed');
-  if FConstants.Count = high(Byte) then raise EMaxConstants.create('Max constants reached'); //note since the opcodes is bytes array, it has fixed index size of 256
-  //inc(FConstantCount);
-  result := EmitBytes(OP_CONSTANT,MakeConstant(Value));
-end;    *)
+  result := FConstants.Count;
+end;
 
-function TChunks.AddDEFINE_GLOBAL(const index : byte) : Integer; //index of the global constant
+function TChunks.getOwnsValues: boolean;
 begin
-  result := EmitBytes(OP_DEFINE_GLOBAL,index);
+  result := FConstants.OwnValues;
+end;
+
+procedure TChunks.setCode(const index, Value: integer);
+begin
+  FCode[Index] := Value;
+end;
+
+procedure TChunks.setConstant(const index : integer; const Value: pValue);
+begin
+  FConstants[Index] := Value;
+end;
+
+function TChunks.AddConstant(const value: pValue): integer;
+begin
+  result := FConstants.Add(Value);
+end;
+
+function TChunks.AddDEFINE_GLOBAL(const index : integer) : Integer; //index of the global constant
+begin
+  result := Emit(OP_DEFINE_GLOBAL,index);
 end;
 
 function TChunks.AddGET_GLOBAL(const Index : integer) : Integer;
 begin
-  result := EmitBytes(OP_GET_GLOBAL, index);
+  result := Emit(OP_GET_GLOBAL, index);
 end;
 
 function TChunks.AddSET_GLOBAL(const Index : integer): Integer;
 begin
-  result := EmitBytes(OP_SET_GLOBAL,index);
+  result := Emit(OP_SET_GLOBAL,index);
 end;
 
 function TChunks.AddDIVIDE: Integer;
 begin
-  result := EmitByte(OP_DIVIDE);
+  result := Emit(OP_DIVIDE);
 end;
 
 function TChunks.AddEQUAL: Integer;
 begin
-  result := EmitByte(OP_EQUAL);
+  result := Emit(OP_EQUAL);
 end;
 
 function TChunks.AddNotEQUAL: Integer;
@@ -1158,7 +1252,7 @@ end;
 
 function TChunks.AddFALSE: Integer;
 begin
-  result := EmitByte(OP_FALSE);
+  result := Emit(OP_FALSE);
 end;
 
 
@@ -1170,22 +1264,22 @@ end; *)
 
 function TChunks.AddGET_PROPERTY: Integer;
 begin
-  result := EmitByte(OP_GET_PROPERTY);
+  result := Emit(OP_GET_PROPERTY);
 end;
 
 function TChunks.AddGET_SUPER: Integer;
 begin
-  result := EmitByte(OP_GET_SUPER);
+  result := Emit(Integer(OP_GET_SUPER));
 end;
 
 function TChunks.AddGET_UPVALUE: Integer;
 begin
-  result := EmitByte(OP_GET_UPVALUE);
+  result := Emit( OP_GET_UPVALUE);
 end;
 
 function TChunks.AddGREATER: Integer;
 begin
-  result := EmitByte(OP_GREATER);
+  result := Emit(OP_GREATER);
 end;
 
 function TChunks.AddGREATERTHANEQUAL: Integer;
@@ -1196,27 +1290,27 @@ end;
 
 function TChunks.AddINHERIT: Integer;
 begin
-  result := EmitByte(OP_INHERIT);
+  result := Emit( OP_INHERIT);
 end;
 
 function TChunks.AddINVOKE: Integer;
 begin
-  result := EmitByte( OP_INVOKE);
+  result := Emit(OP_INVOKE);
 end;
 
 function TChunks.AddJUMP: Integer;
 begin
- result := EmitByte(OP_JUMP);
+ result := Emit(OP_JUMP);
 end;
 
 function TChunks.AddJUMP_IF_FALSE: Integer;
 begin
-  result := EmitByte(OP_JUMP_IF_FALSE);
+  result := Emit(OP_JUMP_IF_FALSE);
 end;
 
 function TChunks.AddLESS: Integer;
 begin
-  result := EmitByte(OP_LESS);
+  result := Emit(OP_LESS);
 end;
 
 function TChunks.AddLESSTHANEQUAL: integer;
@@ -1227,90 +1321,88 @@ end;
 
 function TChunks.AddLOOP: Integer;
 begin
-  result := EmitByte(OP_LOOP);
+  result := Emit(OP_LOOP);
 end;
 
 function TChunks.AddMETHOD: Integer;
 begin
-  result := EmitByte(OP_METHOD);
+  result := Emit(OP_METHOD);
 end;
 
 function TChunks.AddMULTIPLY: Integer;
 begin
-  result := EmitByte(OP_MULTIPLY);
+  result := Emit(OP_MULTIPLY);
 end;
 
 function TChunks.AddNEGATE: Integer;
 begin
-  result := EmitByte(OP_NEGATE);
+  result := Emit(OP_NEGATE);
 end;
 
 function TChunks.AddNIL: Integer;
 begin
-  result := EmitByte(OP_NIL);
+  result := Emit(OP_NIL);
 end;
 
 function TChunks.AddNOT: Integer;
 begin
-  result := EmitByte(OP_NOT);
+  result := Emit(OP_NOT);
 end;
 
 function TChunks.AddPOP: Integer;
 begin
-  result := EmitByte(OP_POP);
+  result := Emit(OP_POP);
 end;
 
 function TChunks.AddPRINT: Integer;
 begin
-  result := EmitByte(OP_PRINT);
+  result := Emit(OP_PRINT);
 end;
 
 function TChunks.AddReturn : integer;
 begin
-  result := EmitByte(OP_RETURN);
+  result := Emit(OP_RETURN);
 end;
-
-
 
 function TChunks.AddSET_LOCAL: Integer;
 begin
-  result := EmitByte(OP_SET_LOCAL);
+  result := Emit(OP_SET_LOCAL);
 end;
 
 function TChunks.AddSET_PROPERTY: Integer;
 begin
-   result := EmitByte(OP_SET_PROPERTY);
+   result := Emit(OP_SET_PROPERTY);
 end;
 
 function TChunks.AddSET_UPVALUE: Integer;
 begin
 
-  result := EmitByte(OP_SET_UPVALUE);
+  result := Emit(OP_SET_UPVALUE);
 end;
 
 
 function TChunks.AddADD: Integer;
 begin
 
-  result := EmitByte(OP_ADD);
+  result := Emit(OP_ADD);
 end;
 
 function TChunks.AddSUBTRACT: Integer;
 begin
 
-  result := EmitByte(OP_SUBTRACT);
+  result := Emit(OP_SUBTRACT);
 end;
 
 function TChunks.AddSUPER_INVOKE: Integer;
 begin
 
-  result := EmitByte(OP_SUPER_INVOKE);
+  result := Emit(OP_SUPER_INVOKE);
 end;
 
 function TChunks.AddTRUE: Integer;
 begin
 
-  result := EmitByte(OP_TRUE);
+  result := Emit(OP_TRUE);
 end;
 
 function TChunks.BytesToString: TStrings;
@@ -1319,17 +1411,17 @@ var
 begin
   result := TStringList.create;
 
-  for i := 0 to FBytes.Count-1 do
+  for i := 0 to FCode.Count-1 do
   begin
-    result.add(Inttostr(pByte(FBytes[i])^));
+    result.add(Inttostr(FCode[i]));
   end;
 end;
 
 
 function TChunks.EmitConstant(const value : pValue) : integer;
 begin
-  result := Constants.Add(value);
-  EmitBytes(OP_CONSTANT,result);
+  result := FConstants.Add(value);
+  Emit(OP_CONSTANT,result);
 end;
 
 
@@ -1337,36 +1429,29 @@ end;
 
 function TChunks.Count: Integer;
 begin
-  result := FBytes.Count;
+  result := FCode.Count;
 end;
 
 constructor TChunks.Create(const FunctionName : String);
 begin
   FName := Functionname;
-  FBytes := TList.create;
+  FCode := TOpCode.Create;
   FConstants := TConstants.Create(Fname);
 
 end;
 
 destructor TChunks.destroy;
 begin
-  FBytes.Free;
+  FCode.Free;
   FConstants.Free;
   inherited;
 end;
 
-
-procedure TChunks.DoChunk(const Operand: TOpCodes);
-begin
-  if assigned(FOnChunk) then FOnChunk(Operand);
-end;
-
 { TConstants }
-
 constructor TConstants.create(const functionName : String);
 begin
   FName := FunctionName;
-  FItems := TValueList.create(true);
+  FItems := TValueList.create(false);
 end;
 
 
@@ -1391,9 +1476,67 @@ begin
   result := FItems[index];
 end;
 
+function TConstants.getOwnValues: boolean;
+begin
+  result := FItems.OwnsValues;
+end;
+
 procedure TConstants.setItem(const Index: integer; const Value: pValue);
 begin
   FItems[index] := Value;
+end;
+
+{ TOpCodes }
+
+function TOpCode.Add(const value: integer) : integer;
+begin
+  result := FCount;
+
+  if FCount = FCapacity then
+    growCapacity;
+
+  fCodes[fCount] := Value;
+  inc(FCount);
+end;
+
+constructor TOpCode.create;
+begin
+  FCount := 0;
+  FCapacity :=  OP_CODE_MULTIPLIER;
+  SetLength(FCodes, FCapacity);
+end;
+
+destructor TOpCode.destroy;
+begin
+
+  inherited;
+end;
+
+function TOpCode.getCapacity: integer;
+begin
+  result := FCapacity;
+end;
+
+function TOpCode.getCode(const index: integer): integer;
+begin
+   result := FCodes[Index];
+end;
+
+function TOpCode.getCount: integer;
+begin
+  result := FCount;
+end;
+
+procedure TOpCode.GrowCapacity;
+begin
+  FCapacity := FCapacity * 2;
+  setLength(FCodes,FCapacity);
+end;
+
+procedure TOpCode.setCode(const index, Value: integer);
+begin
+  assert(index <= FCapacity, 'Out of bounds index opcodes');
+  FCodes[index] := value;
 end;
 
 end.

@@ -4,7 +4,7 @@ interface
 
 type
 
-TOpCodes = (
+    TOpCodes = (
         OP_NULL,
         OP_NIL,
         OP_TRUE,
@@ -42,12 +42,17 @@ TOpCodes = (
         OP_CLASS,
         OP_INHERIT,
         OP_METHOD,
-        OP_CONSTANT
+        OP_CONSTANT,
+        OP_BUILD_LIST,
+        OP_INDEX_SUBSCR,
+        OP_STORE_SUBSCR
 );
+
+  
 
 const
 
-  TOP_Code_name : Array[OP_NULL..OP_CONSTANT] of string  = (
+  TOP_Code_name : Array[OP_NULL..OP_STORE_SUBSCR] of string  = (
    'OP_NULL',
 //> op-constant
 
@@ -139,7 +144,10 @@ const
 //< Superclasses inherit-op
 //> Methods and Initializers method-op
   'OP_METHOD' ,
-  'OP_CONSTANT'
+  'OP_CONSTANT',
+  'OP_BUILD_LIST',
+        'OP_INDEX_SUBSCR',
+        'OP_STORE_SUBSCR'
 //< Methods and Initializers method-op;
 );
 

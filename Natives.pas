@@ -11,13 +11,37 @@ uses
 
   function LoadStringFromFile(const ArgCount: Integer;const Values : TValueStack) : pValue;
 
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TValueStack) : pValue;
+
 
 implementation
+uses
+  Dialogs;
+
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  var
+    dlg : TOpenDialog;
+  begin
+    result := newString('');
+    dlg := TOpenDialog.Create(nil);
+    try
+      if dlg.execute then
+      begin
+         Values.Push(NewString(Dlg.Filename));
+         result := LoadStringFromFile(0,Values);
+        Values.Pop;
+      end;
+    finally
+      dlg.free;
+    end;
+  end;
+
 
   function LoadStringFromFile(const ArgCount: Integer;const Values : TValueStack) : pValue;
   var
     strings : TStrings;
     FileName : String;
+
   begin
     result := newString('');
     FileName := Values.Peek(0).toString;

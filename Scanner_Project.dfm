@@ -13,6 +13,17 @@ object fmScript: TfmScript
   OldCreateOrder = False
   PixelsPerInch = 96
   TextHeight = 13
+  object Splitter1: TSplitter
+    Left = 0
+    Top = 468
+    Width = 1101
+    Height = 4
+    Cursor = crVSplit
+    Align = alBottom
+    ResizeStyle = rsLine
+    ExplicitLeft = -2
+    ExplicitTop = 477
+  end
   object Panel1: TPanel
     Left = 0
     Top = 0
@@ -20,9 +31,6 @@ object fmScript: TfmScript
     Height = 41
     Align = alTop
     TabOrder = 0
-    ExplicitLeft = 272
-    ExplicitTop = 8
-    ExplicitWidth = 497
     object BtnScan: TButton
       Left = 8
       Top = 8
@@ -74,10 +82,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitLeft = 8
-        ExplicitTop = -45
-        ExplicitWidth = 369
-        ExplicitHeight = 209
       end
     end
     object Panel4: TPanel
@@ -88,7 +92,6 @@ object fmScript: TfmScript
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
-      ExplicitLeft = 447
       object MemRun: TMemo
         Left = 1
         Top = 1
@@ -105,10 +108,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitLeft = 105
-        ExplicitTop = -223
-        ExplicitWidth = 369
-        ExplicitHeight = 387
       end
     end
     object Panel5: TPanel
@@ -119,9 +118,6 @@ object fmScript: TfmScript
       Align = alRight
       Caption = 'Panel3'
       TabOrder = 2
-      ExplicitLeft = 536
-      ExplicitTop = 64
-      ExplicitHeight = 41
       object MemCodes: TMemo
         Left = 1
         Top = 1
@@ -138,10 +134,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitLeft = -136
-        ExplicitTop = -223
-        ExplicitWidth = 321
-        ExplicitHeight = 387
       end
     end
   end
@@ -149,19 +141,15 @@ object fmScript: TfmScript
     Left = 0
     Top = 41
     Width = 1101
-    Height = 431
+    Height = 427
     Align = alClient
     Caption = 'Panel6'
     TabOrder = 2
-    ExplicitLeft = 80
-    ExplicitTop = 128
-    ExplicitWidth = 185
-    ExplicitHeight = 41
     object memEdit: TRichEdit
       Left = 1
       Top = 1
       Width = 1099
-      Height = 429
+      Height = 425
       Align = alClient
       Color = clMenuText
       Font.Charset = ANSI_CHARSET
@@ -181,10 +169,6 @@ object fmScript: TfmScript
       ParentFont = False
       TabOrder = 0
       WantTabs = True
-      ExplicitLeft = 22
-      ExplicitTop = 44
-      ExplicitWidth = 1071
-      ExplicitHeight = 387
     end
   end
 end

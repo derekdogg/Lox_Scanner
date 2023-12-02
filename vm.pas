@@ -9,7 +9,8 @@ uses
   Table,
   values,
   opcodes,
-  natives;
+  natives,
+  AdapterCalls;
 
 const
    Frames_Max = 128;
@@ -35,7 +36,7 @@ type
     FResults : TStrings;
     FLog : TStrings;
 
-     
+
     procedure ClearLog;
     procedure Log(Const value : String);overload;
     procedure Log(Const opcode : TopCodes);overload;
@@ -43,6 +44,8 @@ type
     procedure Log(const opCOde : TopCodes;const operand : integer;const value   : pValue); overload;
     procedure Log(const OpCode : TOpCodes; const L,R : pValue);overload;
 
+
+    procedure Halt;
     function VMStack : TValueStack;
 
     function PopStack : pValue;
@@ -79,7 +82,9 @@ type
     function CallValue(const callee : pValue; ArgCount : integer) : boolean;
     Function isFalsey(value : pValue) : Boolean;
     procedure AddGlobal(const name : string ; const Value : pValue);
-
+    procedure BuildList;
+    procedure SubscribeList;
+    procedure StoreList;
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
@@ -115,10 +120,23 @@ begin
 
   Result := INTERPRET_NONE;
   if FCurrentFrame.InstructionPointer.Count = 0 then exit;
-  while (FHalt = false) and (FCurrentFrame.InstructionPointer.Next <> nil) do
+  while (FHalt = false) and (FCurrentFrame.InstructionPointer.Next <> -1) do
   begin
 
-    Case TOpCodes(FCurrentFrame.InstructionPointer.CurrentByte^) of
+    Case TOpCodes(FCurrentFrame.InstructionPointer.current) of
+
+    OP_BUILD_LIST : begin
+       BuildList;
+    end;
+
+
+    OP_INDEX_SUBSCR : begin
+       SubscribeList;
+    end;
+
+    OP_STORE_SUBSCR : begin
+      StoreList;
+    end;
 
       OP_CONSTANT : begin
          DoConstant;
@@ -280,16 +298,99 @@ begin
   FHalt := true;
 end;
 
+(*
+    Value item = pop();
+    Value index = pop();
+    Value list = pop();
+
+    if (!IS_LIST(list)) {
+        runtimeError("Cannot store value in a non-list.");
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    ObjList* list = AS_LIST(list);
+
+    if (!IS_NUMBER(index)) {
+        runtimeError("List index is not a number.");
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    int index = AS_NUMBER(index);
+
+    if (!isValidListIndex(list, index)) {
+        runtimeError("Invalid list index.");
+        return INTERPRET_RUNTIME_ERROR;
+    }
+
+    storeToList(list, index, item);
+    push(item);
+    break;
+
+*)
+
+procedure TVirtualMachine.StoreList;
+var
+  item, Index, ListValue : pValue;
+begin
+   item   := VmStack.Pop;
+   Index  := VmStack.Pop;
+   ListValue := VmStack.Pop;
+   Listvalue.List.Items[round(index.Number)] := Item;
+   VmStack.Push(Item);
+end;
+
+procedure TVirtualMachine.SubscribeList;
+var
+  indexValue, listValue, result: pValue;
+  list: pValue;
+  index: Integer;
+begin
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_INDEX_SUBSCR));
+  indexValue := VmStack.Pop;
+  listValue := VMStack.Pop;
+  index := round(indexValue.Number);
+  result := Listvalue.List.Items[index];
+  VmStack.Push(result);
+end;
+
+procedure TVirtualMachine.BuildList;
+var
+   value : pValue;
+   itemCount: integer;
+   i : integer;
+begin
+   assert(FCurrentFrame.InstructionPointer.current = byte(OP_BUILD_LIST));
+   MoveNext;
+   itemCount := FCurrentFrame.InstructionPointer.current;
+   value :=  NewValueFromList(NewList(''));
+
+   // Add items to list
+   VMStack.Push(value); // So list isn't swept by GC in appendToList - [to do!!]
+   for  i:= itemCount downto 1 do
+   begin
+      value.List.Items.Add(VmStack.Peek(i));
+   end;
+
+   VMStack.Pop;
+
+   // Pop items from stack
+   while itemCount > 0 do
+   begin
+      VMStack.Pop;
+      Dec(itemCount);
+    end;
+
+   vmStack.Push(value);
+end;
+
 procedure TVirtualMachine.DoConstant;
 var
   constantIndex : integer;
   value : pValue;
 begin
-   assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_CONSTANT));
+   assert(FCurrentFrame.InstructionPointer.current = byte(OP_CONSTANT));
 
    MoveNext;
 
-   constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
+   constantIndex := FCurrentFrame.InstructionPointer.current;
 
    value := FCurrentFrame.InstructionPointer.Constant[constantIndex];
    VMStack.Push(value);
@@ -305,7 +406,7 @@ var
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_GREATER));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_GREATER));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VmStack.Pop;
@@ -326,7 +427,7 @@ var
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_LESS));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_LESS));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.pop;
@@ -347,7 +448,7 @@ begin
 //  result := nil;
 
   //we assume here we're sitting on an OP_ADDITION in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
@@ -378,7 +479,7 @@ var
   Result, L,R : pValue;
 
 begin
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_SUBTRACT));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_SUBTRACT));
 
   R := VMStack.Pop;
   L := VMStack.Pop;
@@ -400,7 +501,7 @@ var
 begin
 (*
   //we assume here we're sitting on an OP_MULTIPLY in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_MULTIPLY));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_MULTIPLY));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
@@ -448,11 +549,11 @@ var
   value : pValue;
 begin
 
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_PRINT));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_PRINT));
   //value := FCurrentFrame.Stack.Pop;
   value := VMStack.Pop;
 
-  FResults.Add('PRINT:' + Value.ToString);
+  FResults.Add(Value.ToString);
 end;
 
 
@@ -560,7 +661,7 @@ var
   callee : pValue;
 begin
 
-  ArgCount := FCurrentFrame.InstructionPointer.Next^; //read byte
+  ArgCount := FCurrentFrame.InstructionPointer.Next; //read byte
 
   callee := VMStack.peek(ArgCount);
 
@@ -574,38 +675,38 @@ end;
 
 procedure TVirtualMachine.Loop;
 var
-  a,b : pbyte;
+  a,b : integer;
   offset : integer;
 begin
    a := FCurrentFrame.InstructionPointer.Next;
    b := FCurrentFrame.InstructionPointer.Next;
-   offset := a^ shl 8 + b^;
+   offset := a shl 8 + b;
    assert(FCurrentFrame.InstructionPointer.Move(FCurrentFrame.InstructionPointer.Index - offset) = true, 'failed to move to loop offset');
 end;
 
 
 procedure TVirtualMachine.Jump;
 var
-  a,b : pbyte;
+  a,b : integer;
   offset : integer;
 begin
   a := FCurrentFrame.InstructionPointer.Next;
   b := FCurrentFrame.InstructionPointer.Next;
-  offset := a^ shl 8 + b^;
+  offset := a shl 8 + b;
   assert(FCurrentFrame.InstructionPointer.Move(FCurrentFrame.InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
 procedure TVirtualMachine.JumpFalse;
 var
-  a,b : pbyte;
+  a,b : integer;
   offset : integer;
 begin
    
    a := FCurrentFrame.InstructionPointer.Next;
    b := FCurrentFrame.InstructionPointer.Next;
-   assert(a <> nil, 'a is nil can''t jump');
-   assert(b <> nil, 'b is nil can''t jump');
-   offset := a^ shl 8 + b^;
+   //assert(a <> nil, 'a is nil can''t jump');
+   //assert(b <> nil, 'b is nil can''t jump');
+   offset := a shl 8 + b;
    if (isFalsey(VMStack.peek(0))) then
    begin
      assert(FCurrentFrame.InstructionPointer.Move(FCurrentFrame.InstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
@@ -618,7 +719,7 @@ var
   R : pValue;
 begin
 
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_NEGATE));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_NEGATE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
@@ -644,7 +745,7 @@ var
 begin
 
   //we assume here we're sitting on an OP_DIVIDE in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_DIVIDE));
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_DIVIDE));
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
@@ -678,7 +779,7 @@ var
 
 begin
 
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_NOT), 'Current instruction is <> NOT');
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_NOT), 'Current instruction is <> NOT');
   try
     result := NewBool(isFalsey(VMStack.pop));
     VMStack.Push(Result);
@@ -694,7 +795,7 @@ var
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
+  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
   //this also means we assume the correct values are sitting in Stack...
   try
     R := VMStack.Pop;
@@ -753,11 +854,11 @@ var
   value : pValue;
 begin
 
-  assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_Set_LOCAL), 'current instruction is not op define global');
 
   moveNext;
 
-  index := FCurrentFrame.InstructionPointer.CurrentByte^ ;
+  index := FCurrentFrame.InstructionPointer.current ;
 
   value :=  VMStack.Peek(0);
 
@@ -775,11 +876,11 @@ var
   Count  : Integer;
 begin
 
-  assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_Get_LOCAL), 'current instruction is not op define global');
 
   moveNext;
 
-  Index :=  FCurrentFrame.InstructionPointer.CurrentByte^ ;
+  Index :=  FCurrentFrame.InstructionPointer.current ;
 
   value := FCurrentFrame.Value[index];
 
@@ -800,16 +901,20 @@ begin
   result := newString(v1.toString + v2.ToString + v3.ToString);
 end;
 
-
+procedure TVirtualMachine.Halt;
+begin
+  FHalt := true;
+end;
 
 
 
 procedure TVirtualMachine.RegisterNatives;
 begin
-   AddGlobal( ('foo'),NewNative(foo));
+   AddGlobal( ('foobar'),NewNative(foo));
    AddGlobal( ('DateTime'),NewNative(DateTime));
    AddGlobal( ('FileExists'),NewNative(FileExists));
    AddGlobal( ('LoadFromFile'),NewNative(LoadStringFromFile));
+ 
 end;
 
 function TVirtualMachine.VMStack : TValueStack;
@@ -826,11 +931,11 @@ var
    value : pValue;
 begin
 
-  assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
 
   MoveNext;
 
-  constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
+  constantIndex := FCurrentFrame.InstructionPointer.current;
 
   name := FCurrentFrame.InstructionPointer.global[constantIndex];
 
@@ -852,10 +957,10 @@ var
   // bcode : pByteCode;
 begin
 
-  assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
   MoveNext;
-  constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
+  constantIndex := FCurrentFrame.InstructionPointer.current;
 
   name := FCurrentFrame.InstructionPointer.global[constantIndex];
   value := VMStack.Peek(0);
@@ -875,9 +980,10 @@ end;
 
 
 procedure TVirtualMachine.AddGlobal(const name : string; const Value : pValue);
+
 begin
 
-  assert(assigned(FGlobals.AddNameValue(Name,value)), 'failed to add to hash table');
+  assert(assigned(FGlobals.AddNameValue(Name,value) ), 'failed to add to hash table');
 end;
 
 procedure TVirtualMachine.ClearLog;
@@ -916,7 +1022,8 @@ end;
 
 procedure TVirtualMachine.MoveNext;
 begin
-  Assert(FCurrentFrame.InstructionPointer.Next <> nil,'Expected constant value following constant operation');
+
+  Assert(FCurrentFrame.InstructionPointer.Next <> -1,'Expected constant value following constant operation');
 end;
 
 function TVirtualMachine.PeekStack: pValue;
@@ -934,38 +1041,22 @@ end;
 procedure TVirtualMachine.DoGlobal;
 var
    ConstantIndex : integer;
-   constant   : pValue;
+   Name   : pValue;
    value  : pValue;
 
 begin
-
-  assert(FCurrentFrame.InstructionPointer.CurrentByte^ = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+  assert(FCurrentFrame.InstructionPointer.current = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
-  constantIndex := FCurrentFrame.InstructionPointer.CurrentByte^;
-  constant := FCurrentFrame.InstructionPointer.global[constantIndex];
+  constantIndex := FCurrentFrame.InstructionPointer.current;
+  name := FCurrentFrame.InstructionPointer.global[constantIndex];
   value := VMStack.Peek(0);
-  assert(constant.IsString, 'name is not a string object');
-  AddGlobal(constant.tostring,value);
+  assert(name.IsString, 'name is not a string object');
+  AddGlobal(name.Tostring,value);
   popStack;
 
 end;
 
 
-(*
-result := pop;
-closeUpvalues(frame.slots);
-Dec(vm.frameCount);
-
-if vm.frameCount = 0 then
-begin
-  pop;
-  Exit(INTERPRET_OK);
-end;
-
-vm.stackTop := frame.slots;
-push(result);
-frame := vm.frames[vm.frameCount - 1];
-  *)
 
 
 procedure TVirtualMachine.init(

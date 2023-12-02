@@ -21,6 +21,7 @@ type
     MemCodes: TMemo;
     Panel6: TPanel;
     memEdit: TRichEdit;
+    Splitter1: TSplitter;
     procedure BtnScanClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
   private
@@ -51,7 +52,8 @@ uses
   vm,
   Table,
   Locals,
-  values;
+  values,
+  ValueManager;
 
 {$R *.dfm}
 
@@ -87,9 +89,11 @@ var
   LoxFunction : pLoxFunction;
   i : integer;
   value : pValue;
+  c : TCompiler;
 
 begin
- 
+
+
   //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
   MemCodes.Lines.clear;
@@ -104,19 +108,10 @@ begin
    cc := TCompilerController.Create(Tokens,Scanner,TYPE_SCRIPT);
    try
      LoxFunction := cc.DoCompile;
-
-     cc.LocalsToString(MemLocals.Lines);
-
-     for i := 0 to cc.Count-1 do
-     begin
-        cc[i].ToString(MemRun.lines);
-     end;
-
      VM.Init(LoxFunction,MemRun.Lines,nil{ MemCodes.Lines});
      VM.Run;
 
    finally
-     DisposeFunction(LoxFunction);
      cc.free;
      vm.Finalize;
    end;
