@@ -23,28 +23,19 @@ type
   TVirtualMachine = record
   private
     FCurrentFrame : TCallFrame;
-
     FHalt    : boolean;
     FNatives : TNatives;
     FFrames : TCallFrames;
-
-
     FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
-
     FGlobals : TValuePairs;
-
     FResults : TStrings;
     FLog : TStrings;
-
-
     procedure ClearLog;
     procedure Log(Const value : String);overload;
     procedure Log(Const opcode : TopCodes);overload;
     procedure Log(Const opCOde : TopCodes; const operand : integer); overload;
     procedure Log(const opCOde : TopCodes;const operand : integer;const value   : pValue); overload;
     procedure Log(const OpCode : TOpCodes; const L,R : pValue);overload;
-
-
     procedure Halt;
     function VMStack : TValueStack;
 
@@ -102,21 +93,10 @@ implementation
 uses
   dialogs, addition, subtraction;
 
-
-{ TVirtualMachine }
-(*function TVirtualMachine.Result: TByteCode;
-begin
-  assert(FFrames.Stack.Count = 1, 'stack is empty');
-  result := CurrentFrame.Stack.Pop;
-end;*)
-
 function TVirtualMachine.Run : TInterpretResult;
 begin
 
-  //CallFrame* frame = &vm.frames[vm.frameCount - 1];
-
   clearLog;
-
 
   Result := INTERPRET_NONE;
   if FCurrentFrame.InstructionPointer.Count = 0 then exit;
@@ -156,7 +136,7 @@ begin
 
       OP_SET_GLOBAL:
       begin
-       Log(OP_SET_GLOBAL);
+        Log(OP_SET_GLOBAL);
         DoSetGlobal;
       end;
 
@@ -477,19 +457,13 @@ end;
 procedure TVirtualMachine.subtract;
 var
   Result, L,R : pValue;
-
 begin
   Assert(FCurrentFrame.InstructionPointer.current = byte(OP_SUBTRACT));
-
   R := VMStack.Pop;
   L := VMStack.Pop;
-
   Log(OP_SUBTRACT,L,R);
-
   result := TSubtraction.Subtract(L,R);
-
   VMStack.Push(result);
-
 end;
 
 procedure TVirtualMachine.Multiply;
@@ -578,28 +552,7 @@ begin
   FCurrentFrame.StackTop := NewStackTop;
 
   result := true;
-
 end;
-
-(*
- VM Stack
-
- [0][1][2][3][4][5][6][7][8][9]
- [a][b][c][d][e][f][g][h][i][j]
-
- (Stack top = 10)  - (ArgCount = 1) - 1
-
-
- frame stack
- [0][1][2][3][4][5][6][7][8]
- [a][b][c][d][e][f][g][h][i]
-
- this would put it at i
-
-
-*)
-
-
 
 function TVirtualMachine.CallValue(const callee : pValue; ArgCount : integer) : boolean;
 var
@@ -621,9 +574,7 @@ begin
      result := true;
      exit;
   end;
-
 end;
-
 
 procedure TVirtualMachine.DoReturn;
 var
@@ -701,11 +652,8 @@ var
   a,b : integer;
   offset : integer;
 begin
-   
    a := FCurrentFrame.InstructionPointer.Next;
    b := FCurrentFrame.InstructionPointer.Next;
-   //assert(a <> nil, 'a is nil can''t jump');
-   //assert(b <> nil, 'b is nil can''t jump');
    offset := a shl 8 + b;
    if (isFalsey(VMStack.peek(0))) then
    begin
@@ -1022,19 +970,16 @@ end;
 
 procedure TVirtualMachine.MoveNext;
 begin
-
   Assert(FCurrentFrame.InstructionPointer.Next <> -1,'Expected constant value following constant operation');
 end;
 
 function TVirtualMachine.PeekStack: pValue;
 begin
-
   result := VMStack.Peek;
 end;
 
 function TVirtualMachine.PopStack : pValue;
 begin
-
   result := VMStack.Pop;
 end;
 
@@ -1045,7 +990,7 @@ var
    value  : pValue;
 
 begin
-  assert(FCurrentFrame.InstructionPointer.current = byte(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+  assert(FCurrentFrame.InstructionPointer.current = ord(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
   constantIndex := FCurrentFrame.InstructionPointer.current;
   name := FCurrentFrame.InstructionPointer.global[constantIndex];
@@ -1053,7 +998,6 @@ begin
   assert(name.IsString, 'name is not a string object');
   AddGlobal(name.Tostring,value);
   popStack;
-
 end;
 
 

@@ -152,12 +152,9 @@ type
     Function AddJUMP : Integer;
     Function AddJUMP_IF_FALSE : Integer;
     Function AddLOOP : Integer;
-    //Function AddCALL : Integer;
     Function AddINVOKE : Integer;
     Function AddSUPER_INVOKE : Integer;
-//    Function AddCLOSURE : Integer;
-//    Function AddCLOSE_UPVALUE : Integer;
-//    Function AddCLASS : Integer;
+
     Function AddINHERIT : Integer;
     Function AddMETHOD  : Integer;
     constructor Create(const FunctionName : String);
@@ -201,7 +198,6 @@ type
     function getIsNumber: Boolean;
     function getIsStringObject: Boolean;
     function getIsObject : Boolean;         
-
     function getIsFunction : Boolean;
     function getIsNull: Boolean;
     function getIsNative: Boolean;
@@ -236,11 +232,6 @@ type
     property Null           : boolean read getNull write setNull;
   end;
 
-
-
-
-
-
   TValueList = class
   private
     FItems      : TList;
@@ -273,44 +264,30 @@ type
 
  TValueStack = class
  private
-
     FItems  : TValueList;
     function getCount: integer;
-
  protected
-
-
     function GetItem(const index : integer) : pValue;
     procedure setItem(const index : integer; const value : pValue);
-
     procedure SetStackTop(const value: integer);
  public
-
     procedure Pop(const amount : integer); overload;
     function Peek : pValue; overload;
     function Peek(const distance : integer) : pValue; overload;
-
     procedure Push(const Item : pValue);
     function  Pop : pValue; overload;
-
     constructor create;
     destructor destroy;override;
     property Item[const index : integer] : pValue read getItem write setItem; default;
     property Count : integer read getCount;
     property StackTop : integer write setStackTop;
- end;
-
-
-
-
-
-
+  end;
 
   TInstructionPointer = class
   private
     FName     : String;
     FFunction : PLoxFunction;
-    FIndex      : integer;
+    FIndex    : integer;
     function getCount: integer;
     function Getconstant(const Index : integer) : pValue;
     function Getglobal(const index : integer) : pValue;
@@ -335,8 +312,6 @@ type
     property Func : PLoxFunction read getFunction;
   end;
 
-    //so the value (I think) is an index into an array of pValue. If you have 1, you can either increment it, or decrement it.
-
  TCallFrames = class;
 
  TCallFrame = class
@@ -357,30 +332,24 @@ type
    procedure setValue(const index: integer; const Value: pValue);
     function getStackCount: integer;
  public
-   property StartCount : integer read fStartCount;
-   property StackCount : integer read getStackCount;
-   property LoxFunction : pLoxFunction read FObjectFunction;
-   property InstructionPointer : TInstructionPointer read FInstructionPointer;
-//   property Value : TValueList read FValues write FValues;
-   property FrameIndex : integer read FFrameIndex;
-
-   property Value[const index : integer] : pValue read getValue write setValue;default;
-   //property Stack : TValueStack read FValueStack write FValueStack;
-   constructor create(
+    constructor create(
       const ObjectFunction : pLoxFunction;
       const StackTop : integer;
       const Stack : TValueStack);
    destructor destroy;override;
-
+   property StartCount : integer read fStartCount;
+   property StackCount : integer read getStackCount;
+   property LoxFunction : pLoxFunction read FObjectFunction;
+   property InstructionPointer : TInstructionPointer read FInstructionPointer;
+   property FrameIndex : integer read FFrameIndex;
+   property Value[const index : integer] : pValue read getValue write setValue;default;
    property StackTop : integer read FStackTop write FStackTop;
 
  end;
 
   TCallFrames = class
   private
-
     FConstants : TValueList;
-
     FValueStack : TValueStack;
     FFrames : TList;
     FFrame  : TCallFrame;
