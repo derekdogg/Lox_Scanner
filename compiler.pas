@@ -1732,8 +1732,8 @@ begin
   assert(assigned(Func.Chunks),'no chunks in compiler');
   Chunks := Func.Chunks;
 
-  InstructionPointer := TInstructionPointer.create(Func);
-
+  InstructionPointer := TInstructionPointer.create ;
+  InstructionPointer.Func := Func;
   strings.Add(Func.Name);
   while (InstructionPointer.Next <> -1) do
   begin

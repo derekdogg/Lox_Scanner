@@ -293,6 +293,7 @@ type
     function Getglobal(const index : integer) : pValue;
     function getName: String;
     function getFunction: PLoxFunction;
+    procedure setFunction(const Value: PLoxFunction);
   public
     function Move(const index : integer) : boolean;
     function OpCodeCount : integer;
@@ -301,15 +302,16 @@ type
     function Current : Integer;
     function Next : Integer;
     function PeekNext : Integer;
-    constructor create(
-        const loxFunction : PLoxFunction);
+    constructor create;
+    //constructor create(
+    //    const loxFunction : PLoxFunction);
     property count : integer read getCount;
 
     property constant[const index : integer] : pValue read getConstant;
     property global[const index : integer] : pValue read getGlobal;
     property code[const index : integer] :  integer read GetValue; Default;
     property Name : String read getName;
-    property Func : PLoxFunction read getFunction;
+    property Func : PLoxFunction read getFunction write setFunction;
   end;
 
  TCallFrames = class;
@@ -344,14 +346,14 @@ type
   TCallFrames = class
   private
     FConstants : TValueList;
-    FValueStack : TValueStack;
+
     FFrames : TList;
     FFrame  : TCallFrame;
 
   protected
      function GetFrame : TCallFrame;
      function getCount : integer;
-     function getValueStack : TValueStack;
+
   public
     constructor create;
     destructor destroy; override;
@@ -363,27 +365,15 @@ type
 
     property Frame : TCallFrame read getFrame;
     property Count : integer read getCount;
-    property Stack : TValueStack read getValueStack;
 
   end;
 
-  //function newNative(NativeFn : TNativeFunction) : pValue;
-  //function newValueFromFunction(const fn : pLoxFunction) : pValue;
-  //function NewFunction(const name : string; const Kind :  TFunctionKind) : pValue;
-  //function NewString(const str : String) : pValue;
-  //function NewNumber(Const number : TNumber) : pValue;
-  //function NewBool(const Bool : Boolean) : pValue;
-  //function NewList(const name : string) : pLoxList;
-  //function newValueFromList(const list : pLoxList) : pValue;
-
-
 implementation
-uses sysutils,
-     Exceptions,
-     ValueManager;
 
-
-
+uses
+  sysutils,
+  Exceptions,
+  ValueManager;
 
 procedure TValue.setNative(const Value: pLoxNative);
 begin
@@ -767,12 +757,6 @@ begin
   if not assigned(FFunction) then exit;
   result := FFunction.Name;
 end;
-                            (*
-function TInstructionPointer.ConstantCount: integer;
-begin
-  result := FFunction.Chunks.ConstantCount;
-end;                          *)
-
 
 
 function TInstructionPointer.GetValue(const Index : integer) : integer;
@@ -781,9 +765,14 @@ begin
   result := FFunction.Chunks[FIndex];
 end;
 
+constructor TInstructionPointer.create;
+begin
+  fIndex := -1;
+end;
+
 function TInstructionPointer.Current: integer;
 begin
-  result := getValue(FIndex);//TOpCodes(FBytes.Item(FIndex)^);
+  result := getValue(FIndex);
 end;
 
 function TInstructionPointer.Getconstant(const Index: integer): pValue;
@@ -796,18 +785,15 @@ begin
   result := FIndex;
 end;
 
+(*
 constructor TInstructionPointer.create(
   const loxFunction: PLoxFunction);
 
 begin
   FFunction := LoxFunction;
-
-
-
-//  FBytes := LoxFunction.Chunks.OpCodes;
-  //FConstants := LoxFunction.Chunks.Constants;
   FIndex := -1;
 end;
+*)
 
 function TInstructionPointer.Move(const index: integer): boolean;
 begin
@@ -848,6 +834,11 @@ begin
 end;
 
 
+procedure TInstructionPointer.setFunction(const Value: PLoxFunction);
+begin
+  FFunction := Value;
+end;
+
 function TCallFrames.Add(
   const StackTop : integer;
   const Stack : TValueStack;
@@ -860,14 +851,19 @@ end;
 constructor TCallFrames.create;
 begin
   FFrames := Tlist.create;
-  FValueStack := TValueStack.Create;
+
 end;
 
 destructor TCallFrames.destroy;
+var
+  i : integer;
 begin
+  for i := FFrames.Count-1 downto 0 do
+  begin
+    TCallFrame(FFrames[i]).free;
+  end;
   FFrames.Free;
-
-  FValueStack.Free;
+  
 end;
 
 function TCallFrames.getCount: integer;
@@ -882,10 +878,7 @@ begin
     result := FFrames[FFrames.Count-1];
 end;
 
-function TCallFrames.getValueStack: TValueStack;
-begin
-  result := FValueStack;
-end;
+
 
 function TCallFrames.Remove(const Frame: TCallFrame): integer;
 begin
@@ -902,7 +895,8 @@ begin
 
    FObjectFunction     := ObjectFunction;
 
-   FInstructionPointer := TInstructionPointer.Create(LoxFunction);
+   FInstructionPointer := TInstructionPointer.Create;
+   FInstructionPointer.Func := ObjectFunction;
 
    FStack := Stack;
 
@@ -921,15 +915,7 @@ function TCallFrame.getStackCount: integer;
 begin
   result := FStack.Count;
 end;
-
-(*    [1][2][3][4][5][6][7][8][9][10][11]  VM Stack, stack top = 8
-      [a][b][c][d][e][f][g][ ][ ][ ] [ ]
-
-      Set frame stack top to 4, item zero = 3
-
-
-*)
-
+ 
 function TCallFrame.getValue(const index: integer): pValue;
 begin
   result := FStack[StackTop + index];
@@ -984,8 +970,6 @@ end;
 
 function TChunks.Emit(const value : integer) : integer;
 begin
-  //writeChunk(currentChunk(), byte, parser.previous.line);
-
   result := FCode.Add(value);
 end;
 
@@ -1076,12 +1060,6 @@ begin
 end;
 
 
-
-(*function TChunks.AddGET_LOCAL: Integer;
-begin
-  result := FBytes.Add(ord(OP_GET_LOCAL));
-end; *)
-
 function TChunks.AddGET_PROPERTY: Integer;
 begin
   result := Emit(OP_GET_PROPERTY);
@@ -1135,8 +1113,8 @@ end;
 
 function TChunks.AddLESSTHANEQUAL: integer;
 begin
-  result := AddGreater;//FBytes.Add(ord(OP_GREATER));
-  result := AddNot;//FBytes.Add(ord(OP_NOT));
+  result := AddGreater; 
+  result := AddNot;
 end;
 
 function TChunks.AddLOOP: Integer;

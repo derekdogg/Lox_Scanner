@@ -11,6 +11,7 @@ type
 
   TValueDisposal = class
     procedure DisposeList(var List : pValue);
+    procedure DisposeNil(var value : pValue);
     procedure DisposeBoolean(var value : pValue);
     procedure DisposeNumber(var value : pValue);
     procedure disposeNative(var native : pValue);
@@ -27,6 +28,7 @@ type
         const prev : pLoxFunction;
         const Name : String;
         const Kind : TFunctionKind) : pValue;
+    function NewNil : pValue;
     function NewList(const name : string) : pLoxList;
     function newNative(const NativeFn : TNativeFunction) : pValue;
     function NewNumber(Const number : TNumber) : pValue;
@@ -66,6 +68,7 @@ type
     function NewString(const txt : String) : pValue;
     function NewNumber(Const number : TNumber) : pValue;
     function NewBool(const Bool : Boolean) : pValue;
+    function NewNil : pValue;
     constructor create;
     destructor destroy; override;
   end;
@@ -90,6 +93,12 @@ end;
 function TValueCreation.NewValues: TValueList;
 begin
   result := TValueList.Create(false);
+end;
+
+function TValueCreation.NewNil: pValue;
+begin
+  new(result);
+  result.Kind := lxNull;
 end;
 
 function TValueCreation.NewNumber(const number : TNumber) : pValue;
@@ -268,6 +277,11 @@ begin
    result := FValueFactory.NewNative(NativeFn);
 end;
 
+function TValueManager.NewNil: pValue;
+begin
+  result := FValueFactory.NewNil;
+end;
+
 function TValueManager.NewNumber(
   const number: TNumber): pValue;
 begin
@@ -372,6 +386,11 @@ begin
   dispose(value);
 end;
 
+procedure TValueDisposal.DisposeNil(var value: pValue);
+begin
+  dispose(Value);
+end;
+
 procedure TValueDisposal.DisposeNumber(var value : pValue);
 begin
    dispose(value);
@@ -381,7 +400,7 @@ procedure TValueDisposal.DisposeValue(var value : pValue);
 begin
     if value.IsNull then
     begin
-      //what goes here? DisposeNull(Value);
+      DisposeNil(Value);
       exit;
     end;
 

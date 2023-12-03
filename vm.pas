@@ -25,8 +25,9 @@ type
     FCurrentFrame : TCallFrame;
     FHalt    : boolean;
     FNatives : TNatives;
+    FStack   : TValueStack;
     FFrames : TCallFrames;
-    FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
+   // FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
     FGlobals : TValuePairs;
     FResults : TStrings;
     FLog : TStrings;
@@ -72,7 +73,10 @@ type
     procedure DoReturn;
     function CallValue(const callee : pValue; ArgCount : integer) : boolean;
     Function isFalsey(value : pValue) : Boolean;
-    procedure AddGlobal(const name : string ; const Value : pValue);
+    Procedure AddGlobal(
+      const name : string;
+      const Value : pValue;
+      const ownValue : boolean);
     procedure BuildList;
     procedure SubscribeList;
     procedure StoreList;
@@ -129,7 +133,7 @@ begin
        end;
 
       OP_POP : Begin
-          Log(OP_POP);
+         Log(OP_POP);
          DoPOP;
       end;
 
@@ -278,34 +282,6 @@ begin
   FHalt := true;
 end;
 
-(*
-    Value item = pop();
-    Value index = pop();
-    Value list = pop();
-
-    if (!IS_LIST(list)) {
-        runtimeError("Cannot store value in a non-list.");
-        return INTERPRET_RUNTIME_ERROR;
-    }
-    ObjList* list = AS_LIST(list);
-
-    if (!IS_NUMBER(index)) {
-        runtimeError("List index is not a number.");
-        return INTERPRET_RUNTIME_ERROR;
-    }
-    int index = AS_NUMBER(index);
-
-    if (!isValidListIndex(list, index)) {
-        runtimeError("Invalid list index.");
-        return INTERPRET_RUNTIME_ERROR;
-    }
-
-    storeToList(list, index, item);
-    push(item);
-    break;
-
-*)
-
 procedure TVirtualMachine.StoreList;
 var
   item, Index, ListValue : pValue;
@@ -340,16 +316,16 @@ begin
    assert(FCurrentFrame.InstructionPointer.current = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := FCurrentFrame.InstructionPointer.current;
-   value :=  BorrowChecker.newValueList(''); //NewValueFromList(NewList(''));
+   value :=  BorrowChecker.newValueList('');
 
    // Add items to list
-   VMStack.Push(value); // So list isn't swept by GC in appendToList - [to do!!]
+  // VMStack.Push(value); // So list isn't swept by GC in appendToList - [to do!!]
    for  i:= itemCount downto 1 do
    begin
       value.List.Items.Add(VmStack.Peek(i));
    end;
 
-   VMStack.Pop;
+  // VMStack.Pop;
 
    // Pop items from stack
    while itemCount > 0 do
@@ -717,9 +693,7 @@ begin
     ((Value.IsString) and (lowercase(Value.ToString) = 'false'));
 end;
 
-{  C code...
-  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
-}
+
 
 procedure TVirtualMachine.NotEqual;
 var
@@ -727,7 +701,7 @@ var
 
 begin
 
-  Assert(FCurrentFrame.InstructionPointer.current = byte(OP_NOT), 'Current instruction is <> NOT');
+  Assert(FCurrentFrame.InstructionPointer.current = ord(OP_NOT), 'Current instruction is <> NOT');
   try
     result := BorrowChecker.NewBool(isFalsey(VMStack.pop));
     VMStack.Push(Result);
@@ -741,17 +715,15 @@ procedure TVirtualMachine.Equal;
 var
   L,R, Result : pValue;
 begin
-
-  //we assume here we're sitting on an OP_EQUAL in the IP
   Assert(FCurrentFrame.InstructionPointer.current = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
-  //this also means we assume the correct values are sitting in Stack...
+
   try
     R := VMStack.Pop;
     L := VMStack.Pop;
 
     Result := BorrowChecker.NewBool(r.ToString = l.ToString);
     VMStack.Push(result);
-  //  FStackResults.Add(Result);
+
   except on E:exception do
      HandleRunTimeError(e);
   end;
@@ -762,7 +734,6 @@ procedure TVirtualMachine.DoTrue;
 var
   value : pValue;
 begin
-
   value := BorrowChecker.newBool(true);
   VMStack.Push(value);
 end;
@@ -772,7 +743,6 @@ procedure TVirtualMachine.DoFalse;
 var
   Value : pValue;
 begin
-
   Value := BorrowChecker.NewBool(False);
   VMStack.Push(Value);
 end;
@@ -781,24 +751,13 @@ procedure TVirtualMachine.DoNil;
 var
   value : pValue;
 begin
-
-  new(Value);
-  Value.Null := true;
+  Value := BorrowChecker.NewNil;
   VMStack.Push(value);
 end;
 
-
-
-
-
-(*
-        uint8_t slot = READ_BYTE();
-        frame->slots[slot] = peek(0);
-*)
 procedure TVirtualMachine.OPSetLocal;
 var
   index : Integer;
-
   value : pValue;
 begin
 
@@ -856,16 +815,17 @@ end;
 
 procedure TVirtualMachine.RegisterNatives;
 begin
-   AddGlobal( ('foobar'),BorrowChecker.NewNative(foo));
-   AddGlobal( ('DateTime'),BorrowChecker.NewNative(DateTime));
-   AddGlobal( ('FileExists'),BorrowChecker.NewNative(FileExists));
-   AddGlobal( ('LoadFromFile'),BorrowChecker.NewNative(LoadStringFromFile));
+   exit;
+   AddGlobal( ('foobar'),BorrowChecker.NewNative(foo), true);
+   AddGlobal( ('DateTime'),BorrowChecker.NewNative(DateTime), true);
+   AddGlobal( ('FileExists'),BorrowChecker.NewNative(FileExists), true);
+   AddGlobal( ('LoadFromFile'),BorrowChecker.NewNative(LoadStringFromFile), true);
  
 end;
 
 function TVirtualMachine.VMStack : TValueStack;
 begin
-  result := FFrames.Stack;
+  result := FStack;//FFrames.Stack;
 end;
 
 procedure TVirtualMachine.DoGetGlobal;
@@ -917,19 +877,18 @@ begin
 end;
 
 
-
 procedure TVirtualMachine.DoPOP;
 begin
-
   VMStack.pop;
 end;
 
 
-procedure TVirtualMachine.AddGlobal(const name : string; const Value : pValue);
-
+procedure TVirtualMachine.AddGlobal(
+  const name : string;
+  const Value : pValue;
+  const ownValue : boolean);
 begin
-
-  assert(assigned(FGlobals.AddNameValue(Name,value) ), 'failed to add to hash table');
+  assert(assigned(FGlobals.AddNameValue(Name,value, OwnValue)), 'failed to add to hash table');
 end;
 
 procedure TVirtualMachine.ClearLog;
@@ -994,7 +953,7 @@ begin
   name := FCurrentFrame.InstructionPointer.global[constantIndex];
   value := VMStack.Peek(0);
   assert(name.IsString, 'name is not a string object');
-  AddGlobal(name.Tostring,value);
+  AddGlobal(name.Tostring,value, false);
   popStack;
 end;
 
@@ -1008,6 +967,8 @@ procedure TVirtualMachine.init(
 var
   Value : pValue;
 begin
+  FStack := TValueStack.Create;
+ 
   FLog := Log;
 
   FHalt    := false;
@@ -1020,24 +981,27 @@ begin
 
   RegisterNatives;
 
-  FStackResults := TValueList.Create(true);
+ // FStackResults := TValueList.Create(true);
 
   FFrames := TCallFrames.create;
 
+
   vmStack.Push(BorrowChecker.newValueFromFunction(LoxFunction));
 
-  call(loxfunction, 0); 
+  call(loxfunction, 0);
 
 end;
 
 
 procedure TVirtualMachine.finalize;
+var
+   f : pValue;
 begin
-//  FCurrentFrame.Stack.Free;
-  FFrames.free;
-  FStackResults.free;
-  FGlobals.finalize;
-  //FCurrentFrame.free; ??
+   FStack.Free;
+
+   FGlobals.finalize;
+
+   FFrames.free;
 end;
 
 

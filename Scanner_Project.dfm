@@ -33,7 +33,7 @@ object fmScript: TfmScript
     TabOrder = 0
     object BtnScan: TButton
       Left = 8
-      Top = 8
+      Top = 10
       Width = 137
       Height = 25
       Caption = 'Compile and run'

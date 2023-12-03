@@ -8,20 +8,21 @@ uses
   values;
 
 
-Const MAX_CAPACITY = 2000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
+Const MAX_CAPACITY = 2000; //lets keep it reasonable - note this is not the size of the allocated array pNameValues.
 
 type
 
   pNameValue = ^TNameValue;
   TNameValue = record
+     ownValue : boolean;
      name   : string;
      value  : pValue;
   end;
 
 
 
-  pNameValueItems = ^pValuePairItems;
-  pValuePairItems = array[0..MAX_CAPACITY - 1] of pNameValue;
+  pNameValues = ^TNameValues;
+  TNameValues = array[0..MAX_CAPACITY - 1] of pNameValue;
 
 
   TValuePairs = record
@@ -34,17 +35,17 @@ type
     FCount         : integer;
     FPrevcapacity  : integer;
     FCapacity      : integer;
-    FItems         : pNameValueItems;
-    procedure CopyItems(const old,new : pNameValueItems);
-    procedure AllocateArray(var Items : pNameValueItems; const size : integer);
+    FItems         : pNameValues;
+    procedure CopyItems(const old,new : pNameValues);
+    procedure AllocateArray(var Items : pNameValues; const size : integer);
     procedure GrowArray;
     procedure growCapacity;
-    function findNewIndex(const name  : string; const items : pNameValueItems): Integer;
-    function getItem(const index: integer; const items : pNameValueItems): pNameValue;
-    function DoFindEntry(const name   : string; const items : pNameValueItems): pNameValue;
-    function  DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
-    procedure InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
-    function FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValueItems) : boolean;
+    function findNewIndex(const name  : string; const items : pNameValues): Integer;
+    function getItem(const index: integer; const items : pNameValues): pNameValue;
+    function DoFindEntry(const name   : string; const items : pNameValues): pNameValue;
+    function  DoAdd(const value : pNameValue; const items : pNameValues) : boolean;
+    procedure InsertItem(const index : integer; value : pNameValue; const Items : pNameValues);
+    function FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValues) : boolean;
     function Add(const value : pNameValue) : boolean;
 
   public
@@ -57,46 +58,22 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function AddNameValue(name : string; value : pValue) : pNameValue;
+    function AddNameValue(const name : string; const value : pValue; const OwnValue : boolean) : pNameValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
 
- (*
-
- pValuePairIterator = record
- private
-   FIndex : integer;
-   FValuePairs : TValuePairs;
-   FCurrent : pNameValue;
-   FPrevious : pNameValue;
- public
-   function Index : integer;
-   function Current : pNameValue;
-   function Previous : pNameValue;
-
-   function Count : integer;
-   function MoveFirst : pNameValue;
-   function MoveNext  : pNameValue;
-   function peekNext : pNameValue;
-   function MovePrev  : pNameValue;
-   function PeekPrev : pNameValue;
-   function MoveLast  : pNameValue;
-   procedure init(const Tokens : TValuePairs);
- end;  *)
-
-
-
 
 implementation
+uses ValueManager;
 
-function TValuePairs.AddNameValue(name : string; value : pValue) : pNameValue;
+function TValuePairs.AddNameValue(const name : string; const value : pValue; const OwnValue : boolean) : pNameValue;
 begin
-//  assert(assigned(Name),  'Name is nil');
-//  assert(assigned(value), 'value is nil');
+
   result := nil;
   assert(Find(Name) = nil,format('%s exists already in hash table',[name])); //already exists
   new(result);
+  result.OwnValue := OwnValue;
   result.name := name;
   result.Value := Value;
   Add(result);
@@ -124,7 +101,7 @@ begin
 end;
 
 
-procedure TValuePairs.AllocateArray(var Items : pNameValueItems; const size : integer);
+procedure TValuePairs.AllocateArray(var Items : pNameValues; const size : integer);
 begin
   assert(Items = nil);
   getMem(Items,size);
@@ -136,7 +113,7 @@ begin
   result := FCount;
 end;
 
-procedure TValuePairs.CopyItems(const old,new : pNameValueItems);
+procedure TValuePairs.CopyItems(const old,new : pNameValues);
 var
   i : integer;
   str : pNameValue;
@@ -157,7 +134,7 @@ end;
 
 procedure  TValuePairs.GrowArray;
 var
-  pCopyItems : pNameValueItems;
+  pCopyItems : pNameValues;
 begin
   pCopyItems := nil;
   GrowCapacity;
@@ -181,7 +158,7 @@ begin
 end;
 
 
-function TValuePairs.DoFindEntry(const name : string; const items : pNameValueItems): pNameValue;
+function TValuePairs.DoFindEntry(const name : string; const items : pNameValues): pNameValue;
 var
   index     : integer;
   prospect  : pNameValue;
@@ -263,7 +240,7 @@ begin
 end;  *)
 
 
-function TValuePairs.FindNewIndex(const name  : string; const items : pNameValueItems): Integer;
+function TValuePairs.FindNewIndex(const name  : string; const items : pNameValues): Integer;
 var
   index     : integer;
   prospect  : pNameValue;
@@ -326,7 +303,7 @@ begin
   result := DoAdd(value,FItems);
 end;
 
-procedure TValuePairs.InsertItem(const index : integer; value : pNameValue; const Items : pNameValueItems);
+procedure TValuePairs.InsertItem(const index : integer; value : pNameValue; const Items : pNameValues);
 begin
   assert(assigned(Value),'value is nil');
 //  assert(assigned(Value.name),'name is nil');
@@ -335,7 +312,7 @@ begin
   Items[Index] := Value;
 end;
 
-function TValuePairs.FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValueItems) : boolean;
+function TValuePairs.FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValues) : boolean;
 var
   newIdx : integer;
 
@@ -350,7 +327,7 @@ begin
   result := true;
 end;
 
-function TValuePairs.DoAdd(const value : pNameValue; const items : pNameValueItems) : boolean;
+function TValuePairs.DoAdd(const value : pNameValue; const items : pNameValues) : boolean;
 begin
   assert(assigned(Value),'value is nil');
 //  assert(assigned(Value.name),'name is nil');
@@ -366,7 +343,7 @@ begin
    result := Index * ItemSize <= capacity;
 end;
 
-function TValuePairs.getItem(const index: integer; const items : pNameValueItems): pNameValue;
+function TValuePairs.getItem(const index: integer; const items : pNameValues): pNameValue;
 begin
   assert(FCapacity > 0);
   assert(Items <> nil);
@@ -388,6 +365,10 @@ begin
   begin
     if FItems[i] <> nil then
     begin
+      if FItems[i].OwnValue = true then //the value might belong to some other list etc, therefore we let the owner of the pointer deal with disposal.
+      begin
+        BorrowChecker.dispose(FItems[i].Value);
+      end;
       dispose(FItems[i]);
     end;
   end;

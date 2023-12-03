@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Values;
 
 type
 
@@ -26,9 +26,8 @@ type
     procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
-    prevbuffer,buffer : pointer;
-    index : pInteger;
-    size :  integer;
+    procedure Interpret(const LoxFunction : pLoxFunction);
+
   public
     { Public declarations }
   end;
@@ -52,7 +51,6 @@ uses
   vm,
   Table,
   Locals,
-  values,
   ValueManager;
 
 {$R *.dfm}
@@ -79,13 +77,27 @@ begin
 end;
 
 
+procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
+var
+  VM :  TVirtualMachine;
+begin
+   
+   try
+      VM.Init(LoxFunction,MemRun.Lines,nil{ MemCodes.Lines});
+      VM.Run;
+
+   finally
+
+     vm.Finalize;
+   end;
+end;
 
 procedure TfmScript.BtnScanClick(Sender: TObject);
 var
   Scanner : TScanner;
   cc : TCompilerController;
   Tokens : TTokenIterator;
-  VM :  TVirtualMachine;
+
   LoxFunction : pLoxFunction;
   i : integer;
   value : pValue;
@@ -108,12 +120,9 @@ begin
    cc := TCompilerController.Create(Tokens,Scanner,TYPE_SCRIPT);
    try
      LoxFunction := cc.DoCompile;
-     VM.Init(LoxFunction,MemRun.Lines,nil{ MemCodes.Lines});
-     VM.Run;
-
+     Interpret(LoxFunction);
    finally
      cc.free;
-     vm.Finalize;
    end;
 
   finally
