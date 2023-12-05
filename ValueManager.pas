@@ -17,8 +17,8 @@ type
     procedure disposeNative(var native : pValue);
     procedure DisposeString(var str : pValue);
     procedure DisposeValue(var value : pValue);
-    procedure DisposeFunction(var value : pvalue); overload;
-    procedure DisposeFunction(var value: pLoxFunction); overload;
+    procedure DisposeFunction(var value : pvalue);
+    procedure DisposeLoxFunction(var value: pLoxFunction);
   end;
 
   TValueCreation = class
@@ -94,7 +94,7 @@ uses
 function TValueCreation.NewBool(const Bool : Boolean) : pValue;
 begin
   new(result);
-  result.Kind := lxBoolean;
+  result.ValueRecord.Kind := lxBoolean;
   result.Boolean := Bool;
   //FItems.Add(result);
   //FSize := FSize + Sizeof(result^);
@@ -108,13 +108,13 @@ end;
 function TValueCreation.NewNil: pValue;
 begin
   new(result);
-  result.Kind := lxNull;
+  result.ValueRecord.Kind := lxNull;
 end;
 
 function TValueCreation.NewNumber(const number : TNumber) : pValue;
 begin
   new(result);
-  result.Kind := lxNumber;
+  result.ValueRecord.Kind := lxNumber;
   result.Number := Number;
   //FItems.Add(result);
 end;
@@ -123,7 +123,7 @@ end;
 function TValueCreation.newValueFromList(const List : pLoxList) : pValue;
 begin
   new(result);
-  result.Kind := lxList;
+  result.ValueRecord.Kind := lxList;
   result.ValueRecord.Obj := List;
 end;
 
@@ -153,7 +153,7 @@ var
 begin
   new(result);
   str := NewLoxString(txt);
-  result.Kind := lxString;
+  result.ValueRecord.Kind := lxString;
   result.ValueRecord.Obj := str;
 
   //FItems.Add(result);
@@ -165,7 +165,7 @@ end;
 function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): pValue;
 begin
   new(result);
-  result.Kind := lxFunction;
+  result.ValueRecord.Kind := lxFunction;
   result.valueRecord.Obj := FunctionObj;
 end;
 
@@ -178,7 +178,7 @@ var
 begin
   fn := newLoxFunction(name);
   new(result);
-  result.Kind := lxFunction;
+  result.ValueRecord.Kind := lxFunction;
   result.valueRecord.Obj := fn;
 end;
 
@@ -205,7 +205,7 @@ begin
   new(loxNative);
   loxNative.Native := NativeFn;
 
-  result.Kind := lxNative;
+  result.ValueRecord.Kind := lxNative;
   result.valueRecord.Obj := LoxNative;
 end;
 
@@ -236,7 +236,7 @@ end;
 
 procedure TValueManager.Dispose(var value: pLoxFunction);
 begin
-  FValueDisposal.DisposeFunction(Value);
+  FValueDisposal.DisposeLoxFunction(Value);
 end;
 
 procedure TValueManager.Dispose(var value: pValue);
@@ -347,7 +347,7 @@ begin
   dispose(List);
 end;
 
-procedure TValueDisposal.DisposeFunction(var value: pLoxFunction);
+procedure TValueDisposal.DisposeLoxFunction(var value: pLoxFunction);
 var
   i : integer;
   constant : pValue;
@@ -359,7 +359,7 @@ begin
     constant := value.Chunks.Constant[i];
     disposeValue(constant);
   end;
-  Value.Chunks.Free;
+  Value.Chunks.Free;                 
   dispose(value);
   Value := nil;
 end;
@@ -372,7 +372,7 @@ var
 begin
   if value.Kind <> lxFunction then raise exception.create('value for disposal is not a function');
   func := Value.LoxFunction;
-  DisposeFunction(func);
+  DisposeLoxFunction(func);
   Dispose(Value);
 end;
 
@@ -419,11 +419,11 @@ end;
 
 procedure TValueDisposal.DisposeValue(var value : pValue);
 begin
-    if value.IsNull then
-    begin
-      DisposeNil(Value);
-      exit;
-    end;
+  if value.IsNull then
+  begin
+    DisposeNil(Value);
+    exit;
+  end;
 
   if value.IsList then
   begin

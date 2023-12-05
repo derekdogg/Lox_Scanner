@@ -264,7 +264,7 @@ TTokenKind = (
   'CurlyCloseBrace',
   'Integer',
   'underscore',
-  'this',
+  'this',                      
   'Comment',
   'Semicolon',
   'EOF');

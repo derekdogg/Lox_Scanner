@@ -5,20 +5,20 @@ interface
 uses
   sysutils, Classes, Values;
 
-  function DateTime(const ArgCount: Integer;const Values : TValueStack): pValue;
+  function DateTime(const ArgCount: Integer;const Values : TStack): pValue;
 
-  function FileExists(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : pValue;
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValue;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValue;
 
 
 implementation
 uses
   Dialogs, ValueManager;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValue;
   var
     dlg : TOpenDialog;
   begin
@@ -37,7 +37,7 @@ uses
   end;
 
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValue;
   var
     strings : TStrings;
     FileName : String;
@@ -56,7 +56,7 @@ uses
     end;
   end;
 
-  function FileExists(const ArgCount: Integer;const Values : TValueStack) : pValue;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : pValue;
   var
     fileName : string;
     exists : Boolean;
@@ -68,7 +68,7 @@ uses
 
   end;
 
-  function DateTime(const ArgCount: Integer;const Values : TValueStack): pValue;
+  function DateTime(const ArgCount: Integer;const Values : TStack): pValue;
   begin
      result := BorrowChecker.newString(DateTimeToStr(Now));
   end;

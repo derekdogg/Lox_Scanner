@@ -25,7 +25,7 @@ type
     FCurrentFrame : TCallFrame;
     FHalt    : boolean;
     FNatives : TNatives;
-    FStack   : TValueStack;
+    FStack   : TStack;
     FFrames : TCallFrames;
    // FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
     FGlobals : TValuePairs;
@@ -39,49 +39,49 @@ type
     procedure Log(const opCOde : TopCodes;const operand : integer;const value   : pValue); overload;
     procedure Log(const OpCode : TOpCodes; const L,R : pValue);overload;
     procedure Halt;
-    function VMStack : TValueStack;
+    function VMStack : TStack;
 
     function PopStack : pValue;
     function PeekStack : pValue;
     procedure PushStack(const value : pValue);
     procedure MoveNext;
-    procedure DoConstant;
+    procedure OpConstant;
     Procedure DoAdd;
     Procedure subtract;
     Procedure Divide;
     Procedure Multiply;
     Procedure Negate;
-    procedure Print;
+    procedure OPPrint;
     procedure Loop;
     procedure Equal;
-    procedure Greater;
-    procedure Less;
-    procedure NotEqual;
-    procedure DoTrue;
-    procedure DoFalse;
-    procedure DoNil;
-    procedure DoGlobal;
+    procedure OPGreater;
+    procedure OPLess;
+    procedure OPNotEqual;
+    procedure OpTrue;
+    procedure OpFalse;
+    procedure OpNil;
+    procedure OpDefineGlobal;
     procedure DoGetGlobal;
     procedure RegisterNatives;
     procedure DoSetGlobal;
-    procedure DoPOP;
+    procedure OpPOP;
     procedure OpGetLocal;
     procedure OPSetLocal;
     procedure HandleRunTimeError(const E: Exception);
     procedure JumpFalse;
     procedure Jump;
     function Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
-    procedure DoCall;
-    procedure DoReturn;
+    procedure OpCall;
+    procedure OpReturn;
     function CallValue(const callee : pValue; ArgCount : integer) : boolean;
     Function isFalsey(value : pValue) : Boolean;
     Procedure AddGlobal(
       const name : string;
       const Value : pValue;
       const ownValue : boolean);
-    procedure BuildList;
-    procedure SubscribeList;
-    procedure StoreList;
+    procedure OpBuildList;
+    procedure OpIndexSubscriber;
+    procedure OpStoreSubscriber;
   public
 //    function Result : TByteCode;
     function Run : TInterpretResult;
@@ -112,31 +112,31 @@ begin
     Case TOpCodes(FCurrentFrame.InstructionPointer.current) of
 
     OP_BUILD_LIST : begin
-       BuildList;
+       OpBuildList;
     end;
 
 
     OP_INDEX_SUBSCR : begin
-       SubscribeList;
+       OpIndexSubscriber;
     end;
 
     OP_STORE_SUBSCR : begin
-      StoreList;
+      OpStoreSubscriber;
     end;
 
       OP_CONSTANT : begin
-         DoConstant;
+         OpConstant;
       end;
 
 
       OP_DEFINE_GLOBAL: begin
           Log(OP_DEFINE_GLOBAL);
-          DoGlobal;
+          OpDefineGlobal;
        end;
 
       OP_POP : Begin
          Log(OP_POP);
-         DoPOP;
+         OpPOP;
       end;
 
 
@@ -157,7 +157,6 @@ begin
 
       OP_GET_LOCAL:
       begin
-
         OpGetLocal;
       end;
 
@@ -170,27 +169,27 @@ begin
 
       OP_Nil  : begin
           Log(OP_Nil);
-         DoNil;
+         OpNil;
       end;
 
       OP_TRUE : begin
          Log(OP_TRUE);
-         DoTrue;
+         OpTrue;
       end;
 
       OP_FALSE : begin
           Log(OP_FALSE);
-         DoFalse;
+         OpFalse;
       end;
 
       OP_GREATER : begin
           Log(OP_GREATER);
-         greater;
+         OPgreater;
       end;
 
       OP_LESS : begin
           Log(OP_LESS);
-         less;
+         OPless;
       end;
 
       OP_EQUAL : begin
@@ -200,7 +199,7 @@ begin
 
       OP_NOT : begin
        Log(OP_NOT);
-        NotEqual;
+        OPNotEqual;
       end;
 
 
@@ -231,7 +230,7 @@ begin
 
       OP_PRINT  : begin
          Log(OP_PRINT);
-         Print;
+         OPPrint;
       end;
 
 
@@ -258,15 +257,14 @@ begin
 
       OP_CALL :
       begin
-
-         DoCall; //note here this will create a new stack frame, create a new IP. Something to be aware of.
+         OpCall; //note here this will create a new stack frame, create a new IP. Something to be aware of.
       end;
 
 
       OP_Return :
       begin
          Log(OP_Return);
-         DoReturn;
+         OpReturn;
       end;
 
     end;
@@ -276,15 +274,13 @@ begin
 end;
 
 
-
-
 procedure TVirtualMachine.HandleRunTimeError(const E : Exception);
 begin
   showmessage(E.message);
   FHalt := true;
 end;
 
-procedure TVirtualMachine.StoreList;
+procedure TVirtualMachine.OpStoreSubscriber;
 var
   item, Index, ListValue : pValue;
 begin
@@ -295,7 +291,7 @@ begin
    PushStack(Item);
 end;
 
-procedure TVirtualMachine.SubscribeList;
+procedure TVirtualMachine.OpIndexSubscriber;
 var
   indexValue, listValue, result: pValue;
   list: pValue;
@@ -309,7 +305,7 @@ begin
   PushStack(result);
 end;
 
-procedure TVirtualMachine.BuildList;
+procedure TVirtualMachine.OpBuildList;
 var
    value : pValue;
    itemCount: integer;
@@ -339,7 +335,7 @@ begin
    PushStack(value);
 end;
 
-procedure TVirtualMachine.DoConstant;
+procedure TVirtualMachine.OpConstant;
 var
   constantIndex : integer;
   value : pValue;
@@ -358,7 +354,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.Greater;
+procedure TVirtualMachine.OPGreater;
 var
   L,R,Result : pValue;
 begin
@@ -379,7 +375,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.Less;
+procedure TVirtualMachine.OPLess;
 var
   L,R, Result : pValue;
 begin
@@ -496,7 +492,7 @@ begin
   end; *)
 end;
 
-procedure TVirtualMachine.Print;
+procedure TVirtualMachine.OPPrint;
 var
   value : pValue;
 begin
@@ -528,9 +524,9 @@ begin
 
   prevOffset :=  0;
 
-  FCurrentFrame := FFrames.Add(VmStack.Count,VmStack,Func);
+  FCurrentFrame := FFrames.Add(VmStack.StackTop,VmStack,Func);
 
-  newStackTop := VMStack.Count-ArgCount-1;
+  newStackTop := VMStack.StackTop-ArgCount-1;
 
   FCurrentFrame.StackTop := NewStackTop;
 
@@ -559,7 +555,7 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.DoReturn;
+procedure TVirtualMachine.OpReturn;
 var
   result : pValue;
   StackTop : Integer;
@@ -589,7 +585,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.DoCall;
+procedure TVirtualMachine.OpCall;
 var
   ArgCount : byte;
   callee : pValue;
@@ -706,7 +702,7 @@ end;
 
 
 
-procedure TVirtualMachine.NotEqual;
+procedure TVirtualMachine.OPNotEqual;
 var
   result : pValue;
 
@@ -741,7 +737,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.DoTrue;
+procedure TVirtualMachine.OpTrue;
 var
   value : pValue;
 begin
@@ -750,7 +746,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.DoFalse;
+procedure TVirtualMachine.OpFalse;
 var
   Value : pValue;
 begin
@@ -758,7 +754,7 @@ begin
   PushStack(Value);
 end;
 
-procedure TVirtualMachine.DoNil;
+procedure TVirtualMachine.OpNil;
 var
   value : pValue;
 begin
@@ -808,7 +804,7 @@ end;
 
 
 //suppose we expect 3 values;
-function Foo(const ArgCount: Integer;const Values : TValueStack): pValue;
+function Foo(const ArgCount: Integer;const Values : TStack): pValue;
 var
   v1,v2,v3 : pValue;
 begin
@@ -834,7 +830,7 @@ begin
  
 end;
 
-function TVirtualMachine.VMStack : TValueStack;
+function TVirtualMachine.VMStack : TStack;
 begin
   result := FStack;//FFrames.Stack;
 end;
@@ -888,7 +884,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.DoPOP;
+procedure TVirtualMachine.OpPOP;
 begin
   VMStack.pop;
 end;
@@ -951,7 +947,7 @@ begin
   result := VMStack.Pop;
 end;
 
-procedure TVirtualMachine.DoGlobal;
+procedure TVirtualMachine.OpDefineGlobal;
 var
    ConstantIndex : integer;
    Name   : pValue;
@@ -978,7 +974,7 @@ procedure TVirtualMachine.init(
 var
   Value : pValue;
 begin
-  FStack := TValueStack.Create;
+  FStack := TStack.Create;
  
   FLog := Log;
 

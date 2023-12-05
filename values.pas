@@ -15,10 +15,11 @@ type
       lxNumber       :   (Number: Double);
       lxObject       :   (Obj: Pointer);
   end;
- 
-  TValueStack = class;
+
+//  TValueStack = class;
+  TStack = class;
 
-  TNativeFunction = function(const ArgCount: Integer; const Values : TValueStack): pValue;
+  TNativeFunction = function(const ArgCount: Integer; const Values : TStack): pValue;
 
   TNatives = class
   private
@@ -188,7 +189,6 @@ type
     procedure setBoolean(const value : Boolean);
     procedure setObject(const value : pLoxObject);
     function  getObject : pLoxObject;
-    procedure setFunction(const value : pLoxFunction);
     function  getFunction : pLoxFunction;
     procedure setNull(const value : Boolean);
     function getNull: boolean;
@@ -220,13 +220,13 @@ type
     property IsNumber       : Boolean read getIsNumber;
     property IsNull         : Boolean read getIsNull;
     property isBoolean      : Boolean read getIsBoolean;
-    property Kind           : TLoxKind read getKind write setKind;
+    property Kind           : TLoxKind read getKind;
     property Number         : TNumber read getNumber write SetNumber;
     property Boolean        : Boolean read getBoolean write setBoolean;
     property Str            : String read getString write setString;
     property List           : pLoxList read getList;
     property LoxString      : pLoxString read getLoxString;
-    property Loxfunction    : pLoxFunction read getFunction write SetFunction;
+    property Loxfunction    : pLoxFunction read getFunction;
     property NativeFunction : pLoxNative read getNative write setNative;
     property ToString       : string read getString;
     property Null           : boolean read getNull write setNull;
@@ -259,10 +259,38 @@ type
      Items     : TValueList;
   end;
 
-  
+  //note : Stack top always points to the next place the value will go.
+  // [a,b,c,d, sp]  where sp is equal to next avail slot.
+  //it's basically the count, noting that the array starts at index 0
+  TStack = class
+  const
+    Stack_Mulitplier = 2;
+  private
+    FCapacity : integer;
+    FItems : Array of pValue;
+    FStackTop : integer;
+    function getStackTop: integer;
+    procedure setStackTop(const Value: integer);
+    function getCapacity: integer;
+    function getItem(const index: integer): pValue;
+    procedure setItem(const index: integer; const Value: pValue);
+  protected
+    procedure IncreaseCapacity;
+  public
+    function peek : pValue; overload;
+    function Peek(const fromTop : integer) : pValue; overload;
+    procedure Push(const value : pValue);
+    function pop : pValue;
+
+    constructor create;
+    destructor destroy;override;
+    property StackTop : integer read getStackTop write setStackTop;
+    property Capacity : integer read getCapacity;
+    property Item[const index : integer] : pValue read getItem write setItem; default;
+  end;
 
 
- TValueStack = class
+(* TValueStack = class
  private
     FItems  : TValueList;
     function getCount: integer;
@@ -281,7 +309,7 @@ type
     property Item[const index : integer] : pValue read getItem write setItem; default;
     property Count : integer read getCount;
     property StackTop : integer write setStackTop;
-  end;
+  end;  *)
 
   TInstructionPointer = class
   private
@@ -323,19 +351,19 @@ type
    FObjectFunction     : pLoxFunction;
    FInstructionPointer : TInstructionPointer;
    FFrameIndex         : integer;
-   FStack              : TValueStack;
+   FStack              : TStack;
    procedure InitInstructionPointer;
    function  getValue(const index: integer): pValue;
    procedure setValue(const index: integer; const Value: pValue);
-    function getStackCount: integer;
+//    function getStackCount: integer;
  public
     constructor create(
       const ObjectFunction : pLoxFunction;
       const StackTop : integer;
-      const Stack : TValueStack);
+      const Stack : TStack);
    destructor destroy;override;
    property StartCount : integer read fStartCount;
-   property StackCount : integer read getStackCount;
+//   property StackCount : integer read getStackCount;
    property LoxFunction : pLoxFunction read FObjectFunction;
    property InstructionPointer : TInstructionPointer read FInstructionPointer;
    property FrameIndex : integer read FFrameIndex;
@@ -360,7 +388,7 @@ type
     destructor destroy; override;
     function Add(
       const StackTop : integer;
-      const Stack : TValueStack;
+      const Stack : TStack;
       const ObjectFunction : pLoxFunction) : TCallFrame;
     function Remove(const Frame : TCallFrame) : integer;
 
@@ -479,14 +507,9 @@ end;
 
 procedure TValue.setBoolean(const value : Boolean);
 begin
+  assert(IsBoolean, 'value is not a boolean so can''t set it to one');
   ValueRecord.Kind := lxBoolean;
   ValueRecord.Bool := Value;
-end;
-
-procedure TValue.setFunction(const value: pLoxFunction);
-begin
-  ValueRecord.Kind := lxFunction;
-  ValueRecord.Obj := Value;
 end;
 
 procedure TValue.setKind(const Value: TLoxKind);
@@ -576,12 +599,14 @@ end;
 
 procedure TValue.SetNumber(const value : TNumber);
 begin
+   assert(IsNumber, 'value is not a number so can''t set it to one');
    ValueRecord.Kind := lxNumber;
    ValueRecord.Number := Value;
+
 end;
 
 
-
+(*
 constructor TValueStack.create;
 begin
   FItems := TValueList.Create(false);
@@ -592,6 +617,7 @@ begin
   FItems.Free;
   inherited;
 end;
+
 
 
 
@@ -612,6 +638,7 @@ begin
   assert(distance >= 0, 'distance is negative - this is from the top');
   assert(FItems.Count - 1 - distance >=0, 'distance outside bounds');
   result := FItems.Item[FItems.Count -1 - distance];
+
 end;
 
 procedure TValueStack.Pop(const amount: integer);
@@ -665,7 +692,7 @@ begin
   FItems[index] := value;
 end;
 
-
+ *)
 
 
 
@@ -843,7 +870,7 @@ end;
 
 function TCallFrames.Add(
   const StackTop : integer;
-  const Stack : TValueStack;
+  const Stack : TStack;
   const ObjectFunction: pLoxFunction): TCallFrame;
 begin
   try
@@ -909,30 +936,24 @@ end;
 constructor TCallFrame.create(
   const ObjectFunction : pLoxFunction;
   const StackTop : integer;
-  const Stack : TValueStack);
+  const Stack : TStack);
 begin
-
-   FObjectFunction     := ObjectFunction;
-
+   FObjectFunction := ObjectFunction;
    InitInstructionPointer;
-
    FStack := Stack;
-
    FStackTop := StackTop;
-
 end;
 
 destructor TCallFrame.destroy;
 begin
-
   FInstructionPointer.Free;
   inherited;
 end;
 
-function TCallFrame.getStackCount: integer;
+(*function TCallFrame.getStackCount: integer;
 begin
   result := FStack.Count;
-end;
+end; *)
  
 function TCallFrame.getValue(const index: integer): pValue;
 begin
@@ -1263,7 +1284,7 @@ begin
   inherited;
 end;
 
-{ TConstants }
+{ TConstants }              
 constructor TConstants.create(const functionName : String);
 begin
   FName := FunctionName;
@@ -1353,6 +1374,85 @@ procedure TOpCode.setCode(const index, Value: integer);
 begin
   assert(index <= FCapacity, 'Out of bounds index opcodes');
   FCodes[index] := value;
+end;
+
+{ TStack }
+
+constructor TStack.create;
+begin
+  FStackTop := 0; //noting that this is different from the count, since it begins at slot 0
+  FCapacity := Stack_Mulitplier;
+  setLength(FItems,FCapacity);
+end;
+
+destructor TStack.destroy;
+begin
+
+  inherited;
+end;
+
+function TStack.getCapacity: integer;
+begin
+  result := FCapacity;
+end;
+
+function TStack.getStackTop: integer;
+begin
+  result := FStackTop;
+end;
+
+function TStack.getItem(const index: integer): pValue;
+begin
+  assert(index >= 0, 'index is negative to stack bottom');
+  assert(index <= FStackTop, 'index is beyond stack top');
+  result := FItems[index];
+end;
+
+procedure TStack.IncreaseCapacity;
+begin
+  FCapacity := FCapacity * 2;
+  SetLength(FItems,FCapacity);
+end;
+
+function TStack.peek: pValue;
+begin
+  result := FItems[FStackTop-1];
+end;
+
+function TStack.peek(const fromTop: integer): pValue;
+begin
+  assert(FromTop >= 0, 'This is distance from the top as a positive');
+  assert(FStackTop - FromTop >= 0, 'Distance is beyond stack bottom');
+  result := FItems[FStackTop-FromTop-1];
+end;
+
+function TStack.pop: pValue;
+begin
+  assert(FStackTop >= 1, 'No items to pop');
+  result := FItems[FStackTop-1];
+  FStackTop := FStackTop - 1;
+end;
+
+procedure TStack.Push(const value: pValue);
+begin
+  FItems[FStackTop] := value;
+  SetStackTop(FStackTop+1);
+end;
+
+procedure TStack.setItem(const index: integer; const Value: pValue);
+begin
+  assert(index >= 0, 'index is negative to stack bottom');
+  assert(index <= FStackTop, 'index is beyond stack top');
+  FItems[index] := Value;
+end;
+
+procedure TStack.setStackTop(const Value: integer);
+begin
+  if Value > FCapacity-1 then   //since the FStackTop starts at 0
+  begin
+    IncreaseCapacity;
+  end;
+  FStackTop := Value;
 end;
 
 end.
