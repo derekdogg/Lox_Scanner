@@ -51,7 +51,8 @@
     <DCCReference Include="subtraction.pas" />
     <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />
-    <DCCReference Include="Values.pas" />
+    <DCCReference Include="ValueManager.pas" />
+    <DCCReference Include="values.pas" />
     <DCCReference Include="vm.pas" />
   </ItemGroup>
 </Project>

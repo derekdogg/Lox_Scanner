@@ -12,9 +12,10 @@ uses
   locals in 'locals.pas',
   Addition in 'Addition.pas',
   scanner in 'scanner.pas',
-  Values in 'Values.pas',
+  values in 'values.pas',
   Natives in 'Natives.pas',
-  subtraction in 'subtraction.pas';
+  subtraction in 'subtraction.pas',
+  ValueManager in 'ValueManager.pas';
 
 {$R *.res}
 

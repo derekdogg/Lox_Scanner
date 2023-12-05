@@ -15,8 +15,7 @@ type
       lxNumber       :   (Number: Double);
       lxObject       :   (Obj: Pointer);
   end;
-
-
+ 
   TValueStack = class;
 
   TNativeFunction = function(const ArgCount: Integer; const Values : TValueStack): pValue;
@@ -181,7 +180,7 @@ type
 
 
   TValue = record
-    ValueRecord : TValueRecord;
+  private
     function getNumber  : TNumber;
     procedure SetNumber(const value : TNumber);
     function BoolToString : String;
@@ -203,7 +202,7 @@ type
     function getIsNative: Boolean;
     function getNative: pLoxNative;
     procedure setNative(const Value: pLoxNative);
-  private
+
     function getKind: TLoxKind;
     procedure setKind(const Value: TLoxKind);
     function getIsList: Boolean;
@@ -212,6 +211,7 @@ type
     function getLoxString: pLoxString;
 
   public
+    ValueRecord : TValueRecord;
     property IsFunction     : Boolean read getIsFunction;
     property IsObject       : Boolean read getisobject;
     property IsString       : Boolean read getIsStringObject;
@@ -324,6 +324,7 @@ type
    FInstructionPointer : TInstructionPointer;
    FFrameIndex         : integer;
    FStack              : TValueStack;
+   procedure InitInstructionPointer;
    function  getValue(const index: integer): pValue;
    procedure setValue(const index: integer; const Value: pValue);
     function getStackCount: integer;
@@ -372,6 +373,7 @@ implementation
 
 uses
   sysutils,
+  dialogs,
   Exceptions,
   ValueManager;
 
@@ -844,7 +846,15 @@ function TCallFrames.Add(
   const Stack : TValueStack;
   const ObjectFunction: pLoxFunction): TCallFrame;
 begin
-  result := TCallFrame.Create(ObjectFunction,StackTop,Stack);
+  try
+    result := TCallFrame.Create(ObjectFunction,StackTop,Stack);
+  except
+    on E:Exception do
+    begin
+      Showmessage('Failed to create call frame @ index : ' + inttostr(FFrames.Count));
+      exit;
+    end;
+  end;
   FFrames.Add(result);
 end;
 
@@ -887,6 +897,15 @@ end;
 
 { TCallFrame }
 
+
+procedure TCallFrame.InitInstructionPointer;
+begin
+
+    FInstructionPointer := TInstructionPointer.Create;
+    FInstructionPointer.Func := FObjectFunction;
+
+end;
+
 constructor TCallFrame.create(
   const ObjectFunction : pLoxFunction;
   const StackTop : integer;
@@ -895,8 +914,7 @@ begin
 
    FObjectFunction     := ObjectFunction;
 
-   FInstructionPointer := TInstructionPointer.Create;
-   FInstructionPointer.Func := ObjectFunction;
+   InitInstructionPointer;
 
    FStack := Stack;
 

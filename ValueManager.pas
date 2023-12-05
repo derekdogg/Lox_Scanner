@@ -22,6 +22,9 @@ type
   end;
 
   TValueCreation = class
+  private
+    //fSize : Longint;
+  public
     function newLoxFunction(const Name : String) : pLoxFunction;
     function newValueFromFunction(functionObj : pLoxFunction) : pValue;
     function newFunction(
@@ -37,11 +40,13 @@ type
     function newValueFromList(const List : pLoxList) : pValue;
     function newValueList(const name : string) : pValue;
     function NewString(const txt : String) : pValue;
+//    property Size : LongInt read FSize;
   end;
 
 
   TValueManager = class
   private
+    FOwnValues : boolean;
     FItems : TList;
     FValueFactory  :  TValueCreation;
     FValueDisposal :  TValueDisposal;
@@ -54,10 +59,12 @@ type
 
     function NewList(const name : string) : pLoxList;
     function NewValues : TValueList;
+    function IndexOf(const value : pValue) : integer;
+    function getCount: integer;
 
-     function IndexOf(const value : pValue) : integer;
-
+    procedure SaveValue(const value : pValue);
   public
+
     function newValueFromFunction(functionObj : pLoxFunction) : pValue;
     function newNative(const NativeFn : TNativeFunction) : pValue;
     function NewFunction(const name : string) : pValue; overload;
@@ -69,6 +76,8 @@ type
     function NewNumber(Const number : TNumber) : pValue;
     function NewBool(const Bool : Boolean) : pValue;
     function NewNil : pValue;
+    property OwnValues : Boolean read fOwnValues write FOwnValues;
+    property Count : integer read getCount;
     constructor create;
     destructor destroy; override;
   end;
@@ -88,6 +97,7 @@ begin
   result.Kind := lxBoolean;
   result.Boolean := Bool;
   //FItems.Add(result);
+  //FSize := FSize + Sizeof(result^);
 end;
 
 function TValueCreation.NewValues: TValueList;
@@ -145,6 +155,7 @@ begin
   str := NewLoxString(txt);
   result.Kind := lxString;
   result.ValueRecord.Obj := str;
+
   //FItems.Add(result);
 end;
 
@@ -196,7 +207,6 @@ begin
 
   result.Kind := lxNative;
   result.valueRecord.Obj := LoxNative;
- // FItems.Add(result);
 end;
 
 constructor TValueManager.create;
@@ -212,12 +222,11 @@ var
   value : pValue;
 begin
   FValueFactory.free;
-  (*for i := FItems.Count - 1 downto 0 do
+  for i := FItems.Count - 1 downto 0 do
   begin
-    //FValueDisposal.DisposeFunction(FItems[i]);
     value := FItems[i];
     FValueDisposal.DisposeValue(value);
-  end; *)
+  end;
 
   FItems.Free;
   FValueDisposal.Free;
@@ -235,6 +244,11 @@ begin
   FValueDisposal.DisposeValue(Value);
 end;
 
+function TValueManager.getCount: integer;
+begin
+  result := FItems.Count;
+end;
+
 function TValueManager.IndexOf(const value: pValue): integer;
 begin
   result := FItems.IndexOf(Value);
@@ -244,7 +258,7 @@ function TValueManager.NewBool(
   const Bool: Boolean): pValue;
 begin
   result := FValueFactory.NewBool(bool);
-  //FItems.Add(result);
+  saveValue(result);
 end;
 
 function TValueManager.newFunction(const name: string): pValue;
@@ -256,7 +270,7 @@ function TValueManager.newFunction(const prev: pLoxFunction; const Name: String;
   const Kind: TFunctionKind): pValue;
 begin
   result := FValueFactory.NewFunction(prev,Name,Kind);
-  //FItems.Add(result); //add to the root
+  SaveValue(result);
 
 end;
 
@@ -264,36 +278,40 @@ function TValueManager.NewList(
   const name: string): pLoxList;
 begin
   result := FValueFactory.NewList(Name);
+
 end;
 
 function TValueManager.newLoxFunction(const Name: String): pLoxFunction;
 begin
   result := FValueFactory.NewLoxFunction(Name);
+
 end;
 
 function TValueManager.newNative(
   const NativeFn: TNativeFunction): pValue;
 begin
    result := FValueFactory.NewNative(NativeFn);
+   SaveValue(result);
 end;
 
 function TValueManager.NewNil: pValue;
 begin
   result := FValueFactory.NewNil;
+  SaveValue(result);
 end;
 
 function TValueManager.NewNumber(
   const number: TNumber): pValue;
 begin
   result := FValueFactory.NewNumber(Number);
-  //FItems.Add(result);
+  SaveValue(result);
 end;
 
 function TValueManager.NewString(
   const txt: String): pValue;
 begin
   result := FValueFactory.NewString(txt);
-  //FItems.add(result);
+  SaveValue(result);
 end;
 
 function TValueManager.newValueFromFunction(functionObj: pLoxFunction): pValue;
@@ -311,6 +329,12 @@ end;
 function TValueManager.NewValues: TValueList;
 begin
 
+end;
+
+procedure TValueManager.SaveValue(const value: pValue);
+begin
+  if FOwnValues then
+     FItems.add(value);
 end;
 
 procedure TValueDisposal.DisposeList(var List : pValue);
@@ -363,9 +387,6 @@ begin
   Dispose(LoxNative);
   Dispose(Native);
 end;
-
-
-
 
 procedure TValueDisposal.disposeString(var str : pValue);
 var
@@ -447,6 +468,7 @@ end;
 
 initialization
    BorrowChecker := TValueManager.Create;
+   BorrowChecker.OwnValues := False;
 
 finalization
    BorrowChecker.free;

@@ -108,6 +108,8 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitLeft = -3
+        ExplicitTop = 0
       end
     end
     object Panel5: TPanel

@@ -504,57 +504,6 @@ end;
 
 
 
-(*
-
-procedure parsePrecedence(precedence: TPrecedence);
-begin
-
-  advance();
-  var prefixRule: ParseFn := getRule(parser.previous.typ).prefix;
-  if not Assigned(prefixRule) then
-  begin
-    error('Expect expression.');
-    Exit;
-  end;
-  //< precedence-body
-end;
-procedure expression();
-begin
-  parsePrecedence(PREC_ASSIGNMENT);
-end;
-
-procedure grouping(canAssign : boolean);
-begin
-  expression();
-  consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-end;
-
-
-type
-  ParseRule = record
-    prefix: Pointer;
-    infix: Pointer;
-    precedence: Integer;
-  end;
-
-const
-  rules: array[tkopen_bracket..tkclose_Bracket] of ParseRule = (
-    (prefix: @grouping; infix: @call; precedence: PREC_CALL),
-    (prefix: nil; infix: nil; precedence: PREC_NONE)
-  );
-
-*)
-
-{ TToken }
-
-
-{ TLoxObject }
-
-
-
-
-{ TToken }
-
 procedure TToken.toStrings(const strings: TStrings);
 const
   ln = 'Kind : %s, Start: %s, Length : %s, Line : %s';

@@ -63,19 +63,6 @@ begin
 end;
 
 
-function sum(var a : integer) : integer;
-begin
-  a := a + 1;
-
-  if (a > 20) then
-  begin
-    result :=  a;
-    exit;
-  end;
-
-  result := sum(a) + sum(a) +  10;
-end;
-
 
 procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
