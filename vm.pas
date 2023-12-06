@@ -42,12 +42,13 @@ type
     function VMStack : TStack;
 
     function PopStack : pValue;
-    function PeekStack : pValue;
+    function PeekStack : pValue;overload;
+    function PeekStack(const distance : integer) : pValue;overload;
     procedure PushStack(const value : pValue);
     procedure MoveNext;
     procedure OpConstant;
     Procedure DoAdd;
-    Procedure subtract;
+    Procedure OpSubtract;
     Procedure Divide;
     Procedure Multiply;
     Procedure Negate;
@@ -209,7 +210,7 @@ begin
       end;
 
       OP_SUBTRACT : begin
-        subtract;
+        OPSubtract;
       end;
 
 
@@ -320,7 +321,7 @@ begin
   // PushStack(value); // So list isn't swept by GC in appendToList - [to do!!]
    for  i:= itemCount downto 1 do
    begin
-      value.List.Items.Add(VmStack.Peek(i));
+      value.List.Items.Add(PeekStack(i));
    end;
 
   // PopStack;
@@ -347,6 +348,7 @@ begin
    constantIndex := FCurrentFrame.InstructionPointer.current;
 
    value := FCurrentFrame.InstructionPointer.Constant[constantIndex];
+
    PushStack(value);
 
    Log(OP_CONSTANT,ConstantIndex,value);
@@ -428,7 +430,7 @@ begin
 
 end;
 
-procedure TVirtualMachine.subtract;
+procedure TVirtualMachine.OPSubtract;
 var
   Result, L,R : pValue;
 begin
@@ -593,7 +595,7 @@ begin
 
   ArgCount := NextInstruction; //read byte
 
-  callee := VMStack.peek(ArgCount);
+  callee := peekStack(ArgCount);
 
   if not callValue(Callee,ArgCount) then
   begin
@@ -926,7 +928,7 @@ begin
   FLog.Add(inttostr(FLog.Count) + '.' + Value);
 end;
 
-procedure TVirtualMachine.Log(Const opCOde : TopCodes);
+procedure TVirtualMachine.Log(Const opCode : TopCodes);
 begin
   if not assigned(FLog) then exit;
   FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode));
@@ -940,6 +942,11 @@ end;
 function TVirtualMachine.PeekStack: pValue;
 begin
   result := VMStack.Peek;
+end;
+
+function TVirtualMachine.PeekStack(const distance: integer): pValue;
+begin
+  result := VMStack.Peek(Distance);
 end;
 
 function TVirtualMachine.PopStack : pValue;

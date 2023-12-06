@@ -927,10 +927,8 @@ end;
 
 procedure TCallFrame.InitInstructionPointer;
 begin
-
-    FInstructionPointer := TInstructionPointer.Create;
-    FInstructionPointer.Func := FObjectFunction;
-
+  FInstructionPointer := TInstructionPointer.Create;
+  FInstructionPointer.Func := FObjectFunction;
 end;
 
 constructor TCallFrame.create(

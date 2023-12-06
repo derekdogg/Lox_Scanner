@@ -68,8 +68,9 @@ procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
   VM :  TVirtualMachine;
 begin
-   
+
    try
+
       VM.Init(LoxFunction,MemRun.Lines,nil{ MemCodes.Lines});
       VM.Run;
 
