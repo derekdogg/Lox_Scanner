@@ -551,7 +551,7 @@ begin
 
   prevOffset :=  0;
 
-  FFrames.Add(Func);
+  FFrames.Push(Func);
 
   newStackTop := VMStack.StackTop-ArgCount-1;
 
@@ -595,8 +595,8 @@ begin
 
     Frame :=  CurrentFrame;
 
-    FFrames.Remove(CurrentFrame);
-
+    //FFrames.Remove(CurrentFrame);
+    FFrames.Pop;
     //Frame.Free;
 
     if FFrames.Count = 0 then

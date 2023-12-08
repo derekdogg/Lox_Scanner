@@ -374,19 +374,45 @@ type
 
  end;
 
+  TFrameStack = class
+  const Stack_Mulitplier = 2;
+  private
+
+    FCapacity   : integer;
+    FStackTop  : integer; //note this points the next places a frame will go
+    FItems : Array of TCallFrame;
+    function getItem(const index: integer): TCallFrame;
+    function getStackTop: integer;
+    procedure setItem(const index: integer; const Value: TCallFrame);
+    procedure setStackTop(const Value: integer);
+
+  protected
+     procedure IncreaseCapacity;
+     function GetCapacity : integer;
+  public
+    function peek : TCallFrame; overload;
+    function Peek(const fromTop : integer) : TCallFrame; overload;
+    procedure Push(const value : TCallFrame);
+    function pop : TCallFrame;
+    constructor create;
+    destructor destroy;override;
+    property StackTop : integer read getStackTop write setStackTop;
+    property Capacity : integer read getCapacity;
+    property Item[const index : integer] : TCallFrame read getItem write setItem; default;
+  end;
 
   TCallFrames = class
   private
     FStack : TStack;
-    FFrames : TList;
+    FFrames : TFrameStack;//TList;
   protected
      function GetLastFrame : TCallFrame;
      function getCount : integer;
   public
     constructor create(Const Stack : TStack);
     destructor destroy; override;
-    function Add(const ObjectFunction : pLoxFunction) : TCallFrame;
-    function Remove(const Frame : TCallFrame) : integer;
+    function Push(const ObjectFunction : pLoxFunction) : TCallFrame;
+    function Pop : integer;
     property LastFrame : TCallFrame read getLastFrame;
     property Count : integer read getCount;
   end;
@@ -867,24 +893,25 @@ begin
   FFunction := Value;
 end;
 
-function TCallFrames.Add(const ObjectFunction: pLoxFunction): TCallFrame;
+function TCallFrames.Push(const ObjectFunction: pLoxFunction): TCallFrame;
 begin
   try
     result := TCallFrame.Create(ObjectFunction,FStack);
   except
     on E:Exception do
     begin
-      Showmessage('Failed to create call frame @ index : ' + inttostr(FFrames.Count));
+      Showmessage('Failed to create call frame @ index : ' + inttostr(FFrames.StackTop));
       exit;
     end;
   end;
-  FFrames.Add(result);
+  //FFrames.Add(result);
+  FFrames.Push(result);
 end;
 
 constructor TCallFrames.create(Const Stack : TStack);
 begin
   FStack := Stack;
-  FFrames := Tlist.create;
+  FFrames := TFrameStack.Create;//Tlist.create;
 end;
 
 destructor TCallFrames.destroy;
@@ -892,7 +919,7 @@ var
   i : integer;
   fm : TCallFrame;
 begin
-  for i := FFrames.Count-1 downto 0 do
+  for i := FFrames.StackTop-1 downto 0 do
   begin
     fm := FFrames[i];
     fm.free;
@@ -903,21 +930,23 @@ end;
 
 function TCallFrames.getCount: integer;
 begin
-  result := FFrames.Count;
+  result := FFrames.StackTop;
 end;
 
 function TCallFrames.GetLastFrame: TCallFrame;
 begin
   result := nil;
-  if FFrames.Count > 0 then
-    result := FFrames[FFrames.Count-1];
+  if FFrames.StackTop > 0 then
+    result := FFrames[FFrames.StackTop-1];
 end;
 
 
 
-function TCallFrames.Remove(const Frame: TCallFrame): integer;
+function TCallFrames.Pop : integer;
 begin
-  result := FFrames.Remove(Frame);
+  FFrames.StackTop := FFrames.StackTop - 1;
+  //result := FFrames.Remove(Frame);
+  result := FFrames.StackTop;
 end;
 
 { TCallFrame }
@@ -1443,6 +1472,84 @@ begin
 end;
 
 procedure TStack.setStackTop(const Value: integer);
+begin
+  if Value > FCapacity-1 then   //since the FStackTop starts at 0
+  begin
+    IncreaseCapacity;
+  end;
+  FStackTop := Value;
+end;
+
+{ TFrameStack }
+
+constructor TFrameStack.create;
+begin
+  FStackTop := 0;
+  FCapacity := Stack_Mulitplier;
+  setLength(FItems,FCapacity);
+end;
+
+destructor TFrameStack.destroy;
+begin
+
+  inherited;
+end;
+
+function TFrameStack.GetCapacity: integer;
+begin
+  result := FCapacity;
+end;
+
+function TFrameStack.getItem(const index: integer): TCallFrame;
+begin
+  result := FItems[index];
+end;
+
+function TFrameStack.getStackTop: integer;
+begin
+  result := FStackTop;
+end;
+
+procedure TFrameStack.IncreaseCapacity;
+begin
+  FCapacity := FCapacity * 2;
+  SetLength(FItems,FCapacity);
+end;
+
+function TFrameStack.peek(const fromTop: integer): TCallFrame;
+begin
+  assert(FromTop >= 0, 'This is distance from the top as a positive');
+  assert(FStackTop - FromTop >= 0, 'Distance is beyond stack bottom');
+  result := FItems[FStackTop-FromTop-1];
+end;
+
+function TFrameStack.peek: TCallFrame;
+begin
+   result := FItems[FStackTop-1];
+end;
+
+function TFrameStack.pop: TCallFrame;
+begin
+  assert(FStackTop >= 1, 'No items to pop');
+  result := FItems[FStackTop-1];
+  FStackTop := FStackTop - 1;
+end;
+
+procedure TFrameStack.Push(const value: TCallFrame);
+begin
+  FItems[FStackTop] := value;
+  SetStackTop(FStackTop+1);
+end;
+
+procedure TFrameStack.setItem(const index: integer; const Value: TCallFrame);
+begin
+  assert(index >= 0, 'index is negative to stack bottom');
+  assert(index <= FStackTop, 'index is beyond stack top');
+  FItems[index] := Value;
+
+end;
+
+procedure TFrameStack.setStackTop(const Value: integer);
 begin
   if Value > FCapacity-1 then   //since the FStackTop starts at 0
   begin
