@@ -167,7 +167,7 @@ begin
   if L.IsString then
   begin
     s := copy(L.ToString,0, Length(L.toString) -1 - round(R.Number));
-    result := BorrowChecker.NewString(s);
+    result := BorrowChecker.NewString(rVM,s);
     exit;
   end;
 
@@ -183,7 +183,7 @@ begin
   if not L.IsString then exit;
   if not R.IsString then exit;
 
-  result := BorrowChecker.NewString(Subtract(L.ToString,R.ToString));
+  result := BorrowChecker.NewString(rVM,Subtract(L.ToString,R.ToString));
 
 end;
 

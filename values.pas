@@ -8,8 +8,9 @@ uses classes, LoxTypes, OpCodes;
 type
 
   pValue = ^TValue;
-
+  TRequester = (rCompiler,rVM);
   TValueRecord = record
+    requester : TRequester;
     case Kind: TLoxKind of
       lxBoolean      :   (Bool: Boolean);
       lxNumber       :   (Number: Double);
@@ -24,7 +25,6 @@ type
   TNatives = class
   private
     FItems : TList;
-
   protected
     function getNative(const index : integer) : TNativeFunction;
   public
@@ -290,6 +290,9 @@ type
   end;
 
 
+
+
+
 (* TValueStack = class
  private
     FItems  : TValueList;
@@ -331,6 +334,7 @@ type
     function Next : Integer;
     function PeekNext : Integer;
     constructor create;
+    destructor destroy; override;
     //constructor create(
     //    const loxFunction : PLoxFunction);
     property count : integer read getCount;
@@ -348,23 +352,21 @@ type
  private
    FStartCount         : integer;
    FStackTop           : integer;
-   FObjectFunction     : pLoxFunction;
    FInstructionPointer : TInstructionPointer;
    FFrameIndex         : integer;
    FStack              : TStack;
-   procedure InitInstructionPointer;
+   procedure InitInstructionPointer(const func : pLoxFunction);
    function  getValue(const index: integer): pValue;
    procedure setValue(const index: integer; const Value: pValue);
 //    function getStackCount: integer;
  public
     constructor create(
       const ObjectFunction : pLoxFunction;
-      const StackTop : integer;
       const Stack : TStack);
    destructor destroy;override;
    property StartCount : integer read fStartCount;
 //   property StackCount : integer read getStackCount;
-   property LoxFunction : pLoxFunction read FObjectFunction;
+//   property LoxFunction : pLoxFunction read FObjectFunction;
    property InstructionPointer : TInstructionPointer read FInstructionPointer;
    property FrameIndex : integer read FFrameIndex;
    property Value[const index : integer] : pValue read getValue write setValue;default;
@@ -372,29 +374,21 @@ type
 
  end;
 
+
   TCallFrames = class
   private
-    FConstants : TValueList;
-
+    FStack : TStack;
     FFrames : TList;
-    FFrame  : TCallFrame;
-
   protected
-     function GetFrame : TCallFrame;
+     function GetLastFrame : TCallFrame;
      function getCount : integer;
-
   public
-    constructor create;
+    constructor create(Const Stack : TStack);
     destructor destroy; override;
-    function Add(
-      const StackTop : integer;
-      const Stack : TStack;
-      const ObjectFunction : pLoxFunction) : TCallFrame;
+    function Add(const ObjectFunction : pLoxFunction) : TCallFrame;
     function Remove(const Frame : TCallFrame) : integer;
-
-    property Frame : TCallFrame read getFrame;
+    property LastFrame : TCallFrame read getLastFrame;
     property Count : integer read getCount;
-
   end;
 
 implementation
@@ -804,6 +798,11 @@ begin
   result := getValue(FIndex);
 end;
 
+destructor TInstructionPointer.destroy;
+begin
+  inherited;
+end;
+
 function TInstructionPointer.Getconstant(const Index: integer): pValue;
 begin
   result := FFunction.Chunks.Constant[Index];
@@ -815,7 +814,7 @@ begin
 end;
 
 (*
-constructor TInstructionPointer.create(
+constructor TInstructionPtr.create(
   const loxFunction: PLoxFunction);
 
 begin
@@ -868,13 +867,10 @@ begin
   FFunction := Value;
 end;
 
-function TCallFrames.Add(
-  const StackTop : integer;
-  const Stack : TStack;
-  const ObjectFunction: pLoxFunction): TCallFrame;
+function TCallFrames.Add(const ObjectFunction: pLoxFunction): TCallFrame;
 begin
   try
-    result := TCallFrame.Create(ObjectFunction,StackTop,Stack);
+    result := TCallFrame.Create(ObjectFunction,FStack);
   except
     on E:Exception do
     begin
@@ -885,22 +881,24 @@ begin
   FFrames.Add(result);
 end;
 
-constructor TCallFrames.create;
+constructor TCallFrames.create(Const Stack : TStack);
 begin
+  FStack := Stack;
   FFrames := Tlist.create;
-
 end;
 
 destructor TCallFrames.destroy;
 var
   i : integer;
+  fm : TCallFrame;
 begin
   for i := FFrames.Count-1 downto 0 do
   begin
-    TCallFrame(FFrames[i]).free;
+    fm := FFrames[i];
+    fm.free;
   end;
   FFrames.Free;
-  
+
 end;
 
 function TCallFrames.getCount: integer;
@@ -908,7 +906,7 @@ begin
   result := FFrames.Count;
 end;
 
-function TCallFrames.GetFrame: TCallFrame;
+function TCallFrames.GetLastFrame: TCallFrame;
 begin
   result := nil;
   if FFrames.Count > 0 then
@@ -925,26 +923,26 @@ end;
 { TCallFrame }
 
 
-procedure TCallFrame.InitInstructionPointer;
+procedure TCallFrame.InitInstructionPointer(const func : pLoxFunction);
 begin
   FInstructionPointer := TInstructionPointer.Create;
-  FInstructionPointer.Func := FObjectFunction;
+  FInstructionPointer.Func := func;
 end;
 
 constructor TCallFrame.create(
   const ObjectFunction : pLoxFunction;
-  const StackTop : integer;
+
   const Stack : TStack);
 begin
-   FObjectFunction := ObjectFunction;
-   InitInstructionPointer;
-   FStack := Stack;
-   FStackTop := StackTop;
+  InitInstructionPointer(ObjectFunction);
+  FStack := Stack;
+  FStackTop := Stack.StackTop;
 end;
 
 destructor TCallFrame.destroy;
 begin
-  FInstructionPointer.Free;
+
+  FreeAndNil(FInstructionPointer);
   inherited;
 end;
 
@@ -1378,7 +1376,7 @@ end;
 
 constructor TStack.create;
 begin
-  FStackTop := 0; //noting that this is different from the count, since it begins at slot 0
+  FStackTop := 0;  
   FCapacity := Stack_Mulitplier;
   setLength(FItems,FCapacity);
 end;

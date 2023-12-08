@@ -145,7 +145,7 @@ begin
 
   if (L.IsNull) or (r.IsNull) then
   begin
-    result := BorrowChecker.newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(rVm,L.ToString + R.ToString);
   end;
 
 
@@ -159,13 +159,13 @@ begin
 
   if L.IsString then
   begin
-    result := BorrowChecker.newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(rVm,L.ToString + R.ToString);
     exit;
   end;
 
   if R.IsString then
   begin
-    result := BorrowChecker.newString(L.ToString + R.ToString);
+    result := BorrowChecker.newString(rVM,L.ToString + R.ToString);
     exit;
   end;
 end;
@@ -179,7 +179,7 @@ begin
   if not L.IsString then exit;
   if not R.IsString then exit;
 
-  result := BorrowChecker.NewString(L.ToString + R.ToString);
+  result := BorrowChecker.NewString(rVM,L.ToString + R.ToString);
 
 end;
 

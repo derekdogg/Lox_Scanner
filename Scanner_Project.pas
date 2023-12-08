@@ -33,11 +33,13 @@ type
   end;
 
 
-
 var
   fmScript: TfmScript;
 
 implementation
+
+
+
 
 uses
   typinfo,
@@ -77,6 +79,7 @@ begin
    finally
 
      vm.Finalize;
+   
    end;
 end;
 

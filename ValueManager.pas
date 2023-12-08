@@ -21,10 +21,17 @@ type
     procedure DisposeLoxFunction(var value: pLoxFunction);
   end;
 
+
+
   TValueCreation = class
   private
     //fSize : Longint;
   public
+    function NewValue(
+      const requester : TRequester;
+      const Kind : TLoxKind;
+      const Obj  : pointer) : pValue;
+    function NewLoxString(Const str : string) : pLoxString;
     function newLoxFunction(const Name : String) : pLoxFunction;
     function newValueFromFunction(functionObj : pLoxFunction) : pValue;
     function newFunction(
@@ -39,7 +46,7 @@ type
     function NewValues : TValueList;
     function newValueFromList(const List : pLoxList) : pValue;
     function newValueList(const name : string) : pValue;
-    function NewString(const txt : String) : pValue;
+    function NewString(const requester : TRequester;const txt : String) : pValue;
 //    property Size : LongInt read FSize;
   end;
 
@@ -72,7 +79,7 @@ type
     function newLoxFunction(const Name : String) : pLoxFunction;
     procedure Dispose(var value : pLoxFunction); overload;
     procedure Dispose(var value : pValue);overload;
-    function NewString(const txt : String) : pValue;
+    function NewString(const requester : TRequester;const txt : String) : pValue;
     function NewNumber(Const number : TNumber) : pValue;
     function NewBool(const Bool : Boolean) : pValue;
     function NewNil : pValue;
@@ -89,6 +96,13 @@ var
 implementation
 uses
   sysutils;
+
+function TValueCreation.NewLoxString(Const Str : String) : pLoxString;
+begin
+  new(Result);
+  result.init;
+  result.Chars := str;
+end;
 
 
 function TValueCreation.NewBool(const Bool : Boolean) : pValue;
@@ -146,20 +160,25 @@ begin
   //FItems.Add(result);
 end;
 
-
-function TValueCreation.NewString(const txt : String) : pValue;
-var
-  str : pLoxString;
+function TValueCreation.NewValue(
+  const requester : TRequester;
+  const Kind : TLoxKind;
+  const Obj  : pointer) : pValue;
 begin
   new(result);
-  str := NewLoxString(txt);
-  result.ValueRecord.Kind := lxString;
-  result.ValueRecord.Obj := str;
-
-  //FItems.Add(result);
+  fillChar(result^,sizeof(TValue),#0);
+  result.ValueRecord.Requester := Requester;
+  result.ValueRecord.Kind := Kind;
+  result.ValueRecord.Obj := Obj;
 end;
 
-
+function TValueCreation.NewString(const requester : TRequester;const txt : String) : pValue;
+var
+  p : pLoxString;
+begin
+  p := NewLoxString(txt);
+  result := NewValue(requester,lxString,p);
+end;
 
 
 function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): pValue;
@@ -308,9 +327,9 @@ begin
 end;
 
 function TValueManager.NewString(
-  const txt: String): pValue;
+  const requester : TRequester;const txt: String): pValue;
 begin
-  result := FValueFactory.NewString(txt);
+  result := FValueFactory.NewString(requester,txt);
   SaveValue(result);
 end;
 

@@ -368,7 +368,7 @@ Type
 
 //  function LoxObjectFrom(const value : pointer) : pLoxObject;
 
-  function NewLoxString(Const str : string) : pLoxString;
+
 
 
 
@@ -402,12 +402,6 @@ begin
 end; *)
 
 
-function NewLoxString(Const Str : String) : pLoxString;
-begin
-  new(Result);
-  result.init;
-  result.Chars := str;
-end;
 
 
 
@@ -425,6 +419,7 @@ begin
   new(Result);
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
+
 
 
 

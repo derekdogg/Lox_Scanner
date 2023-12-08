@@ -43,7 +43,7 @@ uses
     FileName : String;
 
   begin
-    result := BorrowChecker.newString('');
+    result := BorrowChecker.newString(rVM,'');
     FileName := Values.Peek(0).toString;
     if not SysUtils.FileExists(Filename) then exit;
 
@@ -70,7 +70,7 @@ uses
 
   function DateTime(const ArgCount: Integer;const Values : TStack): pValue;
   begin
-     result := BorrowChecker.newString(DateTimeToStr(Now));
+     result := BorrowChecker.newString(rVM,DateTimeToStr(Now));
   end;
 
 end.

@@ -450,7 +450,7 @@ begin
   end
   else
   begin
-    Value := BorrowChecker.NewString(TokenName(token));
+    Value := BorrowChecker.NewString(rCompiler,TokenName(token));
     idx :=   Current.Func.Chunks.AddConstant(Value);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
@@ -569,7 +569,7 @@ begin
     exit;
   end;
 
-  Value  := BorrowChecker.NewString(TokenName(FTokens.previous));
+  Value  := BorrowChecker.NewString(rCompiler,TokenName(FTokens.previous));
   result := Current.Func.Chunks.AddConstant(Value);
 end;
 
@@ -992,7 +992,7 @@ var
 begin
   Token := FTokens.previous;
   text := TokenName(Token);
-  Value := BorrowChecker.NewString(Text);
+  Value := BorrowChecker.NewString(rCompiler,Text);
   Current.Func.Chunks.EmitConstant(Value);
 end;
 
