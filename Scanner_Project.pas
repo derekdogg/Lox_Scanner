@@ -74,6 +74,7 @@ begin
       VM := TVirtualMachine.Create(LoxFunction,MemRun.Lines,nil);
       VM.Run;
    finally
+     BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
      vm.Free;
    end;
 end;
@@ -98,7 +99,7 @@ begin
 
 
 
-  BorrowChecker.NumberCount := 0;
+  BorrowChecker.FlushBuffer;
   //BorrowChecker.Logger := MemRun.Lines;
 
   //instructionPointer.Init(LoxFunction);

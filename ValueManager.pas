@@ -108,7 +108,7 @@ type
   TValueManager = class
   private
     FLogger : TStrings;
-    FNumberCount : integer;
+
     FNumberMemory : TNumberMemory;
     FOwnValues : boolean;
     FItems : TList;
@@ -127,7 +127,7 @@ type
     function getCount: integer;
 
     procedure SaveValue(const value : pValueRecord);
-    function getNumberCount: integer;
+
   public
     procedure FlushBuffer;
     function newValueFromFunction(functionObj : pLoxFunction) : pValueRecord;
@@ -146,7 +146,7 @@ type
     property Logger : TStrings read FLogger write FLogger;
     property OwnValues : Boolean read fOwnValues write FOwnValues;
     property Count : integer read getCount;
-    property NumberCount : integer read getNumberCount write FNumberCount;
+
     constructor create;
     destructor destroy; override;
   end;
@@ -329,7 +329,7 @@ end;
 
 constructor TValueManager.create;
 begin
-  FNumberCount := 0;
+
   FItems := TList.Create;
 //  FNumberMemory := TNumberMemory.create(FValueDisposal);
   FValueFactory  := TValueCreation.Create;
@@ -348,9 +348,7 @@ begin
     FItems.Remove(value);
     FValueDisposal.DisposeValue(value);
   end;
-
-
-
+ 
 end;
 
 destructor TValueManager.destroy;
@@ -379,10 +377,6 @@ begin
   result := FItems.Count;
 end;
 
-function TValueManager.getNumberCount: integer;
-begin
-  result := FNumberCount;
-end;
 
 function TValueManager.IndexOf(const value: pValueRecord): integer;
 begin
@@ -439,12 +433,6 @@ function TValueManager.NewNumber(
 begin
   result := FValueFactory.NewNumber(Number);
   SaveValue(result);
-  FNumberCount := FNumberCount +  1;
-  if assigned(FLogger) then
-  begin
-    FLogger.Clear;
-    FLogger.add(inttostr(FNumberCount));
-  end;
 end;
 
 function TValueManager.NewString(
