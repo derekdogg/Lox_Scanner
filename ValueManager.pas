@@ -102,7 +102,7 @@ type
     function newValueFromFunction(functionObj : pLoxFunction) : pValueRecord;
     function newNative(const NativeFn : TNativeFunction) : pValueRecord;
     function NewFunction(const name : string) : pValueRecord; overload;
-    function newValueList(const name : string) : pValueRecord;
+    function newValueList(const OwnValue : boolean; const name : string) : pValueRecord;
     function newLoxFunction(const Name : String) : pLoxFunction;
     procedure Dispose(var value : pLoxFunction); overload;
     procedure Dispose(var value : pValueRecord);overload;
@@ -215,7 +215,6 @@ end;
 function TValueCreation.newValueList(const name : string) : pValueRecord;
 begin
   result := newValueFromList(newList(name));
-  //FItems.Add(result);
 
 end;
 
@@ -381,7 +380,6 @@ end;
 function TValueManager.newLoxFunction(const Name: String): pLoxFunction;
 begin
   result := FValueFactory.NewLoxFunction(Name);
-
 end;
 
 function TValueManager.newNative(
@@ -423,10 +421,11 @@ begin
 end;
 
 function TValueManager.newValueList(
+  const OwnValue : boolean;
   const name: string): pValueRecord;
 begin
    result := FValueFactory.NewValueList(name);
-   //FItems.Add(result);
+   if OwnValue then FItems.Add(result);
 end;
 
 function TValueManager.NewValues: TValueList;
