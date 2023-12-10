@@ -3,6 +3,7 @@ unit ValueManager;
 interface
 
 uses
+
   classes,
   LoxTypes,
   Values;
@@ -10,49 +11,74 @@ uses
 type
 
   TValueDisposal = class
-    procedure DisposeList(var List : pValue);
-    procedure DisposeNil(var value : pValue);
-    procedure DisposeBoolean(var value : pValue);
-    procedure DisposeNumber(var value : pValue);
-    procedure disposeNative(var native : pValue);
-    procedure DisposeString(var str : pValue);
-    procedure DisposeValue(var value : pValue);
-    procedure DisposeFunction(var value : pvalue);
+    procedure DisposeList(var List : pValueRecord);
+    procedure DisposeNil(var value : pValueRecord);
+    procedure DisposeBoolean(var value : pValueRecord);
+    procedure DisposeNumber(var value : pValueRecord);
+    procedure DisposeNative(var native : pValueRecord);
+    procedure DisposeString(var str : pValueRecord);
+    procedure DisposeValue(var value : pValueRecord);
+    procedure DisposeFunction(var value : pValueRecord);
     procedure DisposeLoxFunction(var value: pLoxFunction);
   end;
-
-
 
   TValueCreation = class
   private
     //fSize : Longint;
+
   public
     function NewValue(
       const requester : TRequester;
       const Kind : TLoxKind;
-      const Obj  : pointer) : pValue;
+      const Obj  : pointer) : pValueRecord;
     function NewLoxString(Const str : string) : pLoxString;
     function newLoxFunction(const Name : String) : pLoxFunction;
-    function newValueFromFunction(functionObj : pLoxFunction) : pValue;
+    function newValueFromFunction(functionObj : pLoxFunction) : pValueRecord;
     function newFunction(
         const prev : pLoxFunction;
         const Name : String;
-        const Kind : TFunctionKind) : pValue;
-    function NewNil : pValue;
+        const Kind : TFunctionKind) : pValueRecord;
+    function NewNil : pValueRecord;
     function NewList(const name : string) : pLoxList;
-    function newNative(const NativeFn : TNativeFunction) : pValue;
-    function NewNumber(Const number : TNumber) : pValue;
-    function NewBool(const Bool : Boolean) : pValue;
+    function newNative(const NativeFn : TNativeFunction) : pValueRecord;
+    function NewNumber(Const number : TNumber) : pValueRecord;
+    function NewBool(const Bool : Boolean) : pValueRecord;
     function NewValues : TValueList;
-    function newValueFromList(const List : pLoxList) : pValue;
-    function newValueList(const name : string) : pValue;
-    function NewString(const requester : TRequester;const txt : String) : pValue;
+    function newValueFromList(const List : pLoxList) : pValueRecord;
+    function newValueList(const name : string) : pValueRecord;
+    function NewString(const requester : TRequester;const txt : String) : pValueRecord;
 //    property Size : LongInt read FSize;
   end;
 
+  TNumberMemory = class
+  const BUFFER_CAPACITY = 256;
+  private
+    FCreation : TValueCreation;
+    FDisposal : TValueDisposal;
+    FCount : integer;
+    FStack : TStack;
+    function getStackStock: integer;
+  protected
+    procedure AllocMemory;
 
+  public
+    function BorrowNumber : pValueRecord;
+    procedure ReturnNumber(const value : pValueRecord);
+    constructor create(
+      const creation : TValueCreation;
+      const disposal : TValueDisposal);
+    destructor destroy; override;
+    property StackTop : integer read getStackStock;
+  end;
+
+
+
+  // add in here the size of items borrowed. Then we can work out how much mem is being consumed.
   TValueManager = class
   private
+    FLogger : TStrings;
+    FNumberCount : integer;
+    FNumberMemory : TNumberMemory;
     FOwnValues : boolean;
     FItems : TList;
     FValueFactory  :  TValueCreation;
@@ -61,41 +87,83 @@ type
     function newFunction(
         const prev : pLoxFunction;
         const Name : String;
-        const Kind : TFunctionKind) : pValue; overload;
+        const Kind : TFunctionKind) : pValueRecord; overload;
 
 
     function NewList(const name : string) : pLoxList;
     function NewValues : TValueList;
-    function IndexOf(const value : pValue) : integer;
+    function IndexOf(const value : pValueRecord) : integer;
     function getCount: integer;
 
-    procedure SaveValue(const value : pValue);
+    procedure SaveValue(const value : pValueRecord);
+    function getNumberCount: integer;
   public
 
-    function newValueFromFunction(functionObj : pLoxFunction) : pValue;
-    function newNative(const NativeFn : TNativeFunction) : pValue;
-    function NewFunction(const name : string) : pValue; overload;
-    function newValueList(const name : string) : pValue;
+    function newValueFromFunction(functionObj : pLoxFunction) : pValueRecord;
+    function newNative(const NativeFn : TNativeFunction) : pValueRecord;
+    function NewFunction(const name : string) : pValueRecord; overload;
+    function newValueList(const name : string) : pValueRecord;
     function newLoxFunction(const Name : String) : pLoxFunction;
     procedure Dispose(var value : pLoxFunction); overload;
-    procedure Dispose(var value : pValue);overload;
-    function NewString(const requester : TRequester;const txt : String) : pValue;
-    function NewNumber(Const number : TNumber) : pValue;
-    function NewBool(const Bool : Boolean) : pValue;
-    function NewNil : pValue;
+    procedure Dispose(var value : pValueRecord);overload;
+    function NewString(const requester : TRequester;const txt : String) : pValueRecord;
+    function NewNumber(Const number : TNumber) : pValueRecord;
+    function NewBool(const Bool : Boolean) : pValueRecord;
+    function NewNil : pValueRecord;
+
+
+    property Logger : TStrings read FLogger write FLogger;
     property OwnValues : Boolean read fOwnValues write FOwnValues;
     property Count : integer read getCount;
+    property NumberCount : integer read getNumberCount write FNumberCount;
     constructor create;
     destructor destroy; override;
   end;
 
+
+
+
+
+
+
+    function getNumber(const ValueRecord : pValueRecord)  : TNumber;
+    procedure SetNumber(const ValueRecord : pValueRecord; const value : TNumber);
+    function BoolToString(const ValueRecord : pValueRecord)  : String;
+    function getBoolean(const ValueRecord : pValueRecord)  : Boolean;
+    procedure setBoolean(const ValueRecord : pValueRecord;const value : Boolean);
+    procedure setObject(const ValueRecord : pValueRecord;const value : pLoxObject);
+    function  getObject(const ValueRecord : pValueRecord) : pLoxObject;
+    function  getFunction(const ValueRecord : pValueRecord) : pLoxFunction;
+    procedure setNull(const ValueRecord : pValueRecord;const value : Boolean);
+    function getNull(const ValueRecord : pValueRecord): boolean;
+    procedure SetString(const ValueRecord : pValueRecord;Const value : String);
+    function GetString(const ValueRecord : pValueRecord) : String;
+    function getIsNumber(const ValueRecord : pValueRecord): Boolean;
+    function getIsString(const ValueRecord : pValueRecord): Boolean;
+    function getIsObject(const ValueRecord : pValueRecord) : Boolean;
+    function getIsFunction(const ValueRecord : pValueRecord) : Boolean;
+    function getIsNull(const ValueRecord : pValueRecord): Boolean;
+    function getIsNative(const ValueRecord : pValueRecord): Boolean;
+    function getNative(const ValueRecord : pValueRecord): pLoxNative;
+    procedure setNative(const ValueRecord : pValueRecord;const Value: pLoxNative);
+
+    function getKind(const ValueRecord : pValueRecord): TLoxKind;
+    procedure setKind(const ValueRecord : pValueRecord; const Value: TLoxKind);
+    function getIsList(const ValueRecord : pValueRecord): Boolean;
+    function getList(const ValueRecord : pValueRecord): pLoxList;
+    function getIsBoolean(const ValueRecord : pValueRecord): Boolean;
+    function getLoxString(const ValueRecord : pValueRecord): pLoxString;
+
+
+
 var
    BorrowChecker : TValueManager;
-
-
+  // Numbers : TNumberMemory;
+  // Creation : TValueCreation;
+  // Disposal : TValueDisposal;
 implementation
 uses
-  sysutils;
+  sysutils;              
 
 function TValueCreation.NewLoxString(Const Str : String) : pLoxString;
 begin
@@ -105,11 +173,11 @@ begin
 end;
 
 
-function TValueCreation.NewBool(const Bool : Boolean) : pValue;
+function TValueCreation.NewBool(const Bool : Boolean) : pValueRecord;
 begin
   new(result);
-  result.ValueRecord.Kind := lxBoolean;
-  result.Boolean := Bool;
+  result.Kind := lxBoolean;
+  result.Bool := Bool;
   //FItems.Add(result);
   //FSize := FSize + Sizeof(result^);
 end;
@@ -119,30 +187,32 @@ begin
   result := TValueList.Create(false);
 end;
 
-function TValueCreation.NewNil: pValue;
+function TValueCreation.NewNil: pValueRecord;
 begin
   new(result);
-  result.ValueRecord.Kind := lxNull;
+  result.Kind := lxNull;
 end;
 
-function TValueCreation.NewNumber(const number : TNumber) : pValue;
+function TValueCreation.NewNumber(const number : TNumber) : pValueRecord;
 begin
   new(result);
-  result.ValueRecord.Kind := lxNumber;
+  result.Kind := lxNumber;
   result.Number := Number;
   //FItems.Add(result);
+
+
 end;
 
 
-function TValueCreation.newValueFromList(const List : pLoxList) : pValue;
+function TValueCreation.newValueFromList(const List : pLoxList) : pValueRecord;
 begin
   new(result);
-  result.ValueRecord.Kind := lxList;
-  result.ValueRecord.Obj := List;
+  result.Kind := lxList;
+  result.Obj := List;
 end;
 
 
-function TValueCreation.newValueList(const name : string) : pValue;
+function TValueCreation.newValueList(const name : string) : pValueRecord;
 begin
   result := newValueFromList(newList(name));
   //FItems.Add(result);
@@ -163,16 +233,16 @@ end;
 function TValueCreation.NewValue(
   const requester : TRequester;
   const Kind : TLoxKind;
-  const Obj  : pointer) : pValue;
+  const Obj  : pointer) : pValueRecord;
 begin
   new(result);
-  fillChar(result^,sizeof(TValue),#0);
-  result.ValueRecord.Requester := Requester;
-  result.ValueRecord.Kind := Kind;
-  result.ValueRecord.Obj := Obj;
+  fillChar(result^,sizeof(TValueRecord),#0);
+  result.Requester := Requester;
+  result.Kind := Kind;
+  result.Obj := Obj;
 end;
 
-function TValueCreation.NewString(const requester : TRequester;const txt : String) : pValue;
+function TValueCreation.NewString(const requester : TRequester;const txt : String) : pValueRecord;
 var
   p : pLoxString;
 begin
@@ -181,24 +251,24 @@ begin
 end;
 
 
-function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): pValue;
+function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): pValueRecord;
 begin
   new(result);
-  result.ValueRecord.Kind := lxFunction;
-  result.valueRecord.Obj := FunctionObj;
+  result.Kind := lxFunction;
+  result.Obj := FunctionObj;
 end;
 
 function TValueCreation.newFunction(
   const prev : pLoxFunction;
   const Name : String;
-  const Kind : TFunctionKind) : pValue;
+  const Kind : TFunctionKind) : pValueRecord;
 var
   fn : pLoxFunction;
 begin
   fn := newLoxFunction(name);
   new(result);
-  result.ValueRecord.Kind := lxFunction;
-  result.valueRecord.Obj := fn;
+  result.Kind := lxFunction;
+  result.Obj := fn;
 end;
 
 
@@ -216,7 +286,7 @@ end;
 
 
 
-function TValueCreation.newNative(const NativeFn : TNativeFunction) : pValue;
+function TValueCreation.newNative(const NativeFn : TNativeFunction) : pValueRecord;
 var
   LoxNative : PLoxNative;
 begin
@@ -224,13 +294,15 @@ begin
   new(loxNative);
   loxNative.Native := NativeFn;
 
-  result.ValueRecord.Kind := lxNative;
-  result.valueRecord.Obj := LoxNative;
+  result.Kind := lxNative;
+  result.Obj := LoxNative;
 end;
 
 constructor TValueManager.create;
 begin
+  FNumberCount := 0;
   FItems := TList.Create;
+//  FNumberMemory := TNumberMemory.create(FValueDisposal);
   FValueFactory  := TValueCreation.Create;
   FValueDisposal := TValueDisposal.Create;
 end;
@@ -238,8 +310,9 @@ end;
 destructor TValueManager.destroy;
 var
   i : integer;
-  value : pValue;
+  value : pValueRecord;
 begin
+  FNumberMemory.free;
   FValueFactory.free;
   for i := FItems.Count - 1 downto 0 do
   begin
@@ -258,7 +331,7 @@ begin
   FValueDisposal.DisposeLoxFunction(Value);
 end;
 
-procedure TValueManager.Dispose(var value: pValue);
+procedure TValueManager.Dispose(var value: pValueRecord);
 begin
   FValueDisposal.DisposeValue(Value);
 end;
@@ -268,25 +341,30 @@ begin
   result := FItems.Count;
 end;
 
-function TValueManager.IndexOf(const value: pValue): integer;
+function TValueManager.getNumberCount: integer;
+begin
+  result := FNumberCount;
+end;
+
+function TValueManager.IndexOf(const value: pValueRecord): integer;
 begin
   result := FItems.IndexOf(Value);
 end;
 
 function TValueManager.NewBool(
-  const Bool: Boolean): pValue;
+  const Bool: Boolean): pValueRecord;
 begin
   result := FValueFactory.NewBool(bool);
   saveValue(result);
 end;
 
-function TValueManager.newFunction(const name: string): pValue;
+function TValueManager.newFunction(const name: string): pValueRecord;
 begin
   result := newfunction(nil,Name,TYPE_FUNCTION);
 end;
 
 function TValueManager.newFunction(const prev: pLoxFunction; const Name: String;
-  const Kind: TFunctionKind): pValue;
+  const Kind: TFunctionKind): pValueRecord;
 begin
   result := FValueFactory.NewFunction(prev,Name,Kind);
   SaveValue(result);
@@ -307,39 +385,45 @@ begin
 end;
 
 function TValueManager.newNative(
-  const NativeFn: TNativeFunction): pValue;
+  const NativeFn: TNativeFunction): pValueRecord;
 begin
    result := FValueFactory.NewNative(NativeFn);
    SaveValue(result);
 end;
 
-function TValueManager.NewNil: pValue;
+function TValueManager.NewNil: pValueRecord;
 begin
   result := FValueFactory.NewNil;
   SaveValue(result);
 end;
 
 function TValueManager.NewNumber(
-  const number: TNumber): pValue;
+  const number: TNumber): pValueRecord;
 begin
   result := FValueFactory.NewNumber(Number);
   SaveValue(result);
+  FNumberCount := FNumberCount +  1;
+  if assigned(FLogger) then
+  begin
+    FLogger.Clear;
+    FLogger.add(inttostr(FNumberCount));
+  end;
 end;
 
 function TValueManager.NewString(
-  const requester : TRequester;const txt: String): pValue;
+  const requester : TRequester;const txt: String): pValueRecord;
 begin
   result := FValueFactory.NewString(requester,txt);
   SaveValue(result);
 end;
 
-function TValueManager.newValueFromFunction(functionObj: pLoxFunction): pValue;
+function TValueManager.newValueFromFunction(functionObj: pLoxFunction): pValueRecord;
 begin
   result := FValueFactory.NewValueFromFunction(functionObj);
 end;
 
 function TValueManager.newValueList(
-  const name: string): pValue;
+  const name: string): pValueRecord;
 begin
    result := FValueFactory.NewValueList(name);
    //FItems.Add(result);
@@ -350,17 +434,17 @@ begin
 
 end;
 
-procedure TValueManager.SaveValue(const value: pValue);
+procedure TValueManager.SaveValue(const value: pValueRecord);
 begin
   if FOwnValues then
      FItems.add(value);
 end;
 
-procedure TValueDisposal.DisposeList(var List : pValue);
+procedure TValueDisposal.DisposeList(var List : pValueRecord);
 var
   p : pLoxList;
 begin
-  p := pLoxList(List.ValueRecord.Obj);
+  p := pLoxList(List.Obj);
   p.Items.Free;
   dispose(p);
   dispose(List);
@@ -369,7 +453,7 @@ end;
 procedure TValueDisposal.DisposeLoxFunction(var value: pLoxFunction);
 var
   i : integer;
-  constant : pValue;
+  constant : pValueRecord;
 begin
   assert(value.Chunks.OwnsValues = false, 'the chunk values are owned - dispose will abort');
 
@@ -378,42 +462,42 @@ begin
     constant := value.Chunks.Constant[i];
     disposeValue(constant);
   end;
-  Value.Chunks.Free;                 
+  Value.Chunks.Free;
   dispose(value);
   Value := nil;
 end;
 
-procedure TValueDisposal.DisposeFunction(var value : pValue);
+procedure TValueDisposal.DisposeFunction(var value : pValueRecord);
 var
   i : integer;
   func : pLoxFunction;
-  constant : pValue;
+  constant : pValueRecord;
 begin
   if value.Kind <> lxFunction then raise exception.create('value for disposal is not a function');
-  func := Value.LoxFunction;
+  func := getFunction(Value);
   DisposeLoxFunction(func);
   Dispose(Value);
 end;
 
 
-procedure TValueDisposal.disposeNative(var native : pValue);
+procedure TValueDisposal.disposeNative(var native : pValueRecord);
 var
   LoxNative : PLoxNative;
 begin
   if Native.Kind <> lxNative then raise exception.create('value for disposal is not a Native');
 
-  LoxNative :=  Native.NativeFunction;
+  LoxNative :=  getNative(Native);
   Dispose(LoxNative);
   Dispose(Native);
 end;
 
-procedure TValueDisposal.disposeString(var str : pValue);
+procedure TValueDisposal.disposeString(var str : pValueRecord);
 var
   p : pLoxString;
 begin
   if str.Kind <> lxString then raise exception.create('value for disposal is not a String');
 
-  p :=  str.LoxString;
+  p :=  GetLoxString(Str);
   dispose(p);
   p := nil;
   dispose(str);
@@ -421,60 +505,60 @@ begin
 end;
 
 
-procedure TValueDisposal.DisposeBoolean(var value : pValue);
+procedure TValueDisposal.DisposeBoolean(var value : pValueRecord);
 begin
   dispose(value);
 end;
 
-procedure TValueDisposal.DisposeNil(var value: pValue);
+procedure TValueDisposal.DisposeNil(var value: pValueRecord);
 begin
   dispose(Value);
 end;
 
-procedure TValueDisposal.DisposeNumber(var value : pValue);
+procedure TValueDisposal.DisposeNumber(var value : pValueRecord);
 begin
    dispose(value);
 end;
 
-procedure TValueDisposal.DisposeValue(var value : pValue);
+procedure TValueDisposal.DisposeValue(var value : pValueRecord);
 begin
-  if value.IsNull then
+  if GetIsNull(Value) then
   begin
     DisposeNil(Value);
     exit;
   end;
 
-  if value.IsList then
+  if GetIsList(Value) then
   begin
     DisposeList(Value);
     exit;
   end;
 
-  if value.IsString then
+  if GetIsString(Value) then
   begin
     disposeString(value);
     exit;
   end;
 
-  if value.IsNumber then
+  if GetIsNumber(Value) then
   begin
     disposeNumber(value);
     exit;
   end;
 
-  if value.IsNative then
+  if GetIsNative(Value) then
   begin
      disposeNative(Value);
      exit;
   end;
 
-  if value.IsBoolean then
+  if GetIsBoolean(Value) then
   begin
     disposeBoolean(Value);
     exit;
   end;
 
-  if value.IsFunction then
+  if GetIsFunction(Value) then
   begin
     DisposeFunction(value);
     exit;
@@ -482,16 +566,280 @@ begin
 
 end;
 
+procedure setNative(const ValueRecord : pValueRecord; const Value: pLoxNative);
+begin
+  ValueRecord.Kind := lxNative;
+  ValueRecord.Obj := Value;
+end;
+
+procedure  setNull(const ValueRecord : pValueRecord;const value : Boolean);
+begin
+  ValueRecord.Kind := lxNull;
+end;
+
+procedure  setObject(const ValueRecord : pValueRecord;const value : pLoxObject);
+begin
+  ValueRecord.Kind := lxObject;
+end;
+
+procedure SetString(const ValueRecord : pValueRecord;const value: String);
+var
+  Obj : pLoxString;
+begin
+  Assert(getIsString(ValueRecord) = true, 'Value is not a string object');
+  Obj := GetLoxString(ValueRecord);
+  if Obj <> nil then
+    Obj.Chars := Value;
+end;
+
+function  getObject(const ValueRecord : pValueRecord) : pLoxObject;
+begin
+  result := nil;
+  if (ValueRecord.Kind = lxObject) or
+     (ValueRecord.Kind = lxString) or
+     (valuerecord.Kind = lxNative) or
+     (valueRecord.Kind = lxfunction) or
+     (valueRecord.Kind = lxList) then
+    result := ValueRecord.Obj;
+end;
 
 
+function  BoolToString(const ValueRecord : pValueRecord) : String;
+begin
+  if getBoolean(ValueRecord) = true then result := 'True'
+  else
+    result := 'False';
+
+end;
+
+function GetString(const ValueRecord : pValueRecord): String;
+var
+  Obj : pLoxObject;
+  fun : pLoxFunction;
+begin
+  case  ValueRecord.Kind of
+   lxObject : begin
+       Obj := GetObject(ValueRecord);
+       case Obj.Kind of
+         OBJ_STRING : begin
+           result := pLoxString(obj).Chars;
+         end;
+       end;
+   end;
+
+   lxFunction : begin
+       fun := getFunction(ValueRecord);
+       result := fun^.name;
+
+   end;
+
+   lxBoolean : begin
+     result := BoolToString(ValueRecord);
+   end;
+
+   lxNumber : begin
+     result := floatToStr(GetNumber(ValueRecord));
+   end;
+
+   lxNull  : begin
+     result := 'null';
+   end;
+
+   lxString : begin
+     result := pLoxString(ValueRecord.Obj).Chars;
+   end;
+
+  end;
+end;
+
+function  getBoolean(const ValueRecord : pValueRecord) : Boolean;
+begin
+  result := false;
+  if  ValueRecord.Kind = lxBoolean then result := ValueRecord.Bool;
+
+end;
+
+function  getFunction(const ValueRecord : pValueRecord): pLoxFunction;
+begin
+  result := nil;
+  if  ValueRecord.Kind = lxFunction then
+     result := pLoxFunction(ValueRecord.Obj);
+end;
+
+procedure  setBoolean(const ValueRecord : pValueRecord; const value : Boolean);
+begin
+  assert(GetIsBoolean(ValueRecord), 'value is not a boolean so can''t set it to one');
+  ValueRecord.Kind := lxBoolean;
+  ValueRecord.Bool := Value;
+end;
+
+procedure  setKind(const ValueRecord : pValueRecord; const Value: TLoxKind);
+begin
+  ValueRecord.Kind := Value;
+end;
+
+function  getIsBoolean(const ValueRecord : pValueRecord): Boolean;
+begin
+   result := ValueRecord.Kind = lxBoolean;
+end;
+
+function  getIsFunction(const ValueRecord : pValueRecord): Boolean;
+begin
+   result := ValueRecord.Kind = lxFunction;
+end;
+
+function  getIsList(const ValueRecord : pValueRecord): Boolean;
+begin
+  result := ValueRecord.Kind = lxList;
+end;
+
+function  getIsNative(const ValueRecord : pValueRecord): Boolean;
+begin
+  result := ValueRecord.Kind = lxNative;
+end;
+
+function  getIsNull(const ValueRecord : pValueRecord): Boolean;
+begin
+  result := ValueRecord.Kind = lxNull;
+end;
+
+function  getIsNumber(const ValueRecord : pValueRecord): Boolean;
+begin
+  result := ValueRecord.Kind = lxNumber;
+end;
+
+function  getIsObject(const ValueRecord : pValueRecord): Boolean;
+begin
+   result := (ValueRecord.Kind = lxObject)
+end;
+
+function  getIsString(const ValueRecord : pValueRecord): Boolean;
+begin
+  result :=  ValueRecord.Kind = lxString;//getisobject and (getObject.Kind = OBJ_STRING);
+end;
+
+function  getKind(const ValueRecord : pValueRecord): TLoxKind;
+begin
+  result := ValueRecord.Kind
+end;
+
+function getList(const ValueRecord : pValueRecord): pLoxList;
+begin
+  result := nil;
+  if valueRecord.Kind = lxList then
+    result := pLoxList(valueRecord.obj);
+end;
+
+function  getLoxString(const ValueRecord : pValueRecord): pLoxString;
+begin
+  result := nil;
+  if ValueRecord.Kind = lxString then
+    result := pLoxString(ValueRecord.obj);
+end;
+
+function  getNative(const ValueRecord : pValueRecord): pLoxNative;
+begin
+  result := nil;
+  if ValueRecord.Kind = lxNative then
+     result := pLoxNative(ValueRecord.Obj);
+end;
+
+Function  getNull(const ValueRecord : pValueRecord): boolean;
+begin
+  result := ValueRecord.Kind = lxNull;
+end;
+
+function  getNumber(const ValueRecord : pValueRecord) : TNumber;
+begin
+  result := -1;
+  if ValueRecord.Kind = lxNumber then
+  begin
+    result := ValueRecord.Number;
+  end;
+end;
+
+procedure SetNumber(const ValueRecord : pValueRecord;const value : TNumber);
+begin
+   assert(GetIsNumber(ValueRecord), 'value is not a number so can''t set it to one');
+   ValueRecord.Kind := lxNumber;
+   ValueRecord.Number := Value;
+
+end;
+
+
+
+{ TNumberMemory }
+
+procedure TNumberMemory.AllocMemory;
+var
+  i : integer;
+  Num : pValueRecord;
+begin
+  for i := 0 to BUFFER_CAPACITY-1 do
+  begin
+    Num := FCreation.NewNumber(0);
+    FStack.Push(Num);
+  end;
+end;
+
+function TNumberMemory.BorrowNumber: pValueRecord;
+begin
+  if FStack.StackTop <= 0 then raise exception.create('no more mem');
+  result := FStack.pop;
+end;
+
+constructor TNumberMemory.create(
+  const creation : TValueCreation;
+  const disposal : TValueDisposal);
+begin
+  FCreation := creation;
+  FDisposal := Disposal;
+  FStack := TStack.Create;
+  AllocMemory;
+  FCount := 0;
+end;
+
+destructor TNumberMemory.destroy;
+var
+  i : integer;
+  val : pValueRecord;
+begin
+  for i := 0 to FStack.StackTop-1 do
+  begin
+    Val := FStack.Pop;
+    FDisposal.DisposeNumber(Val);
+  end;
+  FStack.Free;
+  inherited;
+end;
+
+function TNumberMemory.getStackStock: integer;
+begin
+  result := FStack.StackTop;
+end;
+
+procedure TNumberMemory.ReturnNumber(const value: pValueRecord);
+begin
+  FStack.Push(Value);
+end;
 
 initialization
    BorrowChecker := TValueManager.Create;
    BorrowChecker.OwnValues := False;
 
-finalization
-   BorrowChecker.free;
 
+  // Creation := TValueCreation.Create;
+ //  Disposal := TValueDisposal.create;
+
+
+ //  Numbers := TNumberMemory.create(creation,disposal);
+
+finalization
+
+   BorrowChecker.free;
+ //  Numbers.free;
+ //  creation.free;
+ //  disposal.free;
 
 end.
 

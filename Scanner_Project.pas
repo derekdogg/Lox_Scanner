@@ -68,18 +68,13 @@ end;
 
 procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
-  VM :  TVirtualMachine;
+   VM :  TVirtualMachine;
 begin
-
    try
-
-      VM.Init(LoxFunction,MemRun.Lines,nil{ MemCodes.Lines});
+      VM.Init(LoxFunction,MemRun.Lines,nil);
       VM.Run;
-
    finally
-
      vm.Finalize;
-   
    end;
 end;
 
@@ -94,8 +89,17 @@ var
   value : pValue;
   c : TCompiler;
 
+
+
+
+
 begin
 
+
+
+
+  BorrowChecker.NumberCount := 0;
+  //BorrowChecker.Logger := MemRun.Lines;
 
   //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
@@ -103,7 +107,7 @@ begin
   MemLocals.Lines.clear;
 
   try
-
+   MemRun.Lines.BeginUpdate;
    Scanner.Init(MemEdit.Lines.Text);
    Scanner.Scan;
    Tokens.Init(Scanner.Tokens);
@@ -112,16 +116,32 @@ begin
    try
      LoxFunction := cc.DoCompile;
      Interpret(LoxFunction);
+     MemRun.Lines.Add(inttostr(BorrowChecker.NumberCount));
    finally
      cc.free;
+     
    end;
 
   finally
     Scanner.finalize;
-
+    MemRun.Lines.EndUpdate;
   end;
 
 end;
 
 
 end.
+1 = 4
+2 = 7
+3 = 10
+4 = 16
+10 = 268
+15 = 2962
+20 = 32839
+30 = 4038808
+
+
+32839
+53134
+85972
+

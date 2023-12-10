@@ -61,7 +61,7 @@ object fmScript: TfmScript
     object Panel3: TPanel
       Left = 1
       Top = 1
-      Width = 440
+      Width = 411
       Height = 164
       Align = alLeft
       Caption = 'Panel3'
@@ -69,7 +69,7 @@ object fmScript: TfmScript
       object MemLocals: TMemo
         Left = 1
         Top = 1
-        Width = 438
+        Width = 409
         Height = 162
         Align = alClient
         Color = clMenuText
@@ -82,20 +82,23 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitWidth = 438
       end
     end
     object Panel4: TPanel
-      Left = 441
+      Left = 412
       Top = 1
-      Width = 474
+      Width = 368
       Height = 164
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
+      ExplicitLeft = 441
+      ExplicitWidth = 474
       object MemRun: TMemo
         Left = 1
         Top = 1
-        Width = 472
+        Width = 366
         Height = 162
         Align = alClient
         Color = clMenuText
@@ -108,12 +111,14 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitLeft = 5
+        ExplicitWidth = 398
       end
     end
     object Panel5: TPanel
-      Left = 915
+      Left = 780
       Top = 1
-      Width = 185
+      Width = 320
       Height = 164
       Align = alRight
       Caption = 'Panel3'
@@ -121,7 +126,7 @@ object fmScript: TfmScript
       object MemCodes: TMemo
         Left = 1
         Top = 1
-        Width = 183
+        Width = 318
         Height = 162
         Align = alClient
         Color = clMenuText
@@ -134,6 +139,7 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitWidth = 183
       end
     end
   end

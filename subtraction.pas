@@ -8,23 +8,23 @@ uses
 type
 
   TNullSubtraction = class
-    class function LeftNullSubtraction(const L,R : pValue) : pValue;
-    class function RightNullSubtraction(const L,R : pValue) : pValue;
-    class function BothNullSubtraction(const L,R : pValue) : pValue;
+    class function LeftNullSubtraction(const L,R : pValueRecord) : pValueRecord;
+    class function RightNullSubtraction(const L,R : pValueRecord) : pValueRecord;
+    class function BothNullSubtraction(const L,R : pValueRecord) : pValueRecord;
   end;
 
  TStringSubtraction = class
-    class function SubtractStrings(const L,R : pValue) : pValue;
-    class function SubtractNumber(const L,R : pValue) : pValue;
- //   class function SubtractNull(const L,R : pValue) : pValue;
+    class function SubtractStrings(const L,R : pValueRecord) : pValueRecord;
+    class function SubtractNumber(const L,R : pValueRecord) : pValueRecord;
+ //   class function SubtractNull(const L,R : pValueRecord) : pValueRecord;
   end;
 
 
   TSubtraction = class
-     class function SubtractNulls(const L,R : pValue) : pValue;
-     class function SubtractNumbers(const L,R : pValue) : pValue;
-     class function SubtractStrings(const L,R : pValue) : pValue;
-     class function Subtract(const L,R : pValue) : pValue;
+     class function SubtractNulls(const L,R : pValueRecord) : pValueRecord;
+     class function SubtractNumbers(const L,R : pValueRecord) : pValueRecord;
+     class function SubtractStrings(const L,R : pValueRecord) : pValueRecord;
+     class function Subtract(const L,R : pValueRecord) : pValueRecord;
   end;
 
 
@@ -33,41 +33,41 @@ uses
   ValueManager;
 
 
-class function TNullSubtraction.LeftNullSubtraction(const L,R : pValue) : pValue;
+class function TNullSubtraction.LeftNullSubtraction(const L,R : pValueRecord) : pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
   if not assigned(R) then exit;
-  if not L.IsNull then exit;
-  if r.IsNull then exit;
+  if not GetIsNull(L) then exit;
+  if GetIsNull(R) then exit;
   result := R;
 end;
 
-class function TNullSubtraction.RightNullSubtraction(const L,R : pValue) : pValue;
+class function TNullSubtraction.RightNullSubtraction(const L,R : pValueRecord) : pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
   if not assigned(R) then exit;
 
-  if not R.IsNull then exit;
-  if L.IsNull then exit;
+  if not GetIsNull(R) then exit;
+  if GetIsNull(L) then exit;
   result := L;
 end;
 
-class function TNullSubtraction.BothNullSubtraction(const L,R : pValue) : pValue;
+class function TNullSubtraction.BothNullSubtraction(const L,R : pValueRecord) : pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
   if not assigned(R) then exit;
 
-  if not L.IsNull then exit;
-  if not R.IsNull then exit;
+  if not GetIsNull(L) then exit;
+  if not GetIsNull(R) then exit;
 
   result := R;
 end;
 
 
-class function TSubtraction.SubtractNulls(const L,R : pValue) : pValue;
+class function TSubtraction.SubtractNulls(const L,R : pValueRecord) : pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
@@ -84,22 +84,22 @@ begin
   if assigned(result) then exit;
 end;
 
-class function TSubtraction.SubtractNumbers(const L, R: pValue): pValue;
+class function TSubtraction.SubtractNumbers(const L, R: pValueRecord): pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
   if not assigned(R) then exit;
 
-  if not L.IsNumber then exit;
-  if not R.IsNumber then exit;
+  if not GetIsNumber(L) then exit;
+  if not GetIsNumber(R) then exit;
 
-  result := BorrowChecker.NewNumber(L.Number - R.Number);
+  result := BorrowChecker.NewNumber(GetNumber(L) - GetNumber(R));
 end;
 
 
 
 
-class function TSubtraction.SubtractStrings(const L, R: pValue): pValue;
+class function TSubtraction.SubtractStrings(const L, R: pValueRecord): pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
@@ -116,7 +116,7 @@ begin
 
 end;
 
-class function TSubtraction.Subtract(const L,R : pValue) : pValue;
+class function TSubtraction.Subtract(const L,R : pValueRecord) : pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
@@ -130,8 +130,8 @@ begin
 
   result := SubtractStrings(L,R);
   if assigned(result) then exit;
-  showmessage('er');
-  //raise exception.create('cant Subtract');
+
+  raise exception.create('cant Subtract - TSubtraction');
 end;
 
 
@@ -155,7 +155,7 @@ begin
 end;
 
 
-class function TStringSubtraction.SubtractNumber(const L,R: pValue): pValue;
+class function TStringSubtraction.SubtractNumber(const L,R: pValueRecord): pValueRecord;
 var
   s : string;
 
@@ -164,9 +164,9 @@ begin
   if not assigned(L) then exit;
   if not assigned(R) then exit;
 
-  if L.IsString then
+  if GetIsString(L) then
   begin
-    s := copy(L.ToString,0, Length(L.toString) -1 - round(R.Number));
+    s := copy(GetString(L),0, Length(GetString(L)) -1 - round(GetNumber(R)));
     result := BorrowChecker.NewString(rVM,s);
     exit;
   end;
@@ -174,16 +174,16 @@ begin
 
 end;
 
-class function TStringSubtraction.SubtractStrings(const L, R: pValue): pValue;
+class function TStringSubtraction.SubtractStrings(const L, R: pValueRecord): pValueRecord;
 begin
   result := nil;
   if not assigned(L) then exit;
   if not assigned(R) then exit;
 
-  if not L.IsString then exit;
-  if not R.IsString then exit;
+  if not GetIsString(L) then exit;
+  if not GetIsString(R) then exit;
 
-  result := BorrowChecker.NewString(rVM,Subtract(L.ToString,R.ToString));
+  result := BorrowChecker.NewString(rVM,Subtract(GetString(L),GetString(R)));
 
 end;
 

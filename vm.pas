@@ -22,9 +22,9 @@ type
 
   TVirtualMachine = record
   private
-    
+    MemStatus: TMemoryManagerState;
     FCall : integer;
-    FRootFunction : pValue;
+    FRootFunction : pValueRecord;
    // CurrentFrame : TCallFrame;
     FHalt    : boolean;
     FNatives : TNatives;
@@ -42,15 +42,15 @@ type
     procedure Log(Const value : String);overload;
     procedure Log(Const opcode : TopCodes);overload;
     procedure Log(Const opCOde : TopCodes; const operand : integer); overload;
-    procedure Log(const opCOde : TopCodes;const operand : integer;const value   : pValue); overload;
-    procedure Log(const OpCode : TOpCodes; const L,R : pValue);overload;
+    procedure Log(const opCOde : TopCodes;const operand : integer;const value   : pValueRecord); overload;
+    procedure Log(const OpCode : TOpCodes; const L,R : pValueRecord);overload;
     procedure Halt;
     function VMStack : TStack;
 
-    function PopStack : pValue;
-    function PeekStack : pValue;overload;
-    function PeekStack(const distance : integer) : pValue;overload;
-    procedure PushStack(const value : pValue);
+    function PopStack : pValueRecord;
+    function PeekStack : pValueRecord;overload;
+    function PeekStack(const distance : integer) : pValueRecord;overload;
+    procedure PushStack(const value : pValueRecord);
     procedure MoveNext;
     procedure OpConstant;
     Procedure DoAdd;
@@ -80,11 +80,11 @@ type
     function Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
     procedure OpCall;
     procedure OpReturn;
-    function CallValue(const callee : pValue; ArgCount : integer) : boolean;
-    Function isFalsey(value : pValue) : Boolean;
+    function CallValue(const callee : pValueRecord; ArgCount : integer) : boolean;
+    Function isFalsey(value : pValueRecord) : Boolean;
     Procedure AddGlobal(
       const name : string;
-      const Value : pValue;
+      const Value : pValueRecord;
       const ownValue : boolean);
     procedure OpBuildList;
     procedure OpIndexSubscriber;
@@ -115,6 +115,8 @@ begin
   if InstructionPointer.Count = 0 then exit;
   while (FHalt = false) and (NextInstruction <> -1) do
   begin
+    
+
 
     Case TOpCodes(CurrentOpCode) of
 
@@ -290,45 +292,54 @@ end;
 
 procedure TVirtualMachine.OpStoreSubscriber;
 var
-  item, Index, ListValue : pValue;
+  item, Index, ListValue : pValueRecord;
+  List : pLoxList;
 begin
    item   := PopStack;
    Index  := PopStack;
    ListValue := PopStack;
-   Listvalue.List.Items[round(index.Number)] := Item;
+   Assert(GetIsList(ListValue) = true, 'the item on the stack expected list, it is not list');
+
+   List := GetList(ListValue);
+   List.Items[round(index.Number)] := Item;
    PushStack(Item);
 end;
 
 procedure TVirtualMachine.OpIndexSubscriber;
 var
-  indexValue, listValue, result: pValue;
-  list: pValue;
+  indexValue, listValue, result: pValueRecord;
+  list: pValueRecord;
   index: Integer;
+  LoxList : pLoxList;
 begin
   assert(CurrentOpCode = byte(OP_INDEX_SUBSCR));
   indexValue := PopStack;
   listValue := PopStack;
   index := round(indexValue.Number);
-  result := Listvalue.List.Items[index];
+  LoxList := GetList(ListValue);
+  result := LoxList.Items[index];
   PushStack(result);
 end;
 
 procedure TVirtualMachine.OpBuildList;
 var
-   value : pValue;
+   value : pValueRecord;
    itemCount: integer;
    i : integer;
+   LoxList : pLoxList;
 begin
    assert(CurrentOpCode = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := CurrentOpCode;
    value :=  BorrowChecker.newValueList('');
 
+   LoxList := GetList(Value);
+
    // Add items to list
   // PushStack(value); // So list isn't swept by GC in appendToList - [to do!!]
    for  i:= itemCount downto 1 do
    begin
-      value.List.Items.Add(PeekStack(i));
+      LoxList.Items.Add(PeekStack(i));
    end;
 
   // PopStack;
@@ -357,7 +368,7 @@ end;
 procedure TVirtualMachine.OpConstant;
 var
   constantIndex : integer;
-  value : pValue;
+  value : pValueRecord;
 begin
    assert(CurrentOpCode = byte(OP_CONSTANT));
 
@@ -376,7 +387,7 @@ end;
 
 procedure TVirtualMachine.OPGreater;
 var
-  L,R,Result : pValue;
+  L,R,Result : pValueRecord;
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
@@ -397,7 +408,7 @@ end;
 
 procedure TVirtualMachine.OPLess;
 var
-  L,R, Result : pValue;
+  L,R, Result : pValueRecord;
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
@@ -416,8 +427,8 @@ end;
 
 procedure TVirtualMachine.DoAdd;
 var
-  L,R : pValue;
-  Result : pValue;
+  L,R : pValueRecord;
+  Result : pValueRecord;
 begin
 //  result := nil;
 
@@ -441,16 +452,16 @@ end;
  
 
 procedure TVirtualMachine.Log(
-  const OpCode : TOpCodes; const L,R : pValue);
+  const OpCode : TOpCodes; const L,R : pValueRecord);
 begin
   if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + '. LEFT : ' + L.ToString + ' RIGHT:' + R.ToString);
+  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + '. LEFT : ' + GetString(L) + ' RIGHT:' + GetString(R));
 
 end;
 
 procedure TVirtualMachine.OPSubtract;
 var
-  Result, L,R : pValue;
+  Result, L,R : pValueRecord;
 begin
   Assert(CurrentOpCode = byte(OP_SUBTRACT));
   R := PopStack;
@@ -462,7 +473,7 @@ end;
 
 procedure TVirtualMachine.Multiply;
 var
-  L,R : pValue;
+  L,R : pValueRecord;
   i : integer;
   s : string;
 
@@ -514,18 +525,18 @@ end;
 
 procedure TVirtualMachine.OPPrint;
 var
-  value : pValue;
+  value : pValueRecord;
 begin
 
   Assert(CurrentOpCode = byte(OP_PRINT));
   //value := CurrentFrame.Stack.Pop;
   value := PopStack;
 
-  FResults.Add(Value.ToString); //all this does is pass the string to a TStrings object
+  FResults.Add(GetString(Value)); //all this does is pass the string to a TStrings object
 end;
 
 
-procedure TVirtualMachine.PushStack(const value: pValue);
+procedure TVirtualMachine.PushStack(const value: pValueRecord);
 begin
   VMStack.Push(Value);
 end;
@@ -560,22 +571,22 @@ begin
   result := true;
 end;
 
-function TVirtualMachine.CallValue(const callee : pValue; ArgCount : integer) : boolean;
+function TVirtualMachine.CallValue(const callee : pValueRecord; ArgCount : integer) : boolean;
 var
-  value : pValue;
+  value : pValueRecord;
 
 begin
   result := false;
 
-  if Callee.IsFunction then
+  if GetIsFunction(Callee) then
   begin
-    result := call(callee.Loxfunction, argCount);
+    result := call(GetFunction(callee), argCount);
     exit;
   end;
 
-  if Callee.isNative then
+  if GetIsNative(Callee) then
   begin
-     value := Callee.NativeFunction.Native(ArgCount,VmStack);
+     value := GetNative(Callee).Native(ArgCount,VmStack);
      PushStack(value);
      result := true;
      exit;
@@ -584,7 +595,7 @@ end;
 
 procedure TVirtualMachine.OpReturn;
 var
-  result : pValue;
+  result : pValueRecord;
   StackTop : Integer;
   Frame  : TCallFrame;
 
@@ -616,7 +627,7 @@ end;
 procedure TVirtualMachine.OpCall;
 var
   ArgCount : byte;
-  callee : pValue;
+  callee : pValueRecord;
 begin
 
   ArgCount := NextInstruction; //read byte
@@ -674,8 +685,8 @@ end;
 
 procedure TVirtualMachine.Negate;
 var
-  Result : pValue;
-  R : pValue;
+  Result : pValueRecord;
+  R : pValueRecord;
 begin
 
   Assert(CurrentOpCode = byte(OP_NEGATE));
@@ -683,7 +694,7 @@ begin
   try
     R := PopStack;
 
-    if (R.IsNumber) then
+    if (GetIsNumber(R)) then
     begin
       Result := BorrowChecker.newNumber(- R.Number);
       PushStack(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
@@ -700,7 +711,7 @@ end;
 //therefore, for now, always use a result, and pop off old vals
 procedure TVirtualMachine.Divide;
 var
-  L,R, Result : pValue;
+  L,R, Result : pValueRecord;
 begin
 
   //we assume here we're sitting on an OP_DIVIDE in the IP
@@ -708,10 +719,10 @@ begin
   //this also means we assume the correct values are sitting in Stack...
   try
     R := PopStack;
-    Assert(R.Number <> 0); //divide by zero exceptions.
+    Assert(GetNumber(R) <> 0); //divide by zero exceptions.
     L := PopStack;
 
-    Result := BorrowChecker.NewNumber(L.Number / R.Number);
+    Result := BorrowChecker.NewNumber(GetNumber(L) / GetNumber(R));
 
     PushStack(Result);
   except on E:exception do
@@ -719,20 +730,20 @@ begin
   end;
 end;
 
-Function TVirtualMachine.isFalsey(value : pValue) : Boolean;
+Function TVirtualMachine.isFalsey(value : pValueRecord) : Boolean;
 begin
   result :=
     (Value.Kind = lxNull) OR
-    ((Value.Kind = lxBoolean) and (Value.Boolean = false)) OR
-    ((Value.Kind = lxNumber) and (Value.Number <= 0)) OR
-    ((Value.IsString) and (lowercase(Value.ToString) = 'false'));
+    ((Value.Kind = lxBoolean) and (GetBoolean(Value) = false)) OR
+    ((Value.Kind = lxNumber) and (GetNumber(Value) <= 0)) OR
+    ((GetIsString(Value)) and (lowercase(GetString(Value)) = 'false'));
 end;
 
 
 
 procedure TVirtualMachine.OPNotEqual;
 var
-  result : pValue;
+  result : pValueRecord;
 
 begin
 
@@ -748,7 +759,7 @@ end;
 
 procedure TVirtualMachine.Equal;
 var
-  L,R, Result : pValue;
+  L,R, Result : pValueRecord;
 begin
   Assert(CurrentOpCode = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
 
@@ -756,7 +767,7 @@ begin
     R := PopStack;
     L := PopStack;
 
-    Result := BorrowChecker.NewBool(r.ToString = l.ToString);
+    Result := BorrowChecker.NewBool(GetString(r) = GetString(l));
     PushStack(result);
 
   except on E:exception do
@@ -767,7 +778,7 @@ end;
 
 procedure TVirtualMachine.OpTrue;
 var
-  value : pValue;
+  value : pValueRecord;
 begin
   value := BorrowChecker.newBool(true);
   PushStack(value);
@@ -776,7 +787,7 @@ end;
 
 procedure TVirtualMachine.OpFalse;
 var
-  Value : pValue;
+  Value : pValueRecord;
 begin
   Value := BorrowChecker.NewBool(False);
   PushStack(Value);
@@ -784,7 +795,7 @@ end;
 
 procedure TVirtualMachine.OpNil;
 var
-  value : pValue;
+  value : pValueRecord;
 begin
   Value := BorrowChecker.NewNil;
   PushStack(value);
@@ -793,7 +804,7 @@ end;
 procedure TVirtualMachine.OPSetLocal;
 var
   index : Integer;
-  value : pValue;
+  value : pValueRecord;
 begin
 
   assert(CurrentOpCode = byte(OP_Set_LOCAL), 'current instruction is not op define global');
@@ -814,7 +825,7 @@ end;
 procedure TVirtualMachine.OpGetLocal;
 var
   index  : Integer;
-  Value  : pValue;
+  Value  : pValueRecord;
   Count  : Integer;
 begin
 
@@ -832,15 +843,15 @@ end;
 
 
 //suppose we expect 3 values;
-function Foo(const ArgCount: Integer;const Values : TStack): pValue;
+function Foo(const ArgCount: Integer;const Values : TStack): pValueRecord;
 var
-  v1,v2,v3 : pValue;
+  v1,v2,v3 : pValueRecord;
 begin
   v1 := values.Peek(2);
   v2 := values.Peek(1);
   v3 := Values.Peek(0);
 
-  result := BorrowChecker.newString(rVM,v1.toString + v2.ToString + v3.ToString);
+  result := BorrowChecker.newString(rVM,GetString(v1) + GetString(v2) + GetString(v3));
 end;
 
 procedure TVirtualMachine.Halt;
@@ -866,10 +877,10 @@ end;
 procedure TVirtualMachine.DoGetGlobal;
 var
    ConstantIndex : integer;
-   Name   : pValue;
+   Name   : pValueRecord;
    NameValue : pNameValue;
 
-   value : pValue;
+   value : pValueRecord;
 begin
 
   assert(CurrentOpCode = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
@@ -880,7 +891,7 @@ begin
 
   name := CurrentFrame.InstructionPointer.global[constantIndex];
 
-  NameValue := FGlobals.Find(name.tostring);
+  NameValue := FGlobals.Find(GetString(name));
 
   Assert(NameValue <> nil, 'expected value does not exist in globals');
 
@@ -892,8 +903,8 @@ end;
 procedure TVirtualMachine.DoSetGlobal;
 var
    ConstantIndex : integer;
-   Name   : pValue;
-   value  : pValue;
+   Name   : pValueRecord;
+   value  : pValueRecord;
    NameValue : pNameValue;
   // bcode : pByteCode;
 begin
@@ -905,8 +916,8 @@ begin
 
   name := CurrentFrame.InstructionPointer.global[constantIndex];
   value := PeekStack;
-  assert(name.IsString, 'name is not a string object');
-  NameValue := FGlobals.Find(name.tostring);
+  assert(GetIsString(name), 'name is not a string object');
+  NameValue := FGlobals.Find(GetString(name));
   assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
   NameValue.Value := Value;
 end;
@@ -920,7 +931,7 @@ end;
 
 procedure TVirtualMachine.AddGlobal(
   const name : string;
-  const Value : pValue;
+  const Value : pValueRecord;
   const ownValue : boolean);
 begin
   assert(assigned(FGlobals.AddNameValue(Name,value, OwnValue)), 'failed to add to hash table');
@@ -934,10 +945,10 @@ end;
 procedure TVirtualMachine.Log(
   const opCOde : TopCodes;
   const operand : integer;
-  const value   : pValue);
+  const value   : pValueRecord);
 begin
   if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' .INDEX :' +  inttostr(operand) + '. VALUE:' + Value.ToString);
+  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' .INDEX :' +  inttostr(operand) + '. VALUE:' + GetString(Value));
 end;
 
 
@@ -965,17 +976,17 @@ begin
   Assert(NextInstruction <> -1,'Expected constant value following constant operation');
 end;
 
-function TVirtualMachine.PeekStack: pValue;
+function TVirtualMachine.PeekStack: pValueRecord;
 begin
   result := VMStack.Peek;
 end;
 
-function TVirtualMachine.PeekStack(const distance: integer): pValue;
+function TVirtualMachine.PeekStack(const distance: integer): pValueRecord;
 begin
   result := VMStack.Peek(Distance);
 end;
 
-function TVirtualMachine.PopStack : pValue;
+function TVirtualMachine.PopStack : pValueRecord;
 begin
   result := VMStack.Pop;
 end;
@@ -983,8 +994,8 @@ end;
 procedure TVirtualMachine.OpDefineGlobal;
 var
    ConstantIndex : integer;
-   Name   : pValue;
-   value  : pValue;
+   Name   : pValueRecord;
+   value  : pValueRecord;
 
 begin
   assert(CurrentOpCode = ord(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
@@ -992,8 +1003,8 @@ begin
   constantIndex := CurrentOpCode;
   name := CurrentFrame.InstructionPointer.global[constantIndex];
   value := PeekStack;
-  assert(name.IsString, 'name is not a string object');
-  AddGlobal(name.Tostring,value, false);
+  assert(GetIsString(name), 'name is not a string object');
+  AddGlobal(GetString(name),value, false);
   popStack;
 end;
 
@@ -1005,9 +1016,9 @@ procedure TVirtualMachine.init(
   const results : TStrings;
   const Log     : TStrings);
 var
-  Value : pValue;
+  Value : pValueRecord;
 begin
- 
+  GetMemoryManagerState(MemStatus);
 
   FCall := 0;
 

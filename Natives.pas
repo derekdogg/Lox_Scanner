@@ -5,20 +5,20 @@ interface
 uses
   sysutils, Classes, Values;
 
-  function DateTime(const ArgCount: Integer;const Values : TStack): pValue;
+  function DateTime(const ArgCount: Integer;const Values : TStack): pValueRecord;
 
-  function FileExists(const ArgCount: Integer;const Values : TStack) : pValue;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : pValueRecord;
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValue;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValueRecord;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValue;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValueRecord;
 
 
 implementation
 uses
   Dialogs, ValueManager;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValue;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValueRecord;
   var
     dlg : TOpenDialog;
   begin
@@ -37,38 +37,38 @@ uses
   end;
 
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValue;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValueRecord;
   var
     strings : TStrings;
     FileName : String;
 
   begin
     result := BorrowChecker.newString(rVM,'');
-    FileName := Values.Peek(0).toString;
+    FileName := GetString(Values.Peek(0));
     if not SysUtils.FileExists(Filename) then exit;
 
     Strings := TStringList.create;
     try
       Strings.LoadFromFile(FileName);
-      result.Str := Strings.Text;
+      SetString(result,Strings.Text);
     finally
       Strings.Free;
     end;
   end;
 
-  function FileExists(const ArgCount: Integer;const Values : TStack) : pValue;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : pValueRecord;
   var
     fileName : string;
     exists : Boolean;
   begin
-    FileName := Values.Peek(0).toString;
+    FileName := GetString(Values.Peek(0));
     result := BorrowChecker.newBool(False);
 
-    if SysUtils.FileExists(Filename) then result.Boolean := true;
+    if SysUtils.FileExists(Filename) then SetBoolean(result,true);
 
   end;
 
-  function DateTime(const ArgCount: Integer;const Values : TStack): pValue;
+  function DateTime(const ArgCount: Integer;const Values : TStack): pValueRecord;
   begin
      result := BorrowChecker.newString(rVM,DateTimeToStr(Now));
   end;

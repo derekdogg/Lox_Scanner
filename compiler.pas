@@ -239,7 +239,7 @@ var
   token : TToken;
   number : double;
   text : string;
-  Value : pValue;
+  Value : pValueRecord;
 
 begin
   Token := FTokens.Previous;
@@ -438,7 +438,7 @@ var
    getOp,setOp : TOpCodes;
    Idx : integer;
    arg : integer;
-   Value : pValue;
+   Value : pValueRecord;
 begin
 
   Idx := resolveLocal(Current,Token);
@@ -557,7 +557,7 @@ end;
 
 function TCompilerController.parseVariable(const errorMessage : string) : integer;
 var
-  Value : pValue;
+  Value : pValueRecord;
   Name  : String;
 begin
   consume(tkIdentifier, errorMessage);
@@ -986,7 +986,7 @@ end;
 
 procedure TCompilerController.Strings(const canAssign: Boolean);
 var
-  Value : pValue;
+  Value : pValueRecord;
   Token : TToken;
   Text  : String;
 begin
@@ -1077,7 +1077,7 @@ end;
  var
    compiler: TCompiler;
    functionObj: pLoxFunction;
-   value : pValue;
+   value : pValueRecord;
    constantIdx : integer;
    name : string;
 begin
@@ -1725,7 +1725,7 @@ var
   InstructionPointer : TInstructionPointer;
   ArgCount : integer;
   idx : integer;
-  value : pValue;
+  value : pValueRecord;
 begin
   assert(assigned(strings),'No strings to print to');
   assert(assigned(Func), 'no function in compiler');
@@ -1743,7 +1743,7 @@ begin
          opCode := TOpCodes(InstructionPointer.Current);
          idx := InstructionPointer.Next; //skip index
          value := Func.Chunks.Constant[idx];
-         strings.Add(OpCodeToStr(opCode) + ',' + inttostr(idx) + ', value : ' + value.tostring);
+         strings.Add(OpCodeToStr(opCode) + ',' + inttostr(idx) + ', value : ' + GetString(value));
 
       end;
 
