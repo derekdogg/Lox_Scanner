@@ -10,6 +10,37 @@ uses
 
 type
 
+  (* whilst I generally think this is on the right track,
+     there is a lot of memory fragmentation happening here.
+
+     to understand more fully this issue, I will endeavour to set limits on the
+     amount of memory available in any lox program.
+
+     I will do that by setting limits on, for example, the number of functions,
+     the number of "numbers" etc,
+
+     basically, what I'm gonna do, is grab memory up-front, and then allocate from
+     memory pools of a reasonable size. I will probably allow multiple resize up to a point though
+     so the limit will be based on max capacity, with a minimum stipulated as well.
+
+     so that's not gonna be easy...
+
+     but it will hopefully mean that after a program runs, the memory is a known
+     entity.
+
+     What would be a reasonable "chunk" of memory to attempt to grab?
+
+     Answer : I have no idea.
+
+     However, we can also add in some code to allow a user to set these limits.
+
+     This is before we get to the Garbage collection of memory btw.
+
+     it's on the radar, and will be done asap.
+
+   *)
+
+
   TValueDisposal = class
     procedure DisposeList(var List : pValueRecord);
     procedure DisposeNil(var value : pValueRecord);
@@ -165,13 +196,7 @@ implementation
 uses
   sysutils;              
 
-function TValueCreation.NewLoxString(Const Str : String) : pLoxString;
-begin
-  new(Result);
-  result.init;
-  result.Chars := str;
-end;
-
+ 
 
 function TValueCreation.NewBool(const Bool : Boolean) : pValueRecord;
 begin
@@ -229,25 +254,30 @@ begin
   //FItems.Add(result);
 end;
 
-function TValueCreation.NewValue(
-  const requester : TRequester;
-  const Kind : TLoxKind;
-  const Obj  : pointer) : pValueRecord;
+function TValueCreation.NewValue(const Requester: TRequester; const Kind: TLoxKind; const Obj: Pointer): pValueRecord;
 begin
-  new(result);
-  fillChar(result^,sizeof(TValueRecord),#0);
-  result.Requester := Requester;
-  result.Kind := Kind;
-  result.Obj := Obj;
+  New(Result);
+  FillChar(Result^, SizeOf(TValueRecord), #0);
+  Result.Requester := Requester;
+  Result.Kind := Kind;
+  Result.Obj := Obj;
 end;
 
-function TValueCreation.NewString(const requester : TRequester;const txt : String) : pValueRecord;
-var
-  p : pLoxString;
+function TValueCreation.NewLoxString(const Str: String): pLoxString;
 begin
-  p := NewLoxString(txt);
-  result := NewValue(requester,lxString,p);
+  New(Result);
+  Result.Init;
+  Result.Chars := Str;
 end;
+
+function TValueCreation.NewString(const Requester: TRequester; const Txt: String): pValueRecord;
+var
+  P: pLoxString;
+begin
+  P := NewLoxString(Txt);
+  Result := NewValue(Requester, lxString, P);
+end;
+
 
 
 function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): pValueRecord;
@@ -509,12 +539,11 @@ var
 begin
   if str.Kind <> lxString then raise exception.create('value for disposal is not a String');
 
-  freeMem(str);
-  (*p :=  GetLoxString(Str);
+  p :=  GetLoxString(Str);
   dispose(p);
   p := nil;
   dispose(str);
-  str := nil; *)
+  str := nil;
 end;
 
 
