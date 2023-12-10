@@ -333,7 +333,6 @@ Type
   TLoxString = record
   private
     FObj    : TLoxObject;
-    Flength : integer;
     Fchars  : String;
     Fhash   : UInt64;
     function getChars: string;
@@ -452,7 +451,6 @@ end;
 procedure TLoxString.setChars(const Value: String);
 begin
   FChars := Value;
-  FLength := Length(Value);
   hashString;
 end;
 
@@ -494,6 +492,7 @@ procedure TLoxString.Init;
 begin
   fillchar(Self,sizeof(Self),#0);
   FObj.Kind := OBJ_STRING;
+  FHash := 0;
 end;
 
 

@@ -5,6 +5,8 @@ interface
 uses classes, LoxTypes, OpCodes;
 
 
+const Frame_Stack_Mulitplier = 4;
+
 type
 
 
@@ -12,7 +14,6 @@ type
 
   pValueRecord = ^TValueRecord;
   TValueRecord = record
-
     requester : TRequester;
     case Kind: TLoxKind of
       lxBoolean      :   (Bool: Boolean);
@@ -59,7 +60,6 @@ type
 
   TConstants = class
   private
-    fName : string;
     FItems : TValueList;
     function getItem(const Index: integer): pValueRecord;
     procedure setItem(const Index: integer; const Value: pValueRecord);
@@ -68,7 +68,7 @@ type
   protected
 
   public
-    constructor create(const functionName : String); //to help with debugging stuff
+    constructor create;
     destructor destroy; override;
     function Add(const value : pValueRecord) : integer;
     property OwnValues : boolean read getOwnValues;
@@ -79,7 +79,7 @@ type
   TCodes = array of integer;
 
   TOpCode = class
-  const OP_CODE_MULTIPLIER = 64;
+  const OP_CODE_MULTIPLIER = 2;
   private
     FCodes : TCodes;
     FCount : integer;
@@ -102,8 +102,6 @@ type
 
   TChunks = class
   private
-    //FConstantCount : integer;
-    FName : String;
     FOnChunk   : TOnChunk;
     FCode      : TOpCode;
     FConstants : TConstants;
@@ -180,7 +178,7 @@ type
     Chunks    : TChunks;
   end;
 
-   pLoxList = ^TLoxList;
+  pLoxList = ^TLoxList;
 
 
   TValueList = class
@@ -241,30 +239,21 @@ type
     property Item[const index : integer] : pValueRecord read getItem write setItem; default;
   end;
 
-
-
-
-
-
   TInstructionPointer = class
   private
-    FName     : String;
     FFunction : PLoxFunction;
     FIndex    : integer;
     function getCount: integer;
     function Getconstant(const Index : integer) : pValueRecord;
-    function Getglobal(const index : integer) : pValueRecord;
-    function getName: String;
     function getFunction: PLoxFunction;
     procedure setFunction(const Value: PLoxFunction);
+    function GetValue(const Index : integer) : Integer;
   public
     function Move(const index : integer) : boolean;
-    function OpCodeCount : integer;
-    function GetValue(const Index : integer) : Integer;
+
     function Index : integer;
     function Current : Integer;
     function Next : Integer;
-    function PeekNext : Integer;
     constructor create;
     destructor destroy; override;
     //constructor create(
@@ -272,9 +261,7 @@ type
     property count : integer read getCount;
 
     property constant[const index : integer] : pValueRecord read getConstant;
-    property global[const index : integer] : pValueRecord read getGlobal;
     property code[const index : integer] :  integer read GetValue; Default;
-    property Name : String read getName;
     property Func : PLoxFunction read getFunction write setFunction;
   end;
 
@@ -300,13 +287,15 @@ type
 
  end;
 
+  TCallFrameList = Array of TCallFrame;
+
   TFrameStack = class
-  const Frame_Stack_Mulitplier = 4;
+
   private
 
     FCapacity   : integer;
     FStackTop  : integer; //note this points the next places a frame will go
-    FItems : Array of TCallFrame;
+    FItems :  TCallFrameList;
     function getItem(const index: integer): TCallFrame;
     function getStackTop: integer;
     procedure setItem(const index: integer; const Value: TCallFrame);
@@ -333,14 +322,14 @@ type
     FFrames : TFrameStack;
 
   protected
-     function GetLastFrame : TCallFrame;
+     
      function getCount: integer;
   public
     constructor create;
     destructor destroy; override;
     procedure Push(const CallFrame : TCallFrame);
     function Pop : TCallFrame;
-    property LastFrame : TCallFrame read getLastFrame;
+    function Peek : TCallFrame;
     property Count : integer read getCount;
   end;
 
@@ -435,21 +424,6 @@ begin
   result := FFunction;
 end;
 
-function TInstructionPointer.Getglobal(const index: integer): pValueRecord;
-begin
-   result := FFunction.Chunks.Constant[Index];
-end;
-
-
-
-function TInstructionPointer.getName: String;
-begin
-  result := '';
-  if not assigned(FFunction) then exit;
-  result := FFunction.Name;
-end;
-
-
 function TInstructionPointer.GetValue(const Index : integer) : integer;
 begin
   assert((index >= 0) and (index < FFunction.Chunks.count));
@@ -481,16 +455,7 @@ begin
   result := FIndex;
 end;
 
-(*
-constructor TInstructionPtr.create(
-  const loxFunction: PLoxFunction);
-
-begin
-  FFunction := LoxFunction;
-  FIndex := -1;
-end;
-*)
-
+ 
 function TInstructionPointer.Move(const index: integer): boolean;
 begin
   result := false;
@@ -512,23 +477,6 @@ begin
   result := Current;
 end;
 
-function TInstructionPointer.OpCodeCount: integer;
-begin
-
-end;
-
-function TInstructionPointer.PeekNext: Integer;
-var
-  i : integer;
-begin
-  result := -1;
-  if FFunction.Chunks.Count = 0 then exit;
-  i := FIndex;
-  inc(i);
-  if i = FFunction.Chunks.Count then exit;
-  result :=  FFunction.Chunks[i];
-end;
-
 
 procedure TInstructionPointer.setFunction(const Value: PLoxFunction);
 begin
@@ -539,22 +487,6 @@ procedure TCallFrames.Push(const CallFrame : TCallFrame);
 begin
   FFrames.Push(CallFrame);
 end;
-
-(*procedure TCallFrames.Push(const ObjectFunction: pLoxFunction);
-begin
-  try
-    result := TCallFrame.Create(ObjectFunction,FStack);
-
-  except
-    on E:Exception do
-    begin
-      Showmessage('Failed to create call frame @ index : ' + inttostr(FFrames.StackTop));
-      exit;
-    end;
-  end;
-  //FFrames.Add(result);
-  FFrames.Push(result);
-end; *)
 
 
 constructor TCallFrames.create;
@@ -572,9 +504,9 @@ begin
   result := FCount;
 end;
 
-function TCallFrames.GetLastFrame: TCallFrame;
+function TCallFrames.Peek: TCallFrame;
 begin
-
+  result := nil;
   if FFrames.StackTop > 0 then
     result := FFrames[FFrames.StackTop-1];
 end;
@@ -583,8 +515,7 @@ end;
 
 function TCallFrames.Pop : TCallFrame;
 begin
-  result := FFrames[FFrames.StackTop-1];
-  FFrames.StackTop := FFrames.StackTop - 1;
+  result := FFrames.Pop;
 end;
 
 { TCallFrame }
@@ -929,12 +860,10 @@ begin
   result := FCode.Count;
 end;
 
-constructor TChunks.Create(const FunctionName : String);
+constructor TChunks.Create;
 begin
-  FName := Functionname;
   FCode := TOpCode.Create;
-  FConstants := TConstants.Create(Fname);
-
+  FConstants := TConstants.Create;
 end;
 
 destructor TChunks.destroy;
@@ -945,9 +874,9 @@ begin
 end;
 
 { TConstants }              
-constructor TConstants.create(const functionName : String);
+constructor TConstants.create;
 begin
-  FName := FunctionName;
+
   FItems := TValueList.create(false);
 end;
 

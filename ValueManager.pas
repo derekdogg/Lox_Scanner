@@ -98,7 +98,7 @@ type
     procedure SaveValue(const value : pValueRecord);
     function getNumberCount: integer;
   public
-
+    procedure FlushBuffer;
     function newValueFromFunction(functionObj : pLoxFunction) : pValueRecord;
     function newNative(const NativeFn : TNativeFunction) : pValueRecord;
     function NewFunction(const name : string) : pValueRecord; overload;
@@ -306,19 +306,28 @@ begin
   FValueDisposal := TValueDisposal.Create;
 end;
 
-destructor TValueManager.destroy;
+procedure TValueManager.FlushBuffer;
 var
   i : integer;
   value : pValueRecord;
 begin
-  FNumberMemory.free;
-  FValueFactory.free;
+
   for i := FItems.Count - 1 downto 0 do
   begin
     value := FItems[i];
+    FItems.Remove(value);
     FValueDisposal.DisposeValue(value);
   end;
 
+
+
+end;
+
+destructor TValueManager.destroy;
+begin
+  flushBuffer;
+  FNumberMemory.free;
+  FValueFactory.free;
   FItems.Free;
   FValueDisposal.Free;
   inherited;
@@ -446,7 +455,9 @@ begin
   p := pLoxList(List.Obj);
   p.Items.Free;
   dispose(p);
+  p := nil;
   dispose(List);
+  list := nil;
 end;
 
 procedure TValueDisposal.DisposeLoxFunction(var value: pLoxFunction);
@@ -487,7 +498,9 @@ begin
 
   LoxNative :=  getNative(Native);
   Dispose(LoxNative);
+  LoxNative := nil;
   Dispose(Native);
+  Native := nil;
 end;
 
 procedure TValueDisposal.disposeString(var str : pValueRecord);
@@ -496,27 +509,31 @@ var
 begin
   if str.Kind <> lxString then raise exception.create('value for disposal is not a String');
 
-  p :=  GetLoxString(Str);
+  freeMem(str);
+  (*p :=  GetLoxString(Str);
   dispose(p);
   p := nil;
   dispose(str);
-  str := nil;
+  str := nil; *)
 end;
 
 
 procedure TValueDisposal.DisposeBoolean(var value : pValueRecord);
 begin
   dispose(value);
+  Value := nil;
 end;
 
 procedure TValueDisposal.DisposeNil(var value: pValueRecord);
 begin
   dispose(Value);
+  Value := nil;
 end;
 
 procedure TValueDisposal.DisposeNumber(var value : pValueRecord);
 begin
    dispose(value);
+   Value := nil;
 end;
 
 procedure TValueDisposal.DisposeValue(var value : pValueRecord);

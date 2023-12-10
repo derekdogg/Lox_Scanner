@@ -35,6 +35,7 @@ type
     FGlobals : TValuePairs;
     FResults : TStrings;
     FLog : TStrings;
+    procedure AssertCurrentOp(OpCode : TOpCodes);
     function CurrentFrame : TCallFrame;
     function InstructionPointer : TInstructionPointer;
     function CurrentOpCode : integer;
@@ -54,14 +55,14 @@ type
     procedure PushStack(const value : pValueRecord);
     procedure MoveNext;
     procedure OpConstant;
-    Procedure DoAdd;
+    Procedure OPAdd;
     Procedure OpSubtract;
-    Procedure Divide;
-    Procedure Multiply;
-    Procedure Negate;
+    Procedure OPDivide;
+    Procedure OPMultiply;
+    Procedure OPNegate;
     procedure OPPrint;
-    procedure Loop;
-    procedure Equal;
+    procedure OpLoop;
+    procedure OPEqual;
     procedure OPGreater;
     procedure OPLess;
     procedure OPNotEqual;
@@ -69,15 +70,15 @@ type
     procedure OpFalse;
     procedure OpNil;
     procedure OpDefineGlobal;
-    procedure DoGetGlobal;
+    procedure OPGETGLOBAL;
     procedure RegisterNatives;
     procedure DoSetGlobal;
     procedure OpPOP;
     procedure OpGetLocal;
     procedure OPSetLocal;
     procedure HandleRunTimeError(const E: Exception);
-    procedure JumpFalse;
-    procedure Jump;
+    procedure OPJumpFalse;
+    procedure OpJump;
     function Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
     procedure OpCall;
     procedure OpReturn;
@@ -161,7 +162,7 @@ begin
       OP_GET_GLOBAL:
       begin
         Log(OP_GET_GLOBAL);
-        doGetGlobal;
+        OPGetGlobal;
       end;
 
 
@@ -204,7 +205,7 @@ begin
 
       OP_EQUAL : begin
          Log(OP_EQUAL);
-        equal;
+        OPequal;
       end;
 
       OP_NOT : begin
@@ -215,7 +216,7 @@ begin
 
       OP_ADD : begin
          Log(OP_ADD);
-        DoAdd;
+        OPAdd;
       end;
 
       OP_SUBTRACT : begin
@@ -225,17 +226,17 @@ begin
 
       OP_DIVIDE : begin
          Log(OP_DIVIDE);
-        divide;
+        OPdivide;
       end;
 
       OP_MULTIPLY : begin
          Log(OP_MULTIPLY);
-         Multiply;
+         OPMultiply;
       end;
 
       OP_NEGATE : begin
          Log(OP_NEGATE);
-         Negate;
+         OpNegate;
       end;
 
       OP_PRINT  : begin
@@ -245,24 +246,23 @@ begin
 
 
       OP_JUMP_IF_FALSE:
-
       begin
          Log(OP_JUMP_IF_FALSE);
-         JumpFalse;
+         OPJumpFalse;
       end;
 
 
       OP_JUMP:
       begin
          Log(OP_JUMP);
-         Jump;
+         OpJump;
       end;
 
 
        OP_LOOP:
        begin
          Log(OP_LOOP);
-         loop;
+         Oploop;
        end;
 
       OP_CALL :
@@ -372,7 +372,7 @@ var
   constantIndex : integer;
   value : pValueRecord;
 begin
-   assert(CurrentOpCode = byte(OP_CONSTANT));
+   AssertCurrentOp(OP_CONSTANT);
 
    MoveNext;
 
@@ -391,10 +391,8 @@ procedure TVirtualMachine.OPGreater;
 var
   L,R,Result : pValueRecord;
 begin
+  AssertCurrentOp(OP_Greater);
 
-  //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(CurrentOpCode = byte(OP_GREATER));
-  //this also means we assume the correct values are sitting in Stack...
   try
     R := PopStack;
     L := PopStack;
@@ -414,7 +412,7 @@ var
 begin
 
   //we assume here we're sitting on an OP_EQUAL in the IP
-  Assert(CurrentOpCode = byte(OP_LESS));
+ AssertCurrentOp(OP_LESS);
   //this also means we assume the correct values are sitting in Stack...
   try
     R := PopStack;
@@ -427,15 +425,18 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.DoAdd;
+procedure TVirtualMachine.AssertCurrentOp(OpCode : TOpCodes);
+begin
+  Assert(CurrentOpCode = ord(OpCode),'Problem with current op code not equal to expected');
+end;
+
+
+procedure TVirtualMachine.OPAdd;
 var
   L,R : pValueRecord;
   Result : pValueRecord;
 begin
-//  result := nil;
-
-  //we assume here we're sitting on an OP_ADDITION in the IP
-  Assert(CurrentOpCode = byte(OP_ADD),'Trying to Add - Stack pointer is not OP_ADD');
+  AssertCurrentOp(OP_ADD);
   //this also means we assume the correct values are sitting in Stack...
   try
     R := PopStack;
@@ -449,10 +450,7 @@ begin
      HandleRunTimeError(e);
   end;
 end;
-
-
  
-
 procedure TVirtualMachine.Log(
   const OpCode : TOpCodes; const L,R : pValueRecord);
 begin
@@ -470,10 +468,11 @@ begin
   L := PopStack;
   Log(OP_SUBTRACT,L,R);
   result := TSubtraction.Subtract(L,R);
+  assert(Result <> nil, 'result of subtraction was nil indicating failure');
   PushStack(result);
 end;
 
-procedure TVirtualMachine.Multiply;
+procedure TVirtualMachine.OpMultiply;
 var
   L,R : pValueRecord;
   i : integer;
@@ -529,8 +528,7 @@ procedure TVirtualMachine.OPPrint;
 var
   value : pValueRecord;
 begin
-
-  Assert(CurrentOpCode = byte(OP_PRINT));
+  AssertCurrentOp(OP_PRINT);
   //value := CurrentFrame.Stack.Pop;
   value := PopStack;
 
@@ -579,13 +577,17 @@ end;
 function TVirtualMachine.CallValue(const callee : pValueRecord; ArgCount : integer) : boolean;
 var
   value : pValueRecord;
-
+  fn    : pLoxFunction;
 begin
+  value := nil;
+  fn    := nil;
+
   result := false;
 
   if GetIsFunction(Callee) then
   begin
-    result := call(GetFunction(callee), argCount);
+    fn := GetFunction(callee);
+    result := call(fn, argCount);
     exit;
   end;
 
@@ -603,6 +605,8 @@ var
   result : pValueRecord;
   ip : TInstructionPointer;
 begin
+    AssertCurrentOp(OP_RETURN);
+
     FCall := FCall - 1;
 
     Result := PopStack;
@@ -616,7 +620,7 @@ begin
 
     IP.free;
     FCurrentFrame.Free;
-    FCurrentFrame := FFrames.LastFrame;
+    FCurrentFrame := FFrames.Peek; //FFrames.LastFrame;
 
     PushStack(result);
 end;
@@ -627,6 +631,7 @@ var
   ArgCount : byte;
   callee : pValueRecord;
 begin
+  AssertCurrentOp(OP_CALL);
 
   ArgCount := NextInstruction;
 
@@ -644,19 +649,22 @@ begin
   result := FCurrentFrame.InstructionPointer.Next;
 end;
 
-procedure TVirtualMachine.Loop;
+procedure TVirtualMachine.OPLoop;
 var
   a,b : integer;
   offset : integer;
+  idx : integer;
 begin
+   AssertCurrentOp(OP_LOOP);
    a := NextInstruction;
    b := NextInstruction;
+   idx := CurrentFrame.InstructionPointer.Index;
    offset := a shl 8 + b;
-   assert(CurrentFrame.InstructionPointer.Move(CurrentFrame.InstructionPointer.Index - offset) = true, 'failed to move to loop offset');
+   assert(CurrentFrame.InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset');
 end;
 
 
-procedure TVirtualMachine.Jump;
+procedure TVirtualMachine.OPJump;
 var
   a,b : integer;
   offset : integer;
@@ -667,7 +675,7 @@ begin
   assert(CurrentFrame.InstructionPointer.Move(CurrentFrame.InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
-procedure TVirtualMachine.JumpFalse;
+procedure TVirtualMachine.OpJumpFalse;
 var
   a,b : integer;
   offset : integer;
@@ -681,7 +689,7 @@ begin
    end;
 end;
 
-procedure TVirtualMachine.Negate;
+procedure TVirtualMachine.OpNegate;
 var
   Result : pValueRecord;
   R : pValueRecord;
@@ -707,7 +715,7 @@ end;
 //it's very important when working with the stack as it is pointer based,
 // and what you might push back on is actually a global var in altered form.
 //therefore, for now, always use a result, and pop off old vals
-procedure TVirtualMachine.Divide;
+procedure TVirtualMachine.OpDivide;
 var
   L,R, Result : pValueRecord;
 begin
@@ -755,7 +763,7 @@ begin
   end;
 end;
 
-procedure TVirtualMachine.Equal;
+procedure TVirtualMachine.OPEqual;
 var
   L,R, Result : pValueRecord;
 begin
@@ -809,7 +817,7 @@ begin
 
   moveNext;
 
-  index := CurrentOpCode ;
+  index := CurrentOpCode;
 
   value :=  PeekStack;
 
@@ -872,7 +880,7 @@ begin
   result := FStack;//FFrames.Stack;
 end;
 
-procedure TVirtualMachine.DoGetGlobal;
+procedure TVirtualMachine.OPGetGlobal;
 var
    ConstantIndex : integer;
    Name   : pValueRecord;
@@ -887,7 +895,7 @@ begin
 
   constantIndex := CurrentOpCode;
 
-  name := CurrentFrame.InstructionPointer.global[constantIndex];
+  name := CurrentFrame.InstructionPointer.constant[constantIndex];
 
   NameValue := FGlobals.Find(GetString(name));
 
@@ -910,13 +918,19 @@ begin
   assert(CurrentOpCode = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
 
   MoveNext;
+
   constantIndex := CurrentOpCode;
 
-  name := CurrentFrame.InstructionPointer.global[constantIndex];
+  name := CurrentFrame.InstructionPointer.Constant[constantIndex];
+
   value := PeekStack;
+
   assert(GetIsString(name), 'name is not a string object');
+
   NameValue := FGlobals.Find(GetString(name));
+
   assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
+
   NameValue.Value := Value;
 end;
 
@@ -999,7 +1013,7 @@ begin
   assert(CurrentOpCode = ord(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
   MoveNext;
   constantIndex := CurrentOpCode;
-  name := CurrentFrame.InstructionPointer.global[constantIndex];
+  name := CurrentFrame.InstructionPointer.constant[constantIndex];
   value := PeekStack;
   assert(GetIsString(name), 'name is not a string object');
   AddGlobal(GetString(name),value, false);
@@ -1032,8 +1046,6 @@ begin
   FGlobals.Init;
 
   RegisterNatives;
-
- // FStackResults := TValueList.Create(true);
 
   FFrames := TCallFrames.create;
 

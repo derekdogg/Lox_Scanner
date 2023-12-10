@@ -75,8 +75,6 @@ type
 
     FCompilers : TCompilers;
 
-    //FGlobals : TValueList;   //scope wide
-
     FCurrent : TCompiler;
 
     FParseRules : TParseRules;

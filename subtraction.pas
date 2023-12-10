@@ -111,8 +111,7 @@ begin
   result := TStringSubtraction.SubtractNumber(L,R);
   if assigned(result) then exit;
 
-//  result :=TStringSubtraction.SubtractNull(L,R);
-//  if assigned(result) then exit;
+  raise exception.create('cant Subtract - TSubtraction');
 
 end;
 
