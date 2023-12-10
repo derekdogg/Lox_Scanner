@@ -183,10 +183,6 @@ type
    pLoxList = ^TLoxList;
 
 
-
-
-
-
   TValueList = class
   private
     FItems      : TList;
@@ -286,25 +282,19 @@ type
 
  TCallFrame = class
  private
-   FStartCount         : integer;
    FStackTop           : integer;
    FInstructionPointer : TInstructionPointer;
-   FFrameIndex         : integer;
    FStack              : TStack;
-   procedure InitInstructionPointer(const func : pLoxFunction);
+
    function  getValue(const index: integer): pValueRecord;
    procedure setValue(const index: integer; const Value: pValueRecord);
-//    function getStackCount: integer;
  public
     constructor create(
-      const ObjectFunction : pLoxFunction;
+      const InstructionPointer : TInstructionPointer;
       const Stack : TStack);
    destructor destroy;override;
-   property StartCount : integer read fStartCount;
-//   property StackCount : integer read getStackCount;
-//   property LoxFunction : pLoxFunction read FObjectFunction;
    property InstructionPointer : TInstructionPointer read FInstructionPointer;
-   property FrameIndex : integer read FFrameIndex;
+
    property Value[const index : integer] : pValueRecord read getValue write setValue;default;
    property StackTop : integer read FStackTop write FStackTop;
 
@@ -339,16 +329,17 @@ type
 
   TCallFrames = class
   private
-    FStack : TStack;
-    FFrames : TFrameStack;//TList;
+    FCount : integer;
+    FFrames : TFrameStack;
+
   protected
      function GetLastFrame : TCallFrame;
-     function getCount : integer;
+     function getCount: integer;
   public
-    constructor create(Const Stack : TStack);
+    constructor create;
     destructor destroy; override;
-    function Push(const ObjectFunction : pLoxFunction) : TCallFrame;
-    function Pop : integer;
+    procedure Push(const CallFrame : TCallFrame);
+    function Pop : TCallFrame;
     property LastFrame : TCallFrame read getLastFrame;
     property Count : integer read getCount;
   end;
@@ -544,10 +535,16 @@ begin
   FFunction := Value;
 end;
 
-function TCallFrames.Push(const ObjectFunction: pLoxFunction): TCallFrame;
+procedure TCallFrames.Push(const CallFrame : TCallFrame);
+begin
+  FFrames.Push(CallFrame);
+end;
+
+(*procedure TCallFrames.Push(const ObjectFunction: pLoxFunction);
 begin
   try
     result := TCallFrame.Create(ObjectFunction,FStack);
+
   except
     on E:Exception do
     begin
@@ -557,75 +554,61 @@ begin
   end;
   //FFrames.Add(result);
   FFrames.Push(result);
-end;
+end; *)
 
-constructor TCallFrames.create(Const Stack : TStack);
+
+constructor TCallFrames.create;
 begin
-  FStack := Stack;
   FFrames := TFrameStack.Create;//Tlist.create;
 end;
 
 destructor TCallFrames.destroy;
-var
-  i : integer;
-  fm : TCallFrame;
 begin
-  for i := FFrames.StackTop-1 downto 0 do
-  begin
-    fm := FFrames[i];
-    fm.free;
-  end;
   FFrames.Free;
-
 end;
 
 function TCallFrames.getCount: integer;
 begin
-  result := FFrames.StackTop;
+  result := FCount;
 end;
 
 function TCallFrames.GetLastFrame: TCallFrame;
 begin
-  result := nil;
+
   if FFrames.StackTop > 0 then
     result := FFrames[FFrames.StackTop-1];
 end;
 
 
 
-function TCallFrames.Pop : integer;
-var
-  fm : TCallFrame;
-
+function TCallFrames.Pop : TCallFrame;
 begin
-  fm := FFrames[FFrames.StackTop-1];
-  fm.free;
+  result := FFrames[FFrames.StackTop-1];
   FFrames.StackTop := FFrames.StackTop - 1;
-  //result := FFrames.Remove(Frame);
-  result := FFrames.StackTop;
 end;
 
 { TCallFrame }
 
-
+(*
 procedure TCallFrame.InitInstructionPointer(const func : pLoxFunction);
 begin
-  FInstructionPointer := TInstructionPointer.Create;
+
   FInstructionPointer.Func := func;
-end;
+end;  *)
 
 constructor TCallFrame.create(
-  const ObjectFunction : pLoxFunction;
+  const Instructionpointer : TInstructionPointer;
   const Stack : TStack);
 begin
-  InitInstructionPointer(ObjectFunction);
+  Assert(Assigned(Stack),'no stack injected');
+  FInstructionPointer := InstructionPointer;
   FStack := Stack;
   FStackTop := Stack.StackTop;
 end;
 
 destructor TCallFrame.destroy;
 begin
-  FInstructionPointer.free;
+  //FInstructionPointer.free;
   inherited;
 end;
 

@@ -82,7 +82,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitWidth = 438
       end
     end
     object Panel4: TPanel
@@ -93,8 +92,6 @@ object fmScript: TfmScript
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
-      ExplicitLeft = 441
-      ExplicitWidth = 474
       object MemRun: TMemo
         Left = 1
         Top = 1
@@ -111,8 +108,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitLeft = 5
-        ExplicitWidth = 398
       end
     end
     object Panel5: TPanel
@@ -139,7 +134,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitWidth = 183
       end
     end
   end

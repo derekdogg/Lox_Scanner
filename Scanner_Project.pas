@@ -71,10 +71,10 @@ var
    VM :  TVirtualMachine;
 begin
    try
-      VM.Init(LoxFunction,MemRun.Lines,nil);
+      VM := TVirtualMachine.Create(LoxFunction,MemRun.Lines,nil);
       VM.Run;
    finally
-     vm.Finalize;
+     vm.Free;
    end;
 end;
 
@@ -116,7 +116,7 @@ begin
    try
      LoxFunction := cc.DoCompile;
      Interpret(LoxFunction);
-     MemRun.Lines.Add(inttostr(BorrowChecker.NumberCount));
+
    finally
      cc.free;
      

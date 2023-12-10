@@ -20,17 +20,18 @@ const
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
-  TVirtualMachine = record
+  TVirtualMachine = class
   private
+    FOPCode : integer;
     MemStatus: TMemoryManagerState;
     FCall : integer;
     FRootFunction : pValueRecord;
-   // CurrentFrame : TCallFrame;
+    FCurrentFrame : TCallFrame;
     FHalt    : boolean;
     FNatives : TNatives;
     FStack   : TStack;
     FFrames : TCallFrames;
-   // FStackResults : TValueList;  //keep track of new values added to stack.For disposal later.
+
     FGlobals : TValuePairs;
     FResults : TStrings;
     FLog : TStrings;
@@ -93,11 +94,11 @@ type
 //    function Result : TByteCode;
     function Run : TInterpretResult;
 
-    procedure init(
+    constructor create(
        const LoxFunction : pLoxFunction;
        const results : TStrings;
        const Log     : TStrings);
-     procedure finalize;
+     Destructor Destroy; override;
 
   end;
 
@@ -322,7 +323,8 @@ end;
 
 procedure TVirtualMachine.OpBuildList;
 var
-   value : pValueRecord;
+   NewList : pValueRecord;
+   Item : pValueRecord;
    List : pLoxList;
    itemCount: integer;
    i : integer;
@@ -330,15 +332,16 @@ begin
    assert(CurrentOpCode = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := CurrentOpCode;
-   value :=  BorrowChecker.newValueList('');
+   NewList :=  BorrowChecker.newValueList(true,'');
 
    // Add items to list
   // PushStack(value); // So list isn't swept by GC in appendToList - [to do!!]
 
-   List := GetList(Value);
+   List := GetList(NewList);
    for  i:= itemCount downto 1 do
    begin
-      List.Items.Add(PeekStack(i));
+      Item := PeekStack(i-1);
+      List.Items.Add(Item);
    end;
 
   // PopStack;
@@ -350,7 +353,7 @@ begin
       Dec(itemCount);
     end;
 
-   PushStack(value);
+   PushStack(NewList);
 end;
 
 
@@ -381,7 +384,7 @@ begin
 
    Log(OP_CONSTANT,ConstantIndex,value);
 
-end;
+end;  
 
 
 procedure TVirtualMachine.OPGreater;
@@ -542,16 +545,16 @@ end;
 
 function TVirtualMachine.CurrentFrame : TCallFrame;
 begin
-  result := FFrames.LastFrame;
+  result := FCurrentFrame; 
 end;
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
   const ArgCount : integer) : boolean;
 var
-  prevOffset : integer;
   newStackTop : integer;
 
+  InstructionPointer : TInstructionPointer;
 begin
   FCall := FCall + 1;
 
@@ -559,13 +562,16 @@ begin
 
   if not (argCount = func.Arity) then raise exception.create('param mismatch');
 
-  prevOffset :=  0;
+  InstructionPointer := TInstructionPointer.create;
+  InstructionPointer.Func := Func;
 
-  FFrames.Push(Func);
+  FCurrentFrame := TCallFrame.Create(InstructionPointer,FStack);
+
+  FFrames.Push(FCurrentFrame);
 
   newStackTop := VMStack.StackTop-ArgCount-1;
 
-  CurrentFrame.StackTop := NewStackTop;
+  FCurrentFrame.StackTop := newStacktop;
 
   result := true;
 end;
@@ -595,31 +601,24 @@ end;
 procedure TVirtualMachine.OpReturn;
 var
   result : pValueRecord;
-  StackTop : Integer;
-  Frame  : TCallFrame;
-
+  ip : TInstructionPointer;
 begin
     FCall := FCall - 1;
 
     Result := PopStack;
 
-    Frame :=  CurrentFrame;
+    FFrames.Pop; //pop off the current frame
 
-    //FFrames.Remove(CurrentFrame);
-    FFrames.Pop;
-    //Frame.Free;
+    VMStack.StackTop := FCurrentFrame.StackTop;
 
-    if FFrames.Count = 0 then
-    begin
-      PopStack;
-      exit;
-    end;
+    //free the current frame, make the new current frame the last item now on the stack.
+    IP := FCurrentFrame.InstructionPointer;
 
-    VMStack.StackTop := Frame.StackTop;
+    IP.free;
+    FCurrentFrame.Free;
+    FCurrentFrame := FFrames.LastFrame;
 
     PushStack(result);
-
-
 end;
 
 
@@ -629,7 +628,7 @@ var
   callee : pValueRecord;
 begin
 
-  ArgCount := NextInstruction; //read byte
+  ArgCount := NextInstruction;
 
   callee := peekStack(ArgCount);
 
@@ -642,7 +641,7 @@ end;
 
 function TVirtualMachine.NextInstruction : integer;
 begin
-  result := CurrentFrame.InstructionPointer.Next;
+  result := FCurrentFrame.InstructionPointer.Next;
 end;
 
 procedure TVirtualMachine.Loop;
@@ -977,17 +976,17 @@ end;
 
 function TVirtualMachine.PeekStack: pValueRecord;
 begin
-  result := VMStack.Peek;
+  Result := VMStack.Peek;
 end;
 
 function TVirtualMachine.PeekStack(const distance: integer): pValueRecord;
 begin
-  result := VMStack.Peek(Distance);
+  Result := VMStack.Peek(Distance);
 end;
 
 function TVirtualMachine.PopStack : pValueRecord;
 begin
-  result := VMStack.Pop;
+  Result := VMStack.Pop;
 end;
 
 procedure TVirtualMachine.OpDefineGlobal;
@@ -1010,14 +1009,13 @@ end;
 
 
 
-procedure TVirtualMachine.init(
+Constructor TVirtualMachine.Create(
   const LoxFunction : pLoxFunction;
   const results : TStrings;
   const Log     : TStrings);
 var
   Value : pValueRecord;
 begin
-  GetMemoryManagerState(MemStatus);
 
   FCall := 0;
 
@@ -1037,7 +1035,7 @@ begin
 
  // FStackResults := TValueList.Create(true);
 
-  FFrames := TCallFrames.create(FStack);
+  FFrames := TCallFrames.create;
 
   FRootFunction := BorrowChecker.newValueFromFunction(LoxFunction);
 
@@ -1050,14 +1048,11 @@ end;
 
 function TVirtualMachine.InstructionPointer: TInstructionPointer;
 begin
-  result := CurrentFrame.InstructionPointer;
+  result := FCurrentFrame.InstructionPointer;
 end;
 
-procedure TVirtualMachine.finalize;
+destructor TVirtualMachine.destroy;
 begin
-   
-
-   Showmessage('op call amount: ' + inttostr(FCall));
 
    FStack.Free;
 
