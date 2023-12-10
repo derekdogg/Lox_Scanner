@@ -293,13 +293,13 @@ end;
 procedure TVirtualMachine.OpStoreSubscriber;
 var
   item, Index, ListValue : pValueRecord;
+
   List : pLoxList;
 begin
    item   := PopStack;
    Index  := PopStack;
    ListValue := PopStack;
-   Assert(GetIsList(ListValue) = true, 'the item on the stack expected list, it is not list');
-
+   //  Listvalue.List.Items[round(index.Number)] := Item;
    List := GetList(ListValue);
    List.Items[round(index.Number)] := Item;
    PushStack(Item);
@@ -308,38 +308,37 @@ end;
 procedure TVirtualMachine.OpIndexSubscriber;
 var
   indexValue, listValue, result: pValueRecord;
-  list: pValueRecord;
   index: Integer;
-  LoxList : pLoxList;
+  List : pLoxList;
 begin
   assert(CurrentOpCode = byte(OP_INDEX_SUBSCR));
   indexValue := PopStack;
   listValue := PopStack;
   index := round(indexValue.Number);
-  LoxList := GetList(ListValue);
-  result := LoxList.Items[index];
+  List := GetList(ListValue);
+  result := List.Items[index];
   PushStack(result);
 end;
 
 procedure TVirtualMachine.OpBuildList;
 var
    value : pValueRecord;
+   List : pLoxList;
    itemCount: integer;
    i : integer;
-   LoxList : pLoxList;
 begin
    assert(CurrentOpCode = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := CurrentOpCode;
    value :=  BorrowChecker.newValueList('');
 
-   LoxList := GetList(Value);
-
    // Add items to list
   // PushStack(value); // So list isn't swept by GC in appendToList - [to do!!]
+
+   List := GetList(Value);
    for  i:= itemCount downto 1 do
    begin
-      LoxList.Items.Add(PeekStack(i));
+      List.Items.Add(PeekStack(i));
    end;
 
   // PopStack;
