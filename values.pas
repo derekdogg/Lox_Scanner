@@ -1102,6 +1102,7 @@ function TFrameStack.pop: TCallFrame;
 begin
   assert(FStackTop >= 1, 'No items to pop');
   result := FItems[FStackTop-1];
+  FItems[FStackTop-1] := nil;
   FStackTop := FStackTop - 1;
 end;
 

@@ -48,7 +48,8 @@ type
     procedure Log(const OpCode : TOpCodes; const L,R : pValueRecord);overload;
     procedure Halt;
     function VMStack : TStack;
-
+    procedure PushFrame(const func : PLoxFunction);
+    procedure  popFrame;
     function PopStack : pValueRecord;
     function PeekStack : pValueRecord;overload;
     function PeekStack(const distance : integer) : pValueRecord;overload;
@@ -543,16 +544,50 @@ end;
 
 function TVirtualMachine.CurrentFrame : TCallFrame;
 begin
-  result := FCurrentFrame; 
+  result := FCurrentFrame;
 end;
+
+
+procedure TVirtualMachine.PushFrame(const func : PLoxFunction);
+var
+  InstructionPointer : TInstructionPointer;
+
+
+begin
+  //we could probably just keep reususing the IP as long as you return to the current OPCode (before call here) after return.
+  InstructionPointer := TInstructionPointer.create;
+  InstructionPointer.Func := Func;
+  FCurrentFrame := TCallFrame.Create(InstructionPointer,FStack);
+
+  FFrames.Push(FCurrentFrame);
+
+end;
+
+procedure TVirtualMachine.PopFrame;
+var
+  IP : TInstructionPointer;
+begin
+  FFrames.Pop; //pop off the current frame
+
+
+
+  //free the current frame, make the new current frame the last item now on the stack.
+  IP := FCurrentFrame.InstructionPointer;
+  IP.free;
+
+  FreeAndNil(FCurrentFrame);
+
+  FCurrentFrame := FFrames.Peek; //FFrames.LastFrame;
+end;
+
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
   const ArgCount : integer) : boolean;
-var
-  newStackTop : integer;
 
-  InstructionPointer : TInstructionPointer;
+var
+   newStackTop : integer;
+
 begin
   FCall := FCall + 1;
 
@@ -560,12 +595,7 @@ begin
 
   if not (argCount = func.Arity) then raise exception.create('param mismatch');
 
-  InstructionPointer := TInstructionPointer.create;
-  InstructionPointer.Func := Func;
-
-  FCurrentFrame := TCallFrame.Create(InstructionPointer,FStack);
-
-  FFrames.Push(FCurrentFrame);
+  PushFrame(func);
 
   newStackTop := VMStack.StackTop-ArgCount-1;
 
@@ -600,6 +630,8 @@ begin
   end;
 end;
 
+
+
 procedure TVirtualMachine.OpReturn;
 var
   result : pValueRecord;
@@ -611,18 +643,11 @@ begin
 
     Result := PopStack;
 
-    FFrames.Pop; //pop off the current frame
-
     VMStack.StackTop := FCurrentFrame.StackTop;
 
-    //free the current frame, make the new current frame the last item now on the stack.
-    IP := FCurrentFrame.InstructionPointer;
-
-    IP.free;
-    FCurrentFrame.Free;
-    FCurrentFrame := FFrames.Peek; //FFrames.LastFrame;
-
     PushStack(result);
+
+    PopFrame;
 end;
 
 
