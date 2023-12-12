@@ -239,6 +239,9 @@ type
     property Item[const index : integer] : pValueRecord read getItem write setItem; default;
   end;
 
+
+
+
   TInstructionPointer = class
   private
     FFunction : PLoxFunction;
@@ -442,6 +445,7 @@ end;
 
 destructor TInstructionPointer.destroy;
 begin
+  FFunction := nil;
   inherited destroy;
 end;
 

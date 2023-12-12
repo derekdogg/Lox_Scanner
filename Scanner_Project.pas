@@ -70,12 +70,14 @@ procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
    VM :  TVirtualMachine;
 begin
+
    try
-      VM := TVirtualMachine.Create(LoxFunction,MemRun.Lines,nil);
-      VM.Run;
+      VM := TVirtualMachine.Create(MemRun.Lines,nil);
+      VM.Run(LoxFunction);
    finally
-     BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
      vm.Free;
+     BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
+
    end;
 end;
 

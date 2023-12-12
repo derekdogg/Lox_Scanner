@@ -165,7 +165,21 @@ object fmScript: TfmScript
         '}'
         ''
         ' '
-        'print fib(10);')
+        'print fib(10);'
+        ''
+        'fun factorial(n)'
+        '{'
+        '// Base case'
+        'if (n == 0) {'
+        'return 1;'
+        '}'
+        '// Recursive case'
+        'return n * factorial(n - 1);'
+        '}'
+        ''
+        ''
+        ''
+        'print factorial(10);')
       ParentFont = False
       TabOrder = 0
       WantTabs = True
