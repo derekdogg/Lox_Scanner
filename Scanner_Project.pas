@@ -70,7 +70,6 @@ procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
    VM :  TVirtualMachine;
 begin
-
    try
       VM := TVirtualMachine.Create(MemRun.Lines,nil);
       VM.Run(LoxFunction);
@@ -101,7 +100,7 @@ begin
 
 
 
-  BorrowChecker.FlushBuffer;
+ // BorrowChecker.FlushBuffer;
   //BorrowChecker.Logger := MemRun.Lines;
 
   //instructionPointer.Init(LoxFunction);
@@ -122,7 +121,7 @@ begin
 
    finally
      cc.free;
-     
+     //BorrowChecker.FlushBuffer;
    end;
 
   finally
@@ -134,17 +133,4 @@ end;
 
 
 end.
-1 = 4
-2 = 7
-3 = 10
-4 = 16
-10 = 268
-15 = 2962
-20 = 32839
-30 = 4038808
-
-
-32839
-53134
-85972
 

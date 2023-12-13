@@ -237,7 +237,7 @@ var
   token : TToken;
   number : double;
   text : string;
-  Value : pValueRecord;
+  Value : TValueRecord;
 
 begin
   Token := FTokens.Previous;
@@ -436,7 +436,7 @@ var
    getOp,setOp : TOpCodes;
    Idx : integer;
    arg : integer;
-   Value : pValueRecord;
+   Value : TValueRecord;
 begin
 
   Idx := resolveLocal(Current,Token);
@@ -555,7 +555,7 @@ end;
 
 function TCompilerController.parseVariable(const errorMessage : string) : integer;
 var
-  Value : pValueRecord;
+  Value : TValueRecord;
   Name  : String;
 begin
   consume(tkIdentifier, errorMessage);
@@ -711,7 +711,7 @@ var
   Jump: Integer;
 begin
   // -2 to adjust for the bytecode for the jump offset itself.
-  Jump := Current.Func.Chunks.Count - OffSet - 2;
+  Jump := Current.Func.Chunks.CodeCount - OffSet - 2;
 
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
@@ -738,7 +738,7 @@ begin
   Current.Func.Chunks.Emit(instruction);
   Current.Func.Chunks.Emit($FF); //255
   Current.Func.Chunks.Emit($FF); //255
-  result :=  Current.Func.Chunks.count - 2;
+  result :=  Current.Func.Chunks.Codecount - 2;
 end;
 
 
@@ -832,7 +832,7 @@ var
 begin
   Current.Func.Chunks.Emit(OP_LOOP);
 
-  offset := Current.Func.Chunks.count - loopStart + 2;
+  offset := Current.Func.Chunks.CodeCount - loopStart + 2;
   if (offset > MAX_JUMP) then error('Loop body too large.');
 
   Current.Func.Chunks.Emit((offset shr 8) and $ff);
@@ -847,7 +847,7 @@ var
 
 begin
   
-  loopStart := Current.Func.Chunks.count;
+  loopStart := Current.Func.Chunks.Codecount;
   consume(tkOpenBracket, 'Expect "(" after while.');
 
    
@@ -984,7 +984,7 @@ end;
 
 procedure TCompilerController.Strings(const canAssign: Boolean);
 var
-  Value : pValueRecord;
+  Value : TValueRecord;
   Token : TToken;
   Text  : String;
 begin
@@ -1075,7 +1075,7 @@ end;
  var
    compiler: TCompiler;
    functionObj: pLoxFunction;
-   value : pValueRecord;
+   value : TValueRecord;
    constantIdx : integer;
    name : string;
 begin
@@ -1084,8 +1084,7 @@ begin
    Compiler := FCompilers.Add(Name,FunctionKind,Current);
 
    Current := Compiler;
-
-
+ 
    BeginScope;
    Consume(tkOpenBracket,    'Expect ''('' after function name.');
 
@@ -1108,7 +1107,7 @@ begin
 
    functionObj := EndCompiler; //in the c version this makes current to previous one.
 
-   Value := BorrowChecker.newValueFromFunction(functionObj);
+   Value := BorrowChecker.newValueFromFunction(rCompiler,functionObj);
 
    Current.Func.Chunks.EmitConstant(Value);
 
@@ -1723,7 +1722,7 @@ var
   InstructionPointer : TInstructionPointer;
   ArgCount : integer;
   idx : integer;
-  value : pValueRecord;
+  value : TValueRecord;
 begin
   assert(assigned(strings),'No strings to print to');
   assert(assigned(Func), 'no function in compiler');

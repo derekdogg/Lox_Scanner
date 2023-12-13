@@ -1,6 +1,7 @@
 program Project_scanner;
 
 uses
+  ExceptionLog,
   Forms,
   Scanner_Project in 'Scanner_Project.pas' {fmScript},
   LoxTypes in 'LoxTypes.pas',

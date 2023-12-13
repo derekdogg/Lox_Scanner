@@ -5,20 +5,20 @@ interface
 uses
   sysutils, Classes, Values;
 
-  function DateTime(const ArgCount: Integer;const Values : TStack): pValueRecord;
+  function DateTime(const ArgCount: Integer;const Values : TStack): TValueRecord;
 
-  function FileExists(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : TValueRecord;
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : TValueRecord;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : TValueRecord;
 
 
 implementation
 uses
   Dialogs, ValueManager;
 
-  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function OpenFileAndLoad(const ArgCount: Integer;const Values : TStack) : TValueRecord;
   var
     dlg : TOpenDialog;
   begin
@@ -37,14 +37,14 @@ uses
   end;
 
 
-  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function LoadStringFromFile(const ArgCount: Integer;const Values : TStack) : TValueRecord;
   var
     strings : TStrings;
     FileName : String;
 
   begin
     result := BorrowChecker.newString(rVM,'');
-    FileName := GetString(Values.Peek(0));
+    FileName := GetString(Values.Peek);
     if not SysUtils.FileExists(Filename) then exit;
 
     Strings := TStringList.create;
@@ -56,19 +56,19 @@ uses
     end;
   end;
 
-  function FileExists(const ArgCount: Integer;const Values : TStack) : pValueRecord;
+  function FileExists(const ArgCount: Integer;const Values : TStack) : TValueRecord;
   var
     fileName : string;
     exists : Boolean;
   begin
-    FileName := GetString(Values.Peek(0));
+    FileName := GetString(Values.Peek);
     result := BorrowChecker.newBool(False);
 
     if SysUtils.FileExists(Filename) then SetBoolean(result,true);
 
   end;
 
-  function DateTime(const ArgCount: Integer;const Values : TStack): pValueRecord;
+  function DateTime(const ArgCount: Integer;const Values : TStack): TValueRecord;
   begin
      result := BorrowChecker.newString(rVM,DateTimeToStr(Now));
   end;

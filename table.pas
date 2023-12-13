@@ -16,7 +16,7 @@ type
   TNameValue = record
      ownValue : boolean;
      name   : string;
-     value  : pValueRecord;
+     value  : TValueRecord;
   end;
 
 
@@ -58,7 +58,7 @@ type
     function ResizeCount : integer;
     function FreeSlots : integer;
     function Count : integer;
-    function AddNameValue(const name : string; const value : pValueRecord; const OwnValue : boolean) : pNameValue;
+    function AddNameValue(const name : string; const value : TValueRecord; const OwnValue : boolean) : pNameValue;
     constructor init;
     procedure finalize; //<-- no destructor allowed, seems weird.
  end;
@@ -67,7 +67,7 @@ type
 implementation
 uses ValueManager;
 
-function TValuePairs.AddNameValue(const name : string; const value : pValueRecord; const OwnValue : boolean) : pNameValue;
+function TValuePairs.AddNameValue(const name : string; const value : TValueRecord; const OwnValue : boolean) : pNameValue;
 begin
 
   result := nil;
