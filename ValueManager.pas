@@ -201,6 +201,7 @@ uses
 function TValueCreation.NewBool(const Bool : Boolean) : TValueRecord;
 begin
 //  new(result);
+  Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxBoolean;
   result.Bool := Bool;
   //FCompilerItems.Add(result);
@@ -215,12 +216,14 @@ end;
 function TValueCreation.NewNil: TValueRecord;
 begin
   //new(result);
+    Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxNull;
 end;
 
 function TValueCreation.NewNumber(const number : TNumber) : TValueRecord;
 begin
   //new(result);
+  Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxNumber;
   result.Number := Number;
   //FCompilerItems.Add(result);
@@ -232,6 +235,7 @@ end;
 function TValueCreation.newValueFromList(const List : pLoxList) : TValueRecord;
 begin
   //new(result);
+  Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxList;
   result.Obj := List;
 end;
@@ -239,6 +243,7 @@ end;
 
 function TValueCreation.newValueList(const name : string) : TValueRecord;
 begin
+  Fillchar(Result,Sizeof(Result),#0);
   result := newValueFromList(newList(name));
 
 end;
@@ -257,7 +262,7 @@ end;
 function TValueCreation.NewValue(const Requester: TRequester; const Kind: TLoxKind; const Obj: Pointer): TValueRecord;
 begin
   //New(Result);
-  FillChar(Result, SizeOf(TValueRecord), #0);
+  FillChar(Result, SizeOf(result), #0);
 //  Result.Requester := Requester;
   Result.Kind := Kind;
   Result.Obj := Obj;
@@ -283,6 +288,7 @@ end;
 function TValueCreation.newValueFromFunction(functionObj: pLoxFunction): TValueRecord;
 begin
 //  new(result);
+  Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxFunction;
   result.Obj := FunctionObj;
 end;
@@ -294,6 +300,7 @@ function TValueCreation.newFunction(
 var
   fn : pLoxFunction;
 begin
+  Fillchar(Result,Sizeof(Result),#0);
   fn := newLoxFunction(name);
   //new(result);
   result.Kind := lxFunction;
@@ -320,6 +327,7 @@ var
   LoxNative : PLoxNative;
 begin
  // new(result);
+  Fillchar(Result,Sizeof(Result),#0);
   new(loxNative);
   loxNative.Native := NativeFn;
 

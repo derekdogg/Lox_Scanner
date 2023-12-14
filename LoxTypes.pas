@@ -349,7 +349,7 @@ Type
 
 
 
-  TLoxKind = (lxNumber,lxBoolean, lxNull, lxObject, lxString, lxList,lxFunction, lxNative);
+  TLoxKind = (lxNull,lxNumber,lxBoolean, lxObject, lxString, lxList,lxFunction, lxNative);
 
 
 

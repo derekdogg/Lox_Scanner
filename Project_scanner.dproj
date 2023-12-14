@@ -18,7 +18,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
     <DCC_Define>DEBUG;EUREKALOG;EUREKALOG_VER6</DCC_Define>
-    <DCC_Optimize>False</DCC_Optimize>
     <DCC_RangeChecking>True</DCC_RangeChecking>
     <DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
     <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
@@ -31,6 +30,7 @@
     <DCC_ResourcePath>C:\repo\_DCP</DCC_ResourcePath>
     <DCC_ObjPath>C:\repo\_DCP</DCC_ObjPath>
     <DCC_IncludePath>C:\repo\_DCP</DCC_IncludePath>
+    <DCC_Optimize>False</DCC_Optimize>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>

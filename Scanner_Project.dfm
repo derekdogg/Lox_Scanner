@@ -31,6 +31,20 @@ object fmScript: TfmScript
     Height = 41
     Align = alTop
     TabOrder = 0
+    object Label1: TLabel
+      Left = 520
+      Top = 16
+      Width = 54
+      Height = 13
+      Caption = 'Stack Top :'
+    end
+    object Label2: TLabel
+      Left = 780
+      Top = 22
+      Width = 71
+      Height = 13
+      Caption = 'Stack Capacity'
+    end
     object BtnScan: TButton
       Left = 8
       Top = 10
@@ -48,6 +62,22 @@ object fmScript: TfmScript
       Caption = 'Clear'
       TabOrder = 1
       OnClick = btnClearClick
+    end
+    object Edit1: TEdit
+      Left = 580
+      Top = 14
+      Width = 121
+      Height = 21
+      ReadOnly = True
+      TabOrder = 2
+    end
+    object Edit2: TEdit
+      Left = 857
+      Top = 15
+      Width = 121
+      Height = 21
+      ReadOnly = True
+      TabOrder = 3
     end
   end
   object Panel2: TPanel

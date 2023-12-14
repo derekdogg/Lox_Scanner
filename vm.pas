@@ -22,6 +22,9 @@ type
 
   TVirtualMachine = class
   private
+    FOnStackPush : TOnStackPush;
+    FOnStackPop  : TOnStackPop;
+
     FOPCode : integer;
     MemStatus: TMemoryManagerState;
     FCall : integer;
@@ -96,6 +99,9 @@ type
     procedure OpBuildList;
     procedure OpIndexSubscriber;
     procedure OpStoreSubscriber;
+
+    procedure CaptureStackPush(Const stack : TStack);
+    procedure CaptureStackPop(Const stack : TStack);
   public
 //    function Result : TByteCode;
     function Run(const func : PLoxFunction) : TInterpretResult;
@@ -104,7 +110,8 @@ type
        const results : TStrings;
        const Log     : TStrings);
      Destructor Destroy; override;
-
+    property OnPush : TOnStackPush read FOnStackPush write FOnStackPush;
+    property OnPop : TOnStackPop read FOnStackPop write FOnStackPop;
   end;
 
 
@@ -483,15 +490,15 @@ end;
 
 procedure TVirtualMachine.OPSubtract;
 var
-  Result, L,R : TValueRecord;
+  L,R : TValueRecord;
 begin
   Assert(CurrentOpCode = byte(OP_SUBTRACT));
   R := PopStack;
   L := PopStack;
   Log(OP_SUBTRACT,L,R);
-  result := TSubtraction.Subtract(L,R);
+  L := TSubtraction.Subtract(L,R);
   //assert(Result <> nil, 'result of subtraction was nil indicating failure');
-  PushStack(result);
+  PushStack(L);
 end;
 
 procedure TVirtualMachine.OpMultiply;
@@ -539,6 +546,7 @@ end;
 procedure TVirtualMachine.PushStack(const value: TValueRecord);
 begin
   VMStack.Push(Value);
+
 end;
 
 function TVirtualMachine.CurrentFrame : TCallFrame;
@@ -606,6 +614,16 @@ end;
 
 
 
+procedure TVirtualMachine.CaptureStackPop(const stack: TStack);
+begin
+  if assigned(FOnStackPop) then FOnStackPop(stack);
+end;
+
+procedure TVirtualMachine.CaptureStackPush(const stack: TStack);
+begin
+   if assigned(FOnStackPush) then FOnStackPush(stack);
+end;
+
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
   const ArgCount : integer) : boolean;
@@ -627,6 +645,7 @@ procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
   ip : TInstructionPointer;
+
 begin
     AssertCurrentOp(OP_RETURN);
 
@@ -635,6 +654,8 @@ begin
     Result := PopStack;
 
     VMStack.StackTop := FFrames.Peek.StackTop;
+
+    VMStack.DecreaseCapacity;
 
     PushStack(result);
 
@@ -1055,7 +1076,9 @@ begin
   FTempStack := TStack.Create;
 
   FStack := TStack.Create;
- 
+  FStack.OnPush := CaptureStackPush;
+  FStack.OnPop :=  CaptureStackPop;
+
   FLog := Log;
 
   FHalt    := false;

@@ -22,11 +22,17 @@ type
     Panel6: TPanel;
     memEdit: TRichEdit;
     Splitter1: TSplitter;
+    Edit1: TEdit;
+    Label1: TLabel;
+    Edit2: TEdit;
+    Label2: TLabel;
     procedure BtnScanClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
     procedure Interpret(const LoxFunction : pLoxFunction);
+    procedure LogStackPush(Const stack : TStack);
+    procedure LogStackPop(Const stack : TStack);
 
   public
     { Public declarations }
@@ -65,6 +71,21 @@ begin
 end;
 
 
+procedure TFmScript.LogStackPush(Const stack : TStack);
+begin
+  Edit1.Text := inttostr(Stack.StackTop);
+  Edit2.Text := inttostr(Stack.Capacity);
+  Application.processMessages;
+
+end;
+
+procedure TFmScript.LogStackPop(Const stack : TStack);
+begin
+  Edit1.Text := inttostr(Stack.StackTop);
+  Edit2.Text := inttostr(Stack.Capacity);
+  Application.processMessages;
+end;
+
 
 procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
@@ -72,6 +93,8 @@ var
 begin
    try
       VM := TVirtualMachine.Create(MemRun.Lines,nil);
+      Vm.OnPush := LogStackPush;
+      Vm.OnPop  := LogStackPop;
       VM.Run(LoxFunction);
    finally
      vm.Free;
