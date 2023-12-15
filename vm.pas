@@ -30,7 +30,7 @@ type
 
     FHalt    : boolean;
     FNatives : TNatives;
-    FTempStack : TStack;
+
     FStack   : TStack;
     FFrames : TCallFrames;
 
@@ -1009,29 +1009,21 @@ begin
 end;
 
 
-
-
 Constructor TVirtualMachine.Create(
   const results : TStrings);
 var
   Value : TValueRecord;
 begin
+  assert(Assigned(results),'No way to display results as no string storage passed in');
+  FResults := results;
 
   FCall := 0;
-
-  FTempStack := TStack.Create;
 
   FStack := TStack.Create;
   FStack.OnPush := CaptureStackPush;
   FStack.OnPop :=  CaptureStackPop;
-
-
-
+ 
   FHalt    := false;
-
-  assert(Assigned(results),'No way to display results as no string storage passed in');
-
-  FResults := results;
 
   FGlobals.Init;
 
@@ -1050,15 +1042,13 @@ end;
 destructor TVirtualMachine.destroy;
 begin
 
-   FTempStack.Free;
-
    FStack.Free;
 
    FGlobals.finalize;
 
    FFrames.free;
 
-//   dispose(FRootFunction); //dispose the wraper around the current function.
+  
 end;
 
 

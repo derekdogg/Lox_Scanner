@@ -8,7 +8,7 @@ uses
   values;
 
 
-Const MAX_CAPACITY = 2000; //lets keep it reasonable - note this is not the size of the allocated array pNameValues.
+Const MAX_CAPACITY = Maxint div 16;
 
 type
 
@@ -209,36 +209,6 @@ begin
 
 end;
 
-(*function TValuePairs.FindEntry(const value : String): pNameValue;
-var
-  startIndex  : integer;
-  index       : integer;
- // ValuePair   : pNameValue;
-  hashstr     : pNameValue;
-  prospect    : pNameValue;
-begin
-  result := nil;
-  hashstr := NewValuePair(value);
-  index := hashstr.hash and (slotcount -1);
-  startIndex := index;
-  repeat
-    assert(inbounds(Index),'index for Hash to seek exceeds dictionary limits');
-
-    prospect := getItem(Index);
-
-    if assigned(prospect) and ((prospect.chars = value)) then
-    begin
-      result := prospect;
-      exit;
-    end;
-
-    inc(index);
-    if index = SlotCount then index := 0;
-
-  until (prospect = nil);   //<--- index = startindex -1 indicates that the loop went back to 0 then to the position before where we 1st started, and did not find the key
-  dispose(hashStr);
-end;  *)
-
 
 function TValuePairs.FindNewIndex(const name  : string; const items : pNameValues): Integer;
 var
@@ -289,8 +259,7 @@ var
   pItem : pNameValue;
 begin
   assert(assigned(Value),'value is nil');
-//  assert(assigned(Value.name), 'name is nil');
-//  assert(assigned(Value.value),'value is nil');
+
 
   pItem := nil;
   result := false;

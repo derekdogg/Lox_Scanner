@@ -16,7 +16,7 @@ type
     precedence: TPrecedence;
   end;
 
-  TParseRules = array[tknull..tkEOF] of pParseRule;
+  TParseRules = array[tknull..tkEOF] of TParseRule;
 
 
   //TCompilerController = class;
@@ -34,7 +34,6 @@ type
   protected
     function GetLocals : TLocals;
   public
-    procedure ToString(const strings : TStrings);
 
     constructor create(
       const Name : string;
@@ -188,9 +187,7 @@ type
     procedure DoFunction (FunctionKind : TFunctionKind);
 
     procedure consume(const TokenKind : TTokenKind; const Message : String);
-    function GetParseRule(const TokenKind: TTokenKind): pParseRule;
-    procedure SetParseRule(const TokenKind: TTokenKind;
-      const Value: pParseRule);
+    function GetParseRule(const TokenKind: TTokenKind): TParseRule;
     function getCount: integer;
     function getCompiler(const index: integer): TCompiler;
   public
@@ -207,9 +204,7 @@ type
     destructor destroy;override;
 
     property Current : TCompiler read fCurrent write fCurrent;
-    property ParseRule[const TokenKind : TTokenKind] : pParseRule
-      read   GetParseRule
-      write  SetParseRule;
+
     property Count : integer read getCount;
     property Compiler[const index : integer] : TCompiler read getCompiler; default;
   end;
@@ -344,11 +339,11 @@ begin
 end;
 
 
-function TCompilerController.GetParseRule(const TokenKind: TTokenKind): pParseRule;
+function TCompilerController.GetParseRule(const TokenKind: TTokenKind): TParseRule;
 begin
    result := FParseRules[TokenKind];
 end;
- 
+
 
 
 Function TCompilerController.TokenName(const Token : TToken) : String;
@@ -396,39 +391,6 @@ begin
   Log(format('unable to resolve local for %s.',[TokenName(Token)]));
 end;
 
-
-//{ list, subscript, PREC_SUBSCRIPT }, // TOKEN_LEFT_BRACKET
-procedure TCompilerController.SetRulesForOpenSquareBracket;
-var
-  parseRule : pParseRule;
-
-begin
-  new(parseRule);
-
-  ParseRule.Prefix := ListInit;
-  ParseRule.Infix :=  Subscript;
-  ParseRule.Precedence := PREC_SUBScript;
-  FParseRules[tkOpenSquareBracket] := ParseRule;
-end;
-
-procedure TCompilerController.SetRulesForCloseSquareBracket;
-var
-  parseRule : pParseRule;
-begin
-
-  new(parseRule);
-
-  ParseRule .Prefix := nil;
-  ParseRule.Infix := nil;
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkCloseSquareBracket] := ParseRule;
-end;
-
-procedure TCompilerController.SetParseRule(const TokenKind: TTokenKind;
-  const Value: pParseRule);
-begin
-  FParseRules[TokenKind] := Value;
-end;
 
 
 procedure TCompilerController.NamedVariable(const Token : TToken;const CanAssign : Boolean);
@@ -1009,7 +971,7 @@ end;
 procedure TCompilerController.binary(const canAssign : boolean);
 var
   TokenKind : TTokenKind;
-  rule : pParseRule;
+  rule : TParseRule;
 begin
   TokenKind := FTokens.Previous.Kind;
   rule := FParseRules[FTokens.Previous.Kind];
@@ -1155,413 +1117,265 @@ end;
 
 
 procedure TCompilerController.SetRuleForOpen_bracket;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  ParseRule.Prefix := grouping;
-  ParseRule.Infix := call;
-  ParseRule.Precedence := PREC_CALL;
-  FParseRules[tkOpenbracket] := ParseRule;
+  with FParseRules[tkOpenbracket] do
+  begin
+     Prefix := grouping;
+     Infix := call;
+     Precedence := PREC_CALL;
+  end;
 end;
 
 
 procedure TCompilerController.SetRulesForOpenBrace;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkOpenBrace] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForCloseBrace;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkCloseBrace] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForClose_Bracket;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkCloseBracket] := ParseRule;
+   //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForBang;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  // [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE}
-  ParseRule.Prefix := unary;
-  ParseRule.Infix := nil;
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkBang] := ParseRule;
+  with FParseRules[tkBang] do
+  begin
+      Prefix := unary;
+   end;
 end;
 
 procedure TCompilerController.SetRulesForComma;
-var
-  parseRule : pParseRule;
 begin
-  //  [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
-  new(parseRule);
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkComma] := ParseRule;
+   //nothing to set here
 end; 
 
 procedure TCompilerController.SetRulesForComment;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-
-  ParseRule .Prefix := literal;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkComment] := ParseRule;
+  with FParseRules[tkComment] do
+  begin
+     Prefix := literal;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForDivide;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-//  [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_FACTOR;
-  FParseRules[tkSlash] := ParseRule;
+  with FParseRules[tkSlash] do
+  begin
+     Precedence := PREC_FACTOR;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForNil;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-   //[TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
-
-  ParseRule .Prefix := literal;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkNil] := ParseRule;
+  with FParseRules[tkNil] do
+  begin
+    Prefix := literal;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForNotEqual;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-// [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_EQUALITY;
-  FParseRules[tkBangEqual] := ParseRule;
+  with FParseRules[tkBangEqual] do
+  begin
+     Infix := binary;
+     Precedence := PREC_EQUALITY;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForNumber;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  // [TOKEN_NUMBER]   = {number,   NULL,   PREC_NONE},
-
-  ParseRule .Prefix := number;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkNumber] := ParseRule;
+  with FParseRules[tkNumber] do
+  begin
+    Prefix := number;
+  end;
 end;
 
 
 procedure TCompilerController.SetRulesForEqualEqual;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_EQUAL_EQUAL]   = {NULL,     binary, PREC_EQUALITY},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_EQUALITY;
-  FParseRules[tkEqualEqual] := ParseRule;
+  with FParseRules[tkEqualEqual] do
+  begin
+    Infix := binary;
+    Precedence := PREC_EQUALITY;
+  end;
 end;
 
 
 procedure TCompilerController.SetRulesForFalse;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
- //[TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE}
-
-  ParseRule .Prefix := literal;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkFalse] := ParseRule;
+  with FParseRules[tkFalse] do
+  begin
+     Prefix := literal;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForFun;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //   [TOKEN_FUN]           = {NULL,     NULL,   PREC_NONE},
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkFun] := ParseRule;
-
-
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForTrue;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-   //[TOKEN_TRUE] = {literal,  NULL,   PREC_NONE}
-
-  ParseRule .Prefix := literal;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkTrue] := ParseRule;
+  with FParseRules[tkTrue] do
+  begin
+     Prefix := literal;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForWhile;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-//  [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkWhile] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForGreaterThan;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_GREATER]       = {NULL,     binary, PREC_COMPARISON}
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_COMPARISON;
-  FParseRules[tkGreaterthan] := ParseRule;
+  with FParseRules[tkGreaterthan] do
+  begin
+    Infix := binary;
+    Precedence := PREC_COMPARISON;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForGreaterThanEqual;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_GREATER_EQUAL] = {NULL,     binary, PREC_COMPARISON},
-
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_COMPARISON;
-  FParseRules[tkGreaterthanequal] := ParseRule;
+  with FParseRules[tkGreaterthanequal] do
+  begin
+      Infix := binary;
+      Precedence := PREC_COMPARISON;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForIdentifier;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-//   [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE}
-
-  ParseRule.Prefix := variable;
-  ParseRule.Infix := nil;
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkIdentifier] := ParseRule;
+  with FParseRules[tkIdentifier] do
+  begin
+     Prefix := variable;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForIF;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-//  [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
-
-  ParseRule.Prefix := nil;
-  ParseRule.Infix := nil;
-  ParseRule.Precedence := PREC_NONE;
-  FParseRules[tkIf] := ParseRule;
+   //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForLessThan;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  // [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
-
-  ParseRule.Prefix := nil;
-  ParseRule.Infix := binary;
-  ParseRule.Precedence := PREC_COMPARISON;
-  FParseRules[tkLessThan] := ParseRule;
+  with FParseRules[tkLessThan] do
+  begin
+    Infix := binary;
+    Precedence := PREC_COMPARISON;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForLessThanEqual;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
-
-  ParseRule.Prefix := nil;
-  ParseRule.Infix := binary;
-  ParseRule.Precedence := PREC_COMPARISON;
-  FParseRules[tkLessThanEqual] := ParseRule;
+  with FParseRules[tkLessThanEqual] do
+  begin
+     Infix := binary;
+     Precedence := PREC_COMPARISON;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForPlus;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
-
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_TERM;
-  FParseRules[tkPlus] := ParseRule;
+  with FParseRules[tkPlus] do
+  begin
+     Infix := binary;
+     Precedence := PREC_TERM;
+  end;
 end;
 
 
 procedure TCompilerController.SetRulesForPrint;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-// [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE}
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkPrint] := ParseRule;
+  //nothing to set here
 end;
 
 
 procedure TCompilerController.SetRulesForSemiColon;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE}
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkSemiColon] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForString;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-   //[TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
-
-  ParseRule .Prefix := strings;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkQuotes] := ParseRule;
+  with FParseRules[tkQuotes] do
+  begin
+     Prefix := strings;
+     Infix := binary;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForMinus;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
- // [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
 
-
-  ParseRule .Prefix := unary;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_TERM;
-  FParseRules[tkMinus] := ParseRule;
+  with FParseRules[tkMinus] do
+  begin
+     Prefix := unary;
+     Infix := binary;
+     Precedence := PREC_TERM;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForMultiply;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-// [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := binary;
-  ParseRule .Precedence := PREC_FACTOR;
-  FParseRules[tkAsterisk] := ParseRule;
+   with FParseRules[tkAsterisk] do
+   begin
+      Infix := binary;
+      Precedence := PREC_FACTOR;
+   end;
 end;
 
 procedure TCompilerController.SetRulesForElse;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkElse] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForEOF;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-// [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
-
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := nil;
-  ParseRule .Precedence := PREC_NONE;
-  FParseRules[tkEof] := ParseRule;
+  //nothing to set here
 end;
 
 procedure TCompilerController.SetRulesForOR;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_OR]            = {NULL,     or_,    PREC_OR},
-
-  ParseRule .Prefix := nil;
-  ParseRule .Infix := Or_;
-  ParseRule .Precedence := PREC_OR;
-  FParseRules[tkOr] := ParseRule;
+  with FParseRules[tkOr] do
+  begin
+     Infix := Or_;
+     Precedence := PREC_OR;
+  end;
 end;
 
 procedure TCompilerController.SetRulesForAnd;
-var
-  parseRule : pParseRule;
 begin
-  new(parseRule);
-  //[TOKEN_AND]           = {NULL,     and_,   PREC_AND},
 
-  ParseRule .Prefix := nil;
-  ParseRule.Infix := and_;
-  ParseRule.Precedence := PREC_AND;
-  FParseRules[tkAnd] := ParseRule;
+  with FParseRules[tkAnd] do
+  begin
+     Infix := and_;
+     Precedence := PREC_AND;
+  end;
 end;
+
+procedure TCompilerController.SetRulesForOpenSquareBracket;
+begin
+  with FParseRules[tkOpenSquareBracket] do
+  begin
+     Prefix     :=  ListInit;
+     Infix      :=  Subscript;
+     Precedence :=  PREC_SUBScript;
+  end;
+end;
+
+procedure TCompilerController.SetRulesForCloseSquareBracket;
+begin
+  //nothing to set here
+end;
+
 
 
 procedure TCompilerController.SetRules ;
@@ -1630,16 +1444,7 @@ end;
 
 
 destructor TCompilerController.destroy;
-var
-  i : TTokenKind;
 begin
-  for i := low(TTokenKind) to high(TTokenKind) do
-  begin
-    if FParseRules[i] <> nil then
-      dispose(FParseRules[i]);
-  end;
-  //disposeFunction(FFunc);
-  //FLocals.Finalize;
   FCompilers.free;
   inherited;
 end;
@@ -1715,174 +1520,7 @@ begin
 end;
 
 
-procedure TCompiler.ToString(const strings: TStrings);
-var
-  opCode : TOpCodes;
-  Chunks : TChunks;
-  InstructionPointer : TInstructionPointer;
-  ArgCount : integer;
-  idx : integer;
-  value : TValueRecord;
-begin
-  assert(assigned(strings),'No strings to print to');
-  assert(assigned(Func), 'no function in compiler');
-  assert(assigned(Func.Chunks),'no chunks in compiler');
-  Chunks := Func.Chunks;
-
-  InstructionPointer := TInstructionPointer.create ;
-  InstructionPointer.Func := Func;
-  strings.Add(Func.Name);
-  while (InstructionPointer.Next <> -1) do
-  begin
-    Case TOpCodes(InstructionPointer.Current) of
-
-      OP_CONSTANT : begin
-         opCode := TOpCodes(InstructionPointer.Current);
-         idx := InstructionPointer.Next; //skip index
-         value := Func.Chunks.Constant[idx];
-         strings.Add(OpCodeToStr(opCode) + ',' + inttostr(idx) + ', value : ' + GetString(value));
-
-      end;
-
-
-      OP_DEFINE_GLOBAL: begin
-          strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.Current)));
-          InstructionPointer.Next;
-       end;
-
-      OP_POP : Begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.Current)));
-      end;
-
-
-      OP_SET_GLOBAL:
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.Current)));
-         InstructionPointer.Next;
-      end;
-
-
-
-      OP_GET_GLOBAL:
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.Current )));
-         InstructionPointer.Next;
-      end;
-
-
-      OP_GET_LOCAL:
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.Current )));
-          InstructionPointer.Next;
-
-      end;
-
-      OP_SET_LOCAL:
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-         InstructionPointer.Next;
-      end;
-
-
-      OP_Nil  : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_TRUE : begin
-          strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_FALSE : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_GREATER : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_LESS : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-
-      end;
-
-      OP_EQUAL : begin
-          strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_NOT : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-
-      OP_ADD : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_SUBTRACT : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-
-      end;
-
-
-      OP_DIVIDE : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_MULTIPLY : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_NEGATE : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-      OP_PRINT  : begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-
-      OP_JUMP_IF_FALSE:
-
-      begin
-        strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-        InstructionPointer.Next;
-        InstructionPointer.Next;
-      end;
-
-
-      OP_JUMP:
-      begin
-        strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-         InstructionPointer.Next;
-        InstructionPointer.Next;
-      end;
-
-
-       OP_LOOP:
-       begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-         InstructionPointer.Next;
-         InstructionPointer.Next;
-       end;
-
-      OP_CALL :
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-         ArgCount := InstructionPointer.Next;
-      end;
-
-
-      OP_Return :
-      begin
-         strings.Add(OpCodeToStr(TOpCodes(InstructionPointer.current)));
-      end;
-
-    end;
-
-
-  end;
-end;
-
+ 
 constructor TCompiler.Create(
   const Name : string;
   const FunctionKind : TFunctionKind;
