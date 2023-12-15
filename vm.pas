@@ -36,19 +36,14 @@ type
 
     FGlobals : TValuePairs;
     FResults : TStrings;
-    FLog : TStrings;
+
     procedure Execute;
     procedure AssertCurrentOp(OpCode : TOpCodes);
     function CurrentFrame : TCallFrame;
     function InstructionPointer : TInstructionPointer;
     function CurrentOpCode : integer;
     function NextInstruction : integer;
-    procedure ClearLog;
-    procedure Log(Const value : String);overload;
-    procedure Log(Const opcode : TopCodes);overload;
-    procedure Log(Const opCOde : TopCodes; const operand : integer); overload;
-    procedure Log(const opCOde : TopCodes;const operand : integer;const value   : TValueRecord); overload;
-    procedure Log(const OpCode : TOpCodes; const L,R : TValueRecord);overload;
+
     procedure Halt;
     function VMStack : TStack;
     procedure PushFrame(
@@ -105,8 +100,7 @@ type
     function Run(const func : PLoxFunction) : TInterpretResult;
 
     constructor create(
-       const results : TStrings;
-       const Log     : TStrings);
+       const results : TStrings);
      Destructor Destroy; override;
     property OnPush : TOnStackPush read FOnStackPush write FOnStackPush;
     property OnPop : TOnStackPop read FOnStackPop write FOnStackPop;
@@ -147,19 +141,19 @@ begin
 
 
       OP_DEFINE_GLOBAL: begin
-          Log(OP_DEFINE_GLOBAL);
+
           OpDefineGlobal;
        end;
 
       OP_POP : Begin
-         Log(OP_POP);
+
          OpPOP;
       end;
 
 
       OP_SET_GLOBAL:
       begin
-        Log(OP_SET_GLOBAL);
+
         DoSetGlobal;
       end;
 
@@ -167,7 +161,7 @@ begin
 
       OP_GET_GLOBAL:
       begin
-        Log(OP_GET_GLOBAL);
+
         OPGetGlobal;
       end;
 
@@ -179,49 +173,49 @@ begin
 
       OP_SET_LOCAL:
       begin
-        Log(OP_SET_LOCAL);
+
         OPSetLocal;
       end;
 
 
       OP_Nil  : begin
-         Log(OP_Nil);
+
          OpNil;
       end;
 
       OP_TRUE : begin
-         Log(OP_TRUE);
+
          OpTrue;
       end;
 
       OP_FALSE : begin
-          Log(OP_FALSE);
+
          OpFalse;
       end;
 
       OP_GREATER : begin
-          Log(OP_GREATER);
+
          OPgreater;
       end;
 
       OP_LESS : begin
-          Log(OP_LESS);
+
          OPless;
       end;
 
       OP_EQUAL : begin
-         Log(OP_EQUAL);
+
         OPequal;
       end;
 
       OP_NOT : begin
-       Log(OP_NOT);
+       
         OPNotEqual;
       end;
 
 
       OP_ADD : begin
-         Log(OP_ADD);
+
         OPAdd;
       end;
 
@@ -231,55 +225,55 @@ begin
 
 
       OP_DIVIDE : begin
-         Log(OP_DIVIDE);
+
         OPdivide;
       end;
 
       OP_MULTIPLY : begin
-         Log(OP_MULTIPLY);
+
          OPMultiply;
       end;
 
       OP_NEGATE : begin
-         Log(OP_NEGATE);
+
          OpNegate;
       end;
 
       OP_PRINT  : begin
-         Log(OP_PRINT);
+
          OPPrint;
       end;
 
 
       OP_JUMP_IF_FALSE:
       begin
-         Log(OP_JUMP_IF_FALSE);
+
          OPJumpFalse;
       end;
 
 
       OP_JUMP:
       begin
-         Log(OP_JUMP);
+
          OpJump;
       end;
 
 
        OP_LOOP:
        begin
-         Log(OP_LOOP);
+
          Oploop;
        end;
 
       OP_CALL :
       begin
-         OpCall; 
+         OpCall;
       end;
 
 
       OP_Return :
       begin
-         Log(OP_Return);
+          
          OpReturn;
       end;
 
@@ -297,8 +291,6 @@ begin
   PushStack(FRootFunction);
 
   call(Func, 0);
-
-  clearLog;
 
   Result := INTERPRET_NONE;
 
@@ -411,8 +403,6 @@ begin
 
    PushStack(value);
 
-   Log(OP_CONSTANT,ConstantIndex,value);
-
 end;  
 
 
@@ -478,13 +468,6 @@ begin
   end;
 end;
  
-procedure TVirtualMachine.Log(
-  const OpCode : TOpCodes; const L,R : TValueRecord);
-begin
-  if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + '. LEFT : ' + GetString(L) + ' RIGHT:' + GetString(R));
-
-end;
 
 procedure TVirtualMachine.OPSubtract;
 var
@@ -493,7 +476,7 @@ begin
   Assert(CurrentOpCode = byte(OP_SUBTRACT));
   R := PopStack;
   L := PopStack;
-  Log(OP_SUBTRACT,L,R);
+
   L := TSubtraction.Subtract(L,R);
   //assert(Result <> nil, 'result of subtraction was nil indicating failure');
   PushStack(L);
@@ -643,7 +626,7 @@ procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
   ip : TInstructionPointer;
-
+  f : TCallFrame;
 begin
     AssertCurrentOp(OP_RETURN);
 
@@ -984,40 +967,6 @@ begin
   assert(assigned(FGlobals.AddNameValue(Name,value, OwnValue)), 'failed to add to hash table');
 end;
 
-procedure TVirtualMachine.ClearLog;
-begin
-
-end;
-
-procedure TVirtualMachine.Log(
-  const opCOde : TopCodes;
-  const operand : integer;
-  const value   : TValueRecord);
-begin
-  if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' .INDEX :' +  inttostr(operand) + '. VALUE:' + GetString(Value));
-end;
-
-
-
-procedure TVirtualMachine.Log(Const opCOde : TopCodes; const operand : integer);
-begin
-  if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode) + ' = ' +  inttostr(operand));
-end;
-
-procedure TVirtualMachine.Log(Const value : String);
-begin
-  if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + Value);
-end;
-
-procedure TVirtualMachine.Log(Const opCode : TopCodes);
-begin
-  if not assigned(FLog) then exit;
-  FLog.Add(inttostr(FLog.Count) + '.' + OpCodeToStr(opCode));
-end;
-
 procedure TVirtualMachine.MoveNext;
 begin
   Assert(NextInstruction <> -1,'Expected constant value following constant operation');
@@ -1063,8 +1012,7 @@ end;
 
 
 Constructor TVirtualMachine.Create(
-  const results : TStrings;
-  const Log     : TStrings);
+  const results : TStrings);
 var
   Value : TValueRecord;
 begin
@@ -1077,7 +1025,7 @@ begin
   FStack.OnPush := CaptureStackPush;
   FStack.OnPop :=  CaptureStackPop;
 
-  FLog := Log;
+
 
   FHalt    := false;
 

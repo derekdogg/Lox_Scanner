@@ -94,7 +94,7 @@ var
    VM :  TVirtualMachine;
 begin
    try
-      VM := TVirtualMachine.Create(MemRun.Lines,nil);
+      VM := TVirtualMachine.Create(MemRun.Lines);
       //Vm.OnPush := LogStackPush;
       //Vm.OnPop  := LogStackPop;
       VM.Run(LoxFunction);

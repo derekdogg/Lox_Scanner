@@ -16,9 +16,9 @@ type
   TValueRecord = record
     //requester : TRequester;
     case Kind: TLoxKind of
-      lxBoolean      :   (Bool: Boolean);
-      lxNumber       :   (Number: Double);
-      lxObject       :   (Obj: Pointer);
+      lxBoolean      :   (Bool    : Boolean);
+      lxNumber       :   (Number  : Double);
+      lxObject       :   (Obj     : Pointer);
   end;
 
 //  TValueStack = class;
@@ -1130,11 +1130,13 @@ end;
 
 function TStack.Peek: TValueRecord;
 begin
+  assert(FStackTop > 0, 'Nothing on the stack');
   result := FItems[FStackTop-1];
 end;
 
 function TStack.Peek(const Distance: integer): TValueRecord;
 begin
+  assert(FStackTop > 0, 'Nothing on the stack');
   assert(Distance >= 0, 'This is distance from the top as a positive');
   assert(FStackTop - Distance >= 0, 'Distance is beyond stack bottom');
   result := FItems[FStackTop-Distance-1];
@@ -1180,17 +1182,6 @@ procedure TStack.SetStackTop(const value: integer);
 begin
   Assert(Value < FCapacity, 'stack top is not less than cap - pushing now will exceed mem cap');
   Assert(Value >= 0, 'You idiot, the stack top is below zero');
-
-  (*if Value > FCapacity-1 then   //since the FStackTop starts at 0
-  begin
-    FCapacity := ((Value div Block_Capacity) * Block_Capacity) + Block_Capacity;
-    try
-      SetLength(FItems,FCapacity);
-    except
-      Showmessage('failed to set new cap of ' + inttostr(FCapacity));
-    end;
-  end;  *)
-
   FStackTop := Value;
 
 
