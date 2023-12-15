@@ -251,7 +251,7 @@ type
 
   TStack = class
   const
-    Block_Capacity = 8;
+    Block_Capacity = 256;//2561000;
   private
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
@@ -267,7 +267,7 @@ type
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
   public
-     procedure DecreaseCapacity;
+
      procedure Push(const value : TValueRecord);
      function Pop : TValueRecord;
      function Peek(const Distance : integer) : TValueRecord;overload;
@@ -1011,91 +1011,7 @@ begin
   FCodes[index] := value;
 end;
 
-{ TStack }
 
-(*
-constructor TStack.create;
-begin
-  FStackTop := 0;  
-  FCapacity := Stack_Mulitplier;
-  setLength(FItems,FCapacity);
-end;
-
-destructor TStack.destroy;
-begin
-
-  inherited;
-end;
-
-function TStack.getCapacity: integer;
-begin
-  result := FCapacity;
-end;
-
-function TStack.getStackTop: integer;
-begin
-  result := FStackTop;
-end;
-
-function TStack.getItem(const index: integer): pValueRecord;
-begin
-  assert(index >= 0, 'index is negative to stack bottom');
-  assert(index <= FStackTop, 'index is beyond stack top');
-  result := FItems[index];
-end;
-
-procedure TStack.IncreaseCapacity;
-begin
-  FCapacity := FCapacity * 2;
-  SetLength(FItems,FCapacity);
-end;
-
-function TStack.peek: pValueRecord;
-begin
-  result := FItems[FStackTop-1];
-end;
-
-function TStack.peek(const fromTop: integer): pValueRecord;
-begin
-  assert(FromTop >= 0, 'This is distance from the top as a positive');
-  assert(FStackTop - FromTop >= 0, 'Distance is beyond stack bottom');
-  result := FItems[FStackTop-FromTop-1];
-end;
-
-function TStack.pop: pValueRecord;
-begin
-  assert(FStackTop > 0, 'No items to pop');
-  result := FItems[FStackTop-1];
-  SetStackTop(FStackTop-1);
-end;
-
-procedure TStack.Push(const value: pValueRecord);
-begin
-  FItems[FStackTop] := value;
-  SetStackTop(FStackTop+1);
-end;
-
-procedure TStack.setCapacity(const Value: integer);
-begin
-  FCapacity := Value;
-  SetLength(FItems,FCapacity);
-end;
-
-procedure TStack.setItem(const index: integer; const Value: pValueRecord);
-begin
-  assert(index >= 0, 'index is negative to stack bottom');
-  assert(index <= FStackTop, 'index is beyond stack top');
-  FItems[index] := Value;
-end;
-
-procedure TStack.setStackTop(const Value: integer);
-begin
-  if Value > FCapacity-1 then   //since the FStackTop starts at 0
-  begin
-    IncreaseCapacity;
-  end;
-  FStackTop := Value;
-end;  *)
 
 { TStack }
 
@@ -1190,30 +1106,9 @@ begin
   SetLength(FItems,FCapacity);
   FStackTop := 0;
 end;
+ 
 
 
-
-
-procedure TStack.DecreaseCapacity;
-var
-  BlocksToRemove : integer;
-  NewCapacity    : integer;
-begin
-
-  BlocksToRemove := (FCapacity - FStackTop -1) div Block_Capacity;
-
-  if BlocksToRemove = 0 then exit;
-
-  NewCapacity := FCapacity - (BlocksToRemove * Block_Capacity);
-
-  if (NewCapacity < FCapacity) and (newCapacity <> FCapacity)  then
-  begin
-    FCapacity := NewCapacity;
-    assert(FCapacity <> FStackTop, 'Stack top and cap are equal');
-    SetLength(FItems,FCapacity);
-
-  end;
-end;
 
 destructor TStack.Destroy;
 begin
@@ -1223,6 +1118,7 @@ end;
 
 function TStack.GetItem(const Index: integer): TValueRecord;
 begin
+  assert(Index < FCapacity, 'out of bounds stack get');
   result := FItems[Index];
 end;
 
@@ -1247,18 +1143,19 @@ end;
 function TStack.Pop: TValueRecord;
 begin
   Assert(FStackTop > 0, 'no more items to pop');
-  result := Peek;
-//  FillChar(FItems[FStackTop],sizeof(TValueRecord),#0);
+  result := FItems[FStackTop-1];
+//  FillChar(FItems[VMStack.StackTop],sizeof(TValueRecord),#0);
   SetStackTop(FStackTop-1);
-  if Assigned(FOnStackPop) then FOnStackPop(Self);
+ // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;
 
 procedure TStack.Push(const value: TValueRecord);
 begin
+
   FItems[FStackTop] := Value;
   SetStackTop(FStackTop+1);
 
-  if Assigned(FOnStackPush) then FOnStackPush(Self);
+  //if Assigned(FOnStackPush) then FOnStackPush(Self);
 end;
 
 procedure TStack.SetItem(const Index: integer; const Value: TValueRecord);
@@ -1281,18 +1178,22 @@ end;
 
 procedure TStack.SetStackTop(const value: integer);
 begin
-
+  Assert(Value < FCapacity, 'stack top is not less than cap - pushing now will exceed mem cap');
   Assert(Value >= 0, 'You idiot, the stack top is below zero');
 
-  if Value > FCapacity-1 then   //since the FStackTop starts at 0
+  (*if Value > FCapacity-1 then   //since the FStackTop starts at 0
   begin
     FCapacity := ((Value div Block_Capacity) * Block_Capacity) + Block_Capacity;
-    SetLength(FItems,FCapacity);
-  end;
+    try
+      SetLength(FItems,FCapacity);
+    except
+      Showmessage('failed to set new cap of ' + inttostr(FCapacity));
+    end;
+  end;  *)
 
   FStackTop := Value;
 
-  Assert(FStackTop < FCapacity, 'stack top is not less than cap - pushing now will exceed mem cap');
+
 end;
 
 end.

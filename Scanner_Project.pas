@@ -26,8 +26,10 @@ type
     Label1: TLabel;
     Edit2: TEdit;
     Label2: TLabel;
+    Button1: TButton;
     procedure BtnScanClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     procedure Interpret(const LoxFunction : pLoxFunction);
@@ -93,8 +95,8 @@ var
 begin
    try
       VM := TVirtualMachine.Create(MemRun.Lines,nil);
-      Vm.OnPush := LogStackPush;
-      Vm.OnPop  := LogStackPop;
+      //Vm.OnPush := LogStackPush;
+      //Vm.OnPop  := LogStackPop;
       VM.Run(LoxFunction);
    finally
      vm.Free;
@@ -114,10 +116,6 @@ var
   value : pValue;
   c : TCompiler;
 
-
-
-
-
 begin
 
 
@@ -132,7 +130,7 @@ begin
   MemLocals.Lines.clear;
 
   try
-   MemRun.Lines.BeginUpdate;
+   //MemRun.Lines.BeginUpdate;
    Scanner.Init(MemEdit.Lines.Text);
    Scanner.Scan;
    Tokens.Init(Scanner.Tokens);
@@ -149,11 +147,39 @@ begin
 
   finally
     Scanner.finalize;
-    MemRun.Lines.EndUpdate;
+    //MemRun.Lines.EndUpdate;
   end;
 
 end;
 
+
+procedure TfmScript.Button1Click(Sender: TObject);
+
+  function fib(n : integer) : integer;
+  begin
+    if (n < 2) then
+    begin
+      result := n;
+
+      exit;
+    end;
+    
+    result := fib(n - 2) + fib(n - 1);
+  end;
+
+
+
+var
+  a : integer;
+begin
+  MemRun.Lines.clear;
+  MemRun.Lines.beginUpdate;
+  a := fib(40);
+  MemRun.Lines.add(inttostr(a));
+
+
+  MemRun.Lines.EndUpdate;
+end;
 
 end.
 

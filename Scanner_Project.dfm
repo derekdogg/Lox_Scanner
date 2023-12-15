@@ -79,6 +79,15 @@ object fmScript: TfmScript
       ReadOnly = True
       TabOrder = 3
     end
+    object Button1: TButton
+      Left = 352
+      Top = 11
+      Width = 75
+      Height = 25
+      Caption = 'Button1'
+      TabOrder = 4
+      OnClick = Button1Click
+    end
   end
   object Panel2: TPanel
     Left = 0
@@ -137,6 +146,7 @@ object fmScript: TfmScript
         Lines.Strings = (
           '')
         ParentFont = False
+        ScrollBars = ssVertical
         TabOrder = 0
       end
     end
@@ -195,21 +205,7 @@ object fmScript: TfmScript
         '}'
         ''
         ' '
-        'print fib(10);'
-        ''
-        'fun factorial(n)'
-        '{'
-        '// Base case'
-        'if (n == 0) {'
-        'return 1;'
-        '}'
-        '// Recursive case'
-        'return n * factorial(n - 1);'
-        '}'
-        ''
-        ''
-        ''
-        'print factorial(10);')
+        'print fib(10); ')
       ParentFont = False
       TabOrder = 0
       WantTabs = True

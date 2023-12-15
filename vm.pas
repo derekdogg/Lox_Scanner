@@ -12,9 +12,7 @@ uses
   natives,
   AdapterCalls;
 
-const
-   Frames_Max = 128;
-   Stack_Max = Frames_Max * 256;
+
 
 
 type
@@ -275,7 +273,7 @@ begin
 
       OP_CALL :
       begin
-         OpCall; //note here this will create a new stack frame, create a new IP. Something to be aware of.
+         OpCall; 
       end;
 
 
@@ -655,7 +653,7 @@ begin
 
     VMStack.StackTop := FFrames.Peek.StackTop;
 
-    VMStack.DecreaseCapacity;
+//    VMStack.DecreaseCapacity; //note 
 
     PushStack(result);
 
@@ -1041,7 +1039,7 @@ begin
 
   //add to temp stack
 
-  FTempStack.Push(Result);
+  //FTempStack.Push(Result);
 end;
 
 procedure TVirtualMachine.OpDefineGlobal;
