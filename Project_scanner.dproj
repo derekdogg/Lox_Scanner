@@ -49,9 +49,6 @@
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Natives.pas" />
-    <DCCReference Include="S">
-      <Form>$R *.res</Form>
-    </DCCReference>
     <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>

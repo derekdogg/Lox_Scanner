@@ -88,9 +88,9 @@ type
     function getConstantCount: integer;
     function GetCodeCount : Integer;
   public
-     function Emit(const Operand : TOpCodes; const  value : Integer) : integer;overload;
-     function Emit(const Value : Integer) : integer; overload;
-     function Emit(const Operand : TOpCodes) : integer;overload;
+     procedure Emit(const Operand : TOpCodes; const  value : Integer);overload;
+     procedure Emit(const Value : Integer); overload;
+     procedure Emit(const Operand : TOpCodes);overload;
 
      function AddConstant(const value : TValueRecord) : integer;
      procedure EmitConstant(const value : TValueRecord);
@@ -426,20 +426,20 @@ begin
 end;
 
 
- function TChunks.Emit(const Operand : TOpCodes) : integer;
- begin
-   result := FCode.Add(ord(Operand));
- end;
-
-function TChunks.Emit(const value : integer) : integer;
+procedure TChunks.Emit(const Operand : TOpCodes);
 begin
-  result := FCode.Add(value);
+  FCode.Add(ord(Operand));
+end;
+
+procedure TChunks.Emit(const value : integer);
+begin
+  FCode.Add(value);
 end;
 
 
-Function TChunks.Emit(const Operand : TOpCodes; const  value : integer) : integer;
+procedure TChunks.Emit(const Operand : TOpCodes; const  value : integer);
 begin
-  result := emit(Operand);
+  emit(Operand);
   emit(Value);
 end;
 

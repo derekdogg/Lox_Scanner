@@ -7,9 +7,8 @@ uses dialogs,classes,LOXTypes, TokenArray, Scanner, locals,values, opCodes;
 
 type
 
- TParseFn = procedure(const canAssign : boolean) of object;
- 
-  pParseRule = ^TParseRule;
+  TParseFn = procedure(const canAssign : boolean) of object;
+
   TParseRule = record
     prefix: TParseFn;
     infix: TParseFn;
@@ -17,9 +16,6 @@ type
   end;
 
   TParseRules = array[tknull..tkEOF] of TParseRule;
-
-
-  //TCompilerController = class;
 
   TCompiler = class
   private
@@ -81,9 +77,8 @@ type
     FTokens : TTokenIterator;
     FScanner : TScanner;
 
-    Function TokenName(const Token : TToken) : String;
-
-
+  protected
+    function TokenName(const Token : TToken) : String;
     //---------------------Compiler rules --------------------------------------
     procedure  SetRulesForOpenSquareBracket;
     procedure  SetRulesForCloseSquareBracket;
@@ -122,16 +117,15 @@ type
     procedure  SetRules;
 
 
-    //--------------------------------------------------------------------------
-    function Emit(const Operand : TOpCodes; const  value : Integer) : integer;overload;
+    //----------CHUNKS---------------------------------------------------------
+    procedure Emit(const Operand : TOpCodes; const  value : Integer);overload;
     procedure Emit(const Operand : TOpCodes);overload;
     procedure Emit(const value : integer);overload;
-
     procedure EmitConstant(const value : TValueRecord);
     function EndCompiler: pLoxFunction;
 
 
-    procedure markInitialized();
+    procedure markInitialized;
     procedure funDeclaration;
     procedure patchJump(const offset : integer);
     function emitJump(const instruction : TOpCodes) : integer;
@@ -140,8 +134,8 @@ type
 
     function  checkKind(const Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
-    procedure whileStatement();
-    procedure returnStatement();
+    procedure whileStatement;
+    procedure returnStatement;
     procedure emitLoop(const loopStart : integer);
 
     Function resolveLocal(
@@ -149,7 +143,7 @@ type
       const Token : TToken) : integer;
     procedure AddLocal(const Token: TToken);
     function  identifiersEqual(const a, b: TToken): Boolean;
-    procedure declareLocalVariable();
+    procedure declareLocalVariable;
     procedure Error(Const msg : String);
     function argumentList: Byte;
     procedure NamedVariable(const Token : TToken; const CanAssign : Boolean);
@@ -242,7 +236,7 @@ end;
 
 procedure TCompilerController.grouping(const canAssign : boolean);
 begin
-   expression();
+   expression;
    consume(tkclosebracket, 'Expect '')'' after expression.');  //right bracket
 end;
 
@@ -294,7 +288,8 @@ end;
 //note book suggests better ways to do this, but this uses existing functionality.
 Procedure TCompilerController.or_(const canAssign : boolean);
 var
-  elseJump,endJump : integer;
+  elseJump : integer;
+  endJump  : integer;
 begin
   elseJump := emitJump(OP_JUMP_IF_FALSE);
   endJump := emitJump(OP_JUMP);
@@ -336,11 +331,10 @@ end;
 
 Function TCompilerController.TokenName(const Token : TToken) : String;
 var
-  a : string;
+  txt : string;
 begin
-  a := FScanner.ln.items[Token.Line].text;
-  a := copy(a,token.Start,token.length);
-  result := a;
+  txt := FScanner.ln.items[Token.Line].text;
+  result := copy(txt,token.Start,token.length);
 end;
 
 Function TCompilerController.resolveLocal(
@@ -403,12 +397,10 @@ begin
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
   end;
-
-
-
+ 
   if canAssign and (match(tkEqual)) then
   begin
-     expression();
+     expression;
      Emit(setOp, Idx);
    end
    else
@@ -422,13 +414,11 @@ begin
   namedVariable(FTokens.previous, CanAssign);
 end;
 
-
-procedure TCompilerController.markInitialized();
+procedure TCompilerController.markInitialized;
 begin
   if FCurrent.ScopeDepth = 0 then exit;
   FCurrent.Locals.Last.Depth := FCurrent.ScopeDepth;
 end;
-
 
 procedure TCompilerController.defineVariable(const constantIdx : integer);
 begin
@@ -550,7 +540,7 @@ end;
 
 
 
-procedure TCompilerController.declareLocalVariable();
+procedure TCompilerController.declareLocalVariable;
 var
   i: Integer;
   token: TToken; // Assuming TToken is a pointer to the Token struct.
@@ -591,7 +581,7 @@ begin
 
   if (match(tkequal)) then
   begin
-    expression();
+    expression;
   end
   else
   begin
@@ -609,12 +599,12 @@ begin
 end;
 
 
-procedure TCompilerController.block();
+procedure TCompilerController.block;
 begin
 
   while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
   begin
-    declaration();
+    declaration;
   end;
   consume(tkCloseBrace, 'Expect "}" after block.');
 
@@ -662,7 +652,7 @@ var
 begin
   consume(tkOpenBracket,'Expect "(" after "if".');
 
-  expression();
+  expression;
 
   consume(tkCloseBracket, 'Expect ")" after condition.');
 
@@ -670,7 +660,7 @@ begin
 
   Emit(OP_POP);
 
-  statement();
+  statement;
 
   elseJump := emitJump(OP_JUMP);
 
@@ -678,7 +668,7 @@ begin
 
   Emit(OP_POP);
 
-  if (match(tkElse)) then statement();
+  if (match(tkElse)) then statement;
 
   patchJump(elseJump);
 
@@ -750,7 +740,7 @@ begin
 
 end;
  
-procedure TCompilerController.whileStatement();
+procedure TCompilerController.whileStatement;
 var
   exitJump : integer;
   loopStart : integer;
@@ -759,7 +749,7 @@ begin
 
   consume(tkOpenBracket, 'Expect "(" after while.');
 
-  expression();
+  expression;
 
   consume(tkCloseBracket, 'Expect ")" after condition.');
 
@@ -767,7 +757,7 @@ begin
 
   Emit(OP_POP);
 
-  statement();
+  statement;
 
   emitLoop(loopStart);
 
@@ -819,7 +809,7 @@ begin
 
   if (match(tkIF))then
   begin
-    ifStatement();
+    ifStatement;
     exit;
   end;
 
@@ -839,14 +829,14 @@ begin
 
   if (match(tkWhile)) then
   begin
-    whileStatement();
+    whileStatement;
     exit;
   end;
  
   if (match(tkReturn)) then
   begin
 
-    returnStatement();
+    returnStatement;
     exit;
   end;
 
@@ -1053,8 +1043,8 @@ begin
   FCurrent.Func.Chunks.Emit(Value);
 end;
 
-function TCompilerController.Emit(const Operand: TOpCodes;
-  const value: Integer): integer;
+procedure TCompilerController.Emit(const Operand: TOpCodes;
+  const value: Integer);
 begin
   FCurrent.Func.Chunks.Emit(Operand,Value);
 end;
@@ -1064,11 +1054,10 @@ var
   globalIdx : integer;
 begin
   globalIdx := parseVariable('Expect function name.');
-  markInitialized();
+  markInitialized;
   DoFunction(TYPE_FUNCTION);
   defineVariable(globalIdx);
 end;
-
 
 procedure TCompilerController.declaration;
 begin
@@ -1084,9 +1073,8 @@ begin
      exit;
   end;
 
-  statement();
+  statement;
 end;
-
 
 procedure TCompilerController.SetRuleForOpen_bracket;
 begin
@@ -1349,7 +1337,9 @@ begin
 end;
 
 
-
+//this basically describes the lexical rules in place.
+//so whilst some things are not actually needed, I keep them here for now
+//it may be the case that we add a boolean to describe if a rule is in use.
 procedure TCompilerController.SetRules ;
 begin
   SetRuleForOpen_bracket;
@@ -1386,10 +1376,7 @@ begin
   SetRulesForFun;
   SetRulesForOpenSquareBracket;
   SetRulesForCloseSquareBracket;
-
 end;
-
-
 
 constructor TCompilerController.Create(
   const Tokens  : TTokenIterator;
@@ -1514,7 +1501,7 @@ begin
 end;
 
 destructor TCompiler.destroy;
-begin                
+begin
   FInternal.free;
   Flocals.Free;
   inherited;
