@@ -44,6 +44,9 @@ type
     property Name : String read FName;
   end;
 
+
+  //dumb - there is something fucked up with this, but I'm too tired and time-short to fix it right now.
+  //why have a list of compilers when all you really care about is a list PloxFunctions, at best? Right?
   TCompilers = class
   private
     FItems : TList;
