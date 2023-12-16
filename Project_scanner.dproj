@@ -45,14 +45,34 @@
     </DelphiCompile>
     <DCCReference Include="Addition.pas" />
     <DCCReference Include="compiler.pas" />
-    <DCCReference Include="CompilerRules.pas" />
     <DCCReference Include="Exceptions.pas" />
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Natives.pas" />
+    <DCCReference Include="S">
+      <Form>$R *.res</Form>
+    </DCCReference>
     <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
+    </DCCReference>
+    <DCCReference Include="St">
+      <Form>$R *.res</Form>
+    </DCCReference>
+    <DCCReference Include="Sta">
+      <Form>$R *.res</Form>
+    </DCCReference>
+    <DCCReference Include="Stack">
+      <Form>$R *.res</Form>
+    </DCCReference>
+    <DCCReference Include="Stack.p">
+      <Form>$R *.res</Form>
+    </DCCReference>
+    <DCCReference Include="Stack.pa">
+      <Form>$R *.res</Form>
+    </DCCReference>
+    <DCCReference Include="Stack.pas">
+      <Form>$R *.res</Form>
     </DCCReference>
     <DCCReference Include="subtraction.pas" />
     <DCCReference Include="table.pas" />

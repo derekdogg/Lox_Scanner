@@ -74,7 +74,7 @@ type
     function newNative(const NativeFn : TNativeFunction) : TValueRecord;
     function NewNumber(Const number : TNumber) : TValueRecord;
     function NewBool(const Bool : Boolean) : TValueRecord;
-    function NewValues : TValueList;
+    function NewValues : TStack;
     function newValueFromList(const List : pLoxList) : TValueRecord;
     function newValueList(const name : string) : TValueRecord;
     function NewString(const requester : TRequester;const txt : String) : TValueRecord;
@@ -122,7 +122,7 @@ type
 
 
     function NewList(const name : string) : pLoxList;
-    function NewValues : TValueList;
+    function NewValues : TStack;
 //    function IndexOf(const value : TValueRecord) : integer;
 
 
@@ -208,9 +208,9 @@ begin
   //FSize := FSize + Sizeof(result^);
 end;
 
-function TValueCreation.NewValues: TValueList;
+function TValueCreation.NewValues: TStack;
 begin
-  result := TValueList.Create(false);
+  result := TStack.Create;
 end;
 
 function TValueCreation.NewNil: TValueRecord;
@@ -468,7 +468,7 @@ begin
    if OwnValue then FCompilerItems.Push(result);
 end;
 
-function TValueManager.NewValues: TValueList;
+function TValueManager.NewValues: TStack;
 begin
 
 end;
@@ -499,9 +499,9 @@ var
   i : integer;
   constant : TValueRecord;
 begin
-  assert(value.Chunks.OwnsValues = false, 'the chunk values are owned - dispose will abort');
+  //assert(value.Chunks.OwnsValues = false, 'the chunk values are owned - dispose will abort');
 
-  for i := value.Chunks.StackTop-1 downto 0 do
+  for i := value.Chunks.ConstantCount-1 downto 0 do
   begin
     constant := value.Chunks.Constant[i];
     disposeValue(constant);

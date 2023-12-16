@@ -85,10 +85,8 @@ type
 
 
     //---------------------Compiler rules --------------------------------------
-    procedure SetRulesForOpenSquareBracket;
-    procedure SetRulesForCloseSquareBracket;
-
-
+    procedure  SetRulesForOpenSquareBracket;
+    procedure  SetRulesForCloseSquareBracket;
     procedure  SetRulesForOpenBrace;
     procedure  SetRulesForCloseBrace;
     procedure  SetRulesForClose_Bracket;
@@ -125,7 +123,11 @@ type
 
 
     //--------------------------------------------------------------------------
-    procedure EmitReturn;
+    function Emit(const Operand : TOpCodes; const  value : Integer) : integer;overload;
+    procedure Emit(const Operand : TOpCodes);overload;
+    procedure Emit(const value : integer);overload;
+
+    procedure EmitConstant(const value : TValueRecord);
     function EndCompiler: pLoxFunction;
 
 
@@ -134,7 +136,7 @@ type
     procedure patchJump(const offset : integer);
     function emitJump(const instruction : TOpCodes) : integer;
     procedure ifStatement;
-    procedure Log(const txt : String);
+
 
     function  checkKind(const Kind : TTokenKind) : boolean;
     function  match(const Expected : TTokenKind) : boolean;
@@ -156,8 +158,8 @@ type
     procedure printStatement;
     procedure ExpressionStatement;
     Procedure beginScope;
-    procedure block();
-    procedure endScope();
+    procedure block;
+    procedure endScope;
     procedure RemoveLocal;
     Procedure statement;
     procedure declaration;
@@ -187,26 +189,23 @@ type
     procedure DoFunction (FunctionKind : TFunctionKind);
 
     procedure consume(const TokenKind : TTokenKind; const Message : String);
-    function GetParseRule(const TokenKind: TTokenKind): TParseRule;
-    function getCount: integer;
-    function getCompiler(const index: integer): TCompiler;
-  public
-    procedure LocalsToString(const strings : TStrings);
 
+
+  public
 
     function DoCompile : pLoxFunction;
 
-   constructor Create(
+    constructor Create(
        const Tokens  : TTokenIterator;
        const Scanner : TScanner;
        const FunctionKind : TFunctionKind);
 
     destructor destroy;override;
 
-    property Current : TCompiler read fCurrent write fCurrent;
+    //property Current : TCompiler read fCurrent write fCurrent;
 
-    property Count : integer read getCount;
-    property Compiler[const index : integer] : TCompiler read getCompiler; default;
+
+
   end;
 
 
@@ -218,13 +217,7 @@ uses sysutils, valueManager;
 
 function TCompilerController.advance : boolean;
 begin
-  //if FTokens.Current <> nil then
-  //  log('Before Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
   result := FTokens.MoveNext <> nil;
-
-  //if FTokens.Current <> nil then
-  //  log('After Advance. Current Token : ' + FScanner.TokenText(FTokens.Current^));
-
 end;
 
 procedure TCompilerController.Number(const canAssign : boolean);
@@ -233,7 +226,7 @@ var
   number : double;
   text : string;
   Value : TValueRecord;
-
+  idx : integer;
 begin
   Token := FTokens.Previous;
   if Token = nil then exit;
@@ -242,7 +235,7 @@ begin
 
   Value := BorrowChecker.NewNumber(strToFloat(text));
 
-  Current.Func.Chunks.EmitConstant(Value);
+  EmitConstant(Value);
 end;
 
 
@@ -256,9 +249,15 @@ end;
 procedure TCompilerController.literal(const CanAssign: boolean);
 begin
   case  FTokens.Previous.Kind of
-    tkFalse : Current.Func.Chunks.AddFALSE;
-    tknil   : Current.Func.Chunks.AddNil;
-    tkTrue  : Current.Func.Chunks.AddTrue;
+    tkFalse : begin
+       Emit(OP_FALSE);
+    end;
+    tknil   : begin
+       Emit(OP_NIL);
+    end;
+    tkTrue  : begin
+       Emit(OP_TRUE);
+    end;
   end;
 end;
 
@@ -269,8 +268,8 @@ begin
   TokenKind := FTokens.previous.Kind;
   parsePrecedence(PREC_UNARY);
   case TokenKind of
-    tkMinus : Current.Func.Chunks.AddNEGATE;
-    tkBang  : Current.Func.Chunks.ADDNOT;
+    tkMinus : Emit(OP_NEGATE);
+    tkBang  : Emit(OP_NOT);
   end;
 
 end;
@@ -290,10 +289,6 @@ begin
   error(Message)//errorAtCurrent(message);
 end;
 
-procedure TCompilerController.Log(const txt : String);
-begin
-
-end;
 
 
 //note book suggests better ways to do this, but this uses existing functionality.
@@ -305,7 +300,7 @@ begin
   endJump := emitJump(OP_JUMP);
 
   patchJump(elseJump);
-  Current.Func.Chunks.ADDPOP;
+  Emit(OP_POP);
 
   parsePrecedence(PREC_OR);
   patchJump(endJump);
@@ -318,7 +313,7 @@ var
   endJump : integer;
 begin
   endJump := emitJump(OP_JUMP_IF_FALSE);
-  Current.Func.Chunks.AddPOP;
+  Emit(OP_POP);
   parsePrecedence(PREC_AND);
   patchJump(endJump);
 end;
@@ -328,22 +323,15 @@ procedure TCompilerController.printStatement;
 begin
   expression;
   consume(tkSemiColon, 'Expect ";" after value.');
-  Current.Func.Chunks.ADDPRINT;
+  Emit(OP_PRINT);
 end;
 
 procedure TCompilerController.ExpressionStatement;
 begin
   Expression;
   Consume(tkSemiColon, 'Expect ";" after value.');
-  Current.Func.Chunks.ADDPOP;
+  Emit(OP_POP);
 end;
-
-
-function TCompilerController.GetParseRule(const TokenKind: TTokenKind): TParseRule;
-begin
-   result := FParseRules[TokenKind];
-end;
-
 
 
 Function TCompilerController.TokenName(const Token : TToken) : String;
@@ -384,11 +372,11 @@ begin
       end;
 
       result :=  i;
-      Log(format('resolved local for %s. found at local index index %d',[TokenName(Token),i]));
+
       exit;
     end;
   end;
-  Log(format('unable to resolve local for %s.',[TokenName(Token)]));
+  
 end;
 
 
@@ -401,7 +389,7 @@ var
    Value : TValueRecord;
 begin
 
-  Idx := resolveLocal(Current,Token);
+  Idx := resolveLocal(FCurrent,Token);
 
   if (Idx <> -1) then
   begin
@@ -411,7 +399,7 @@ begin
   else
   begin
     Value := BorrowChecker.NewString(rCompiler,TokenName(token));
-    idx :=   Current.Func.Chunks.AddConstant(Value);
+    idx :=   FCurrent.Func.Chunks.AddConstant(Value);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
   end;
@@ -421,13 +409,11 @@ begin
   if canAssign and (match(tkEqual)) then
   begin
      expression();
-
-     Current.Func.Chunks.Emit(setOp, Idx);
-
+     Emit(setOp, Idx);
    end
    else
    begin
-     Current.Func.Chunks.Emit(getOp, Idx);
+     Emit(getOp, Idx);
    end;
 end;
 
@@ -439,24 +425,19 @@ end;
 
 procedure TCompilerController.markInitialized();
 begin
-  if Current.ScopeDepth = 0 then exit;
-  Current.Locals.Last.Depth := Current.ScopeDepth;
+  if FCurrent.ScopeDepth = 0 then exit;
+  FCurrent.Locals.Last.Depth := FCurrent.ScopeDepth;
 end;
 
 
 procedure TCompilerController.defineVariable(const constantIdx : integer);
 begin
-  log('define variable');
-  if (Current.scopeDepth > 0) then  // If we're in a nested scope, mark the variable as initialized locally.
+  if (FCurrent.scopeDepth > 0) then  // If we're in a nested scope, mark the variable as initialized locally.
   begin
-    log('scope depth is > 0 therefore not global');
     MarkInitialized;
     exit;
   end;
-
-  // If we're in the outermost scope, define the variable as a global.
-  log('define global variable');
-  Current.Func.Chunks.AddDEFINE_GLOBAL(constantidx);
+  Emit(OP_DEFINE_GLOBAL,ConstantIdx);
 end;
 
 procedure TCompilerController.parsePrecedence(precedence : TPrecedence);
@@ -467,7 +448,7 @@ var
 begin
   if not advance then
   begin
-    //error('Advance Called when no further tokens' + TTokenName[FTokens.current.kind]);
+    error('Advance Called when no further tokens' + TTokenName[FTokens.Current.kind]);
     exit;
   end;
 
@@ -500,21 +481,6 @@ begin
 end;
 
 
-(*
-  static uint8_t parseVariable(const char* errorMessage) {
-  consume(TOKEN_IDENTIFIER, errorMessage);
-//> Local Variables parse-local
-
-  declareVariable();
-  if (current->scopeDepth > 0) return 0;
-
-//< Local Variables parse-local
-  return identifierConstant(&parser.previous);
-}
-
-*)
-
-
 function TCompilerController.parseVariable(const errorMessage : string) : integer;
 var
   Value : TValueRecord;
@@ -522,7 +488,7 @@ var
 begin
   consume(tkIdentifier, errorMessage);
 
-  if Current.ScopeDepth > 0 then
+  if FCurrent.ScopeDepth > 0 then
   begin
     declareLocalVariable;
     result := 0;
@@ -530,7 +496,7 @@ begin
   end;
 
   Value  := BorrowChecker.NewString(rCompiler,TokenName(FTokens.previous));
-  result := Current.Func.Chunks.AddConstant(Value);
+  result := FCurrent.Func.Chunks.AddConstant(Value);
 end;
 
 
@@ -555,12 +521,10 @@ var
   Local : TLocal;
 begin
 
-  while (Current.locals.Count > 0) and (Current.Locals.Last.depth > Current.scopeDepth) do
+  while (FCurrent.locals.Count > 0) and (FCurrent.Locals.Last.depth > FCurrent.scopeDepth) do
   begin
-    Current.Func.Chunks.AddPOP;
-    Current.Locals.Remove(Current.Locals.Count-1);
-
-    //Log(format('Remove local kind : %s, name : %s, local count : %d',[TokenKindToStr(Local.Token.Kind),TokenName(Local.Token),FLocals.Count]));
+    Emit(OP_POP);
+    FCurrent.Locals.Remove(FCurrent.Locals.Count-1);
   end;
 end;
 
@@ -569,17 +533,17 @@ var
   Local: TLocal;
 begin
   Assert(Assigned(token),'token being added to local is nil');
-  if Current.Locals.Count = MAX_LOCALS then
+  if FCurrent.Locals.Count = MAX_LOCALS then
   begin
     Error('Too many local variables in function.');
     Exit;
   end;
-  Local := Current.Locals.Add(TokenName(Token), token);
+  Local := FCurrent.Locals.Add(TokenName(Token), token);
 //  Local.Token := Token;
   local.depth := -1 ; //declare undefined
   Local.isCaptured := False; //presumably for future captures
 
-  Log(format('Adding new local %s, %s. Current local count : %d',[TokenKindToStr(Token.Kind),TokenName(Token),Current.Locals.Count]));
+
 end;
 
 
@@ -592,21 +556,21 @@ var
   token: TToken; // Assuming TToken is a pointer to the Token struct.
   local : TLocal;
 begin
-  if Current.ScopeDepth = 0 then
+  if FCurrent.ScopeDepth = 0 then
     Exit;
 
   token := FTokens.previous;
 
 
-  for i := Current.Locals.Count - 1 downto 0 do
+  for i := FCurrent.Locals.Count - 1 downto 0 do
   begin
-    local := Current.Locals[i];
-    if (local.depth <> -1) and (local.depth < Current.ScopeDepth) then
+    local := FCurrent.Locals[i];
+    if (local.depth <> -1) and (local.depth < FCurrent.ScopeDepth) then
     begin
       Break;
     end;
 
-    if identifiersEqual(token, Current.Locals[i].token) then
+    if identifiersEqual(token, FCurrent.Locals[i].token) then
     begin
       error('Already a variable with this name in this scope.');
       exit;
@@ -631,7 +595,7 @@ begin
   end
   else
   begin
-    Current.Func.Chunks.ADDNil;
+    Emit(OP_NIL);
   end;
   consume(tkSemiColon,'Expect ";" after variable declaration.');
 
@@ -640,32 +604,28 @@ end;
 
 Procedure TCompilerController.beginScope;
 begin
-  Current.ScopeDepth := Current.ScopeDepth + 1;
-  Log(format('Begin Scope : %d',[Current.ScopeDepth]));
+  FCurrent.ScopeDepth := FCurrent.ScopeDepth + 1;
+
 end;
 
 
 procedure TCompilerController.block();
 begin
-  Log(format('Begin block at : %d',[Current.ScopeDepth]));
+
   while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
   begin
     declaration();
   end;
   consume(tkCloseBrace, 'Expect "}" after block.');
-  Log(format('end block at : %d',[Current.ScopeDepth]));
+
 end;
 
 
-procedure TCompilerController.endScope();
-var
-  Local : TLocal;
-  i : integer;
-  scope : string;
+procedure TCompilerController.endScope;
 begin
-  Log(format('End scope : %d',[Current.ScopeDepth]));
-  Current.ScopeDepth := Current.ScopeDepth -1;
-  removeLocal;   //current->localCount--;
+
+  FCurrent.ScopeDepth := FCurrent.ScopeDepth -1;
+  removeLocal;
 end;
 
 procedure TCompilerController.PatchJump(const OffSet: Integer);
@@ -673,34 +633,22 @@ var
   Jump: Integer;
 begin
   // -2 to adjust for the bytecode for the jump offset itself.
-  Jump := Current.Func.Chunks.CodeCount - OffSet - 2;
+  Jump := FCurrent.Func.Chunks.CodeCount - OffSet - 2;
 
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
 
-  Current.Func.Chunks[OffSet]   := (Jump shr 8) and $FF;
-  Current.Func.Chunks[OffSet+1] := Jump and $FF;
+  FCurrent.Func.Chunks[OffSet]   := (Jump shr 8) and $FF;
+  FCurrent.Func.Chunks[OffSet+1] := Jump and $FF;
 end;
 
-procedure TCompilerController.LocalsToString(const strings: TStrings);
-var
-  Compiler : TCompiler;
-  i : integer;
-begin
-  for i := 0 to FCompilers.Count-1 do
-  begin
-     Compiler := FCompilers[i];
-     strings.Add('Current Compiler : ' + Compiler.Name);
-     Compiler.Locals.ToString(Strings);
-  end;
-end;
 
 function TCompilerController.emitJump(const instruction : TOpCodes) : integer;
 begin
-  Current.Func.Chunks.Emit(instruction);
-  Current.Func.Chunks.Emit($FF); //255
-  Current.Func.Chunks.Emit($FF); //255
-  result :=  Current.Func.Chunks.Codecount - 2;
+  Emit(instruction);
+  Emit($FF); //255
+  Emit($FF); //255
+  result :=  FCurrent.Func.Chunks.Codecount - 2;
 end;
 
 
@@ -719,16 +667,16 @@ begin
   consume(tkCloseBracket, 'Expect ")" after condition.');
 
   thenJump := emitJump(OP_JUMP_IF_FALSE);
-  //emitOp(OpCode.POP);
-  Current.Func.Chunks.ADDPOP;
+
+  Emit(OP_POP);
 
   statement();
 
   elseJump := emitJump(OP_JUMP);
 
   patchJump(thenJump);
-  //emitOp(OpCode.POP);
-  Current.Func.Chunks.ADDPOP;
+
+  Emit(OP_POP);
 
   if (match(tkElse)) then statement();
 
@@ -745,11 +693,11 @@ begin
   if canAssign and Match(tkEqual) then
   begin
     Expression;
-    Current.Func.Chunks.Emit(OP_STORE_SUBSCR);
+    Emit(OP_STORE_SUBSCR);
   end
   else
   begin
-    Current.Func.Chunks.Emit(OP_INDEX_SUBSCR);
+    Emit(OP_INDEX_SUBSCR);
   end;
 end;
 
@@ -782,8 +730,8 @@ begin
 
   Consume(tkCloseSquareBracket, 'Expect '']'' after list literal.');
 
-  Current.Func.Chunks.Emit(OP_BUILD_LIST);
-  Current.Func.Chunks.Emit(itemCount);
+  Emit(OP_BUILD_LIST);
+  Emit(itemCount);
 end;
 
 
@@ -792,13 +740,13 @@ procedure TCompilerController.emitLoop(const loopStart : integer);
 var
   offset : integer;
 begin
-  Current.Func.Chunks.Emit(OP_LOOP);
+  Emit(OP_LOOP);
 
-  offset := Current.Func.Chunks.CodeCount - loopStart + 2;
+  offset := FCurrent.Func.Chunks.CodeCount - loopStart + 2;
   if (offset > MAX_JUMP) then error('Loop body too large.');
 
-  Current.Func.Chunks.Emit((offset shr 8) and $ff);
-  Current.Func.Chunks.Emit(offset and $ff);
+  Emit((offset shr 8) and $ff);
+  Emit(offset and $ff);
 
 end;
  
@@ -806,44 +754,50 @@ procedure TCompilerController.whileStatement();
 var
   exitJump : integer;
   loopStart : integer;
-
 begin
-  
-  loopStart := Current.Func.Chunks.Codecount;
+  loopStart := FCurrent.Func.Chunks.Codecount;
+
   consume(tkOpenBracket, 'Expect "(" after while.');
 
-   
   expression();
+
   consume(tkCloseBracket, 'Expect ")" after condition.');
+
   exitJump := emitJump(OP_JUMP_IF_FALSE);
-  Current.Func.Chunks.addPOP;
+
+  Emit(OP_POP);
+
   statement();
+
   emitLoop(loopStart);
+
   patchJump(exitJump);
-  Current.Func.Chunks.addPOP;
+
+  Emit(OP_POP); 
 
 end;
 
 
 
 
-procedure TCompilerController.returnStatement();
+procedure TCompilerController.returnStatement;
 begin
 
-  if (Current.Func.FuncKind = TYPE_SCRIPT) then
+  if (FCurrent.Func.FuncKind = TYPE_SCRIPT) then
   begin
     raise exception.create('Cant return from top-level code.');
   end;
 
   if match(tkSemiColon) then    
   begin
-    emitReturn;
+    Emit(OP_NIL);
+    Emit(OP_RETURN);
     exit;
   end;
 
   expression;
   consume(tkSemiColon, 'Expect ";" after return value.');
-  Current.Func.Chunks.AddReturn;
+  Emit(OP_Return);
 end;
 
 
@@ -941,7 +895,10 @@ begin
 end;
 
 
-
+procedure TCompilerController.EmitConstant(const value : TValueRecord);
+begin
+  FCurrent.Func.Chunks.EmitConstant(value);
+end;
 
 
 procedure TCompilerController.Strings(const canAssign: Boolean);
@@ -953,7 +910,7 @@ begin
   Token := FTokens.previous;
   text := TokenName(Token);
   Value := BorrowChecker.NewString(rCompiler,Text);
-  Current.Func.Chunks.EmitConstant(Value);
+  EmitConstant(Value);
 end;
 
 
@@ -964,8 +921,7 @@ var
   count : Integer;
 begin
   argCount := argumentList;
-  Current.Func.Chunks.Emit(ord(OP_CALL), argCount);
-
+  Emit(OP_CALL, argCount);
 end;
 
 procedure TCompilerController.binary(const canAssign : boolean);
@@ -979,16 +935,35 @@ begin
 
 
   Case (TokenKind) of
-    TkPlus              : Current.Func.Chunks.AddADD;
-    TkMinus             : Current.Func.Chunks.AddSUBTRACT;
-    tkAsterisk          : Current.Func.Chunks.AddMULTIPLY;
-    tkEqualEqual        : Current.Func.Chunks.AddEQUAL;
-    tkBangEqual         : Current.Func.Chunks.AddNOTEqual;
-    tkLessThan          : Current.Func.Chunks.AddLess;
-    tkLessThanEqual     : Current.Func.Chunks.AddLESSTHANEQUAL;
-    tkGreaterThanEqual  : Current.Func.Chunks.AddGREATERTHANEQUAL;
-    tkgreaterthan       : Current.Func.Chunks.AddGREATER;
-    tkSlash             : Current.Func.Chunks.AddDivide;
+    TkPlus : Emit(OP_ADD);
+
+    TkMinus : Emit(OP_SUBTRACT);
+
+    tkAsterisk : Emit(OP_MULTIPLY);
+
+    tkEqualEqual : Emit(OP_EQUAL);
+
+    tkBangEqual :
+    begin
+      Emit(OP_EQUAL);
+      Emit(OP_NOT);
+    end;
+
+    tkLessThan          : Emit(OP_LESS);
+
+    tkLessThanEqual     : begin
+                           Emit(OP_GREATER);
+                           Emit(OP_NOT);
+    end;
+    tkGreaterThanEqual  :
+    begin
+                            Emit(OP_LESS);
+                            Emit(OP_NOT);
+    end;
+
+    tkgreaterthan       : Emit(OP_GREATER);
+
+    tkSlash             : Emit(OP_DIVIDE);
     else
     begin
       raise exception.create('A token kind not catered for in a binary operation was encountered');
@@ -1007,29 +982,26 @@ begin
     Declaration;
   end;
 
-  result := Current.Func;
+  result := FCurrent.Func;
+end;
+
+
+procedure TCompilerController.Emit(const Operand : TOpCodes);
+begin
+  FCurrent.Func.Chunks.Emit(Operand);
 end;
 
  
-procedure TCompilerController.EmitReturn;
-begin
-  Current.Func.Chunks.Emit(byte(OP_NIL));
-  Current.Func.Chunks.Emit(byte(OP_RETURN));
-end;
-
-
-
 function TCompilerController.EndCompiler: pLoxFunction;
 var
   fn : pLoxFunction;
 begin
-  EmitReturn;
-  fn := Current.Func;
-  current := current.enclosing;
+  Emit(OP_NIL);
+  Emit(OP_RETURN);
+  fn := FCurrent.Func;
+  FCurrent := FCurrent.enclosing;
   result := fn;
 end;
-
-
 
 
 
@@ -1043,10 +1015,10 @@ end;
 begin
    name := TokenName(FTokens.previous);
 
-   Compiler := FCompilers.Add(Name,FunctionKind,Current);
+   Compiler := FCompilers.Add(Name,FunctionKind,FCurrent);
 
-   Current := Compiler;
- 
+   FCurrent := Compiler;
+
    BeginScope;
    Consume(tkOpenBracket,    'Expect ''('' after function name.');
 
@@ -1071,10 +1043,21 @@ begin
 
    Value := BorrowChecker.newValueFromFunction(rCompiler,functionObj);
 
-   Current.Func.Chunks.EmitConstant(Value);
+   EmitConstant(Value);
 
 end;
 
+
+procedure TCompilerController.Emit(const value: integer);
+begin
+  FCurrent.Func.Chunks.Emit(Value);
+end;
+
+function TCompilerController.Emit(const Operand: TOpCodes;
+  const value: Integer): integer;
+begin
+  FCurrent.Func.Chunks.Emit(Operand,Value);
+end;
 
 procedure TCompilerController.funDeclaration;
 var
@@ -1086,17 +1069,6 @@ begin
   defineVariable(globalIdx);
 end;
 
-
-
-function TCompilerController.getCompiler(const index: integer): TCompiler;
-begin
-  result := FCompilers[index];
-end;
-
-function TCompilerController.getCount: integer;
-begin
-  result := FCompilers.Count;
-end;
 
 procedure TCompilerController.declaration;
 begin
@@ -1427,17 +1399,18 @@ constructor TCompilerController.Create(
 var
   Token : TToken;
 begin
-  FCompilers := TCompilers.Create;
-
-  Current := FCompilers.add('toplevelcompiler',FunctionKind,nil);
-
-  SetRules;
-
   Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
 
   FScanner := Scanner;
 
   FTokens := Tokens;
+
+  FCompilers := TCompilers.Create;
+
+  FCurrent := FCompilers.add('toplevelcompiler',FunctionKind,nil);
+
+  SetRules;
+
 
 end;
 

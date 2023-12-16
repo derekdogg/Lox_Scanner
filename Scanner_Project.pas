@@ -115,6 +115,7 @@ var
   i : integer;
   value : pValue;
   c : TCompiler;
+  l : TList;
 
 begin
 
