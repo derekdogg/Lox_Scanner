@@ -532,13 +532,7 @@ begin
 //  Local.Token := Token;
   local.depth := -1 ; //declare undefined
   Local.isCaptured := False; //presumably for future captures
-
-
 end;
-
-
-
-
 
 procedure TCompilerController.declareLocalVariable;
 var
@@ -1478,8 +1472,6 @@ function TCompiler.GetLocals : TLocals;
 begin
   result := FLocals;
 end;
-
-
  
 constructor TCompiler.Create(
   const Name : string;

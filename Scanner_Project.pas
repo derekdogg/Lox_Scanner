@@ -93,10 +93,9 @@ procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
    VM :  TVirtualMachine;
 begin
+
+   VM := TVirtualMachine.Create(MemRun.Lines);
    try
-      VM := TVirtualMachine.Create(MemRun.Lines);
-      //Vm.OnPush := LogStackPush;
-      //Vm.OnPop  := LogStackPop;
       VM.Run(LoxFunction);
    finally
      vm.Free;
@@ -110,10 +109,7 @@ var
   Scanner : TScanner;
   cc : TCompilerController;
   Tokens : TTokenIterator;
-
   LoxFunction : pLoxFunction;
-  i : integer;
-  value : pValue;
   c : TCompiler;
   l : TList;
 

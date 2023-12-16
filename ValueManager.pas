@@ -42,12 +42,12 @@ type
 
 
   TValueDisposal = class
-    procedure DisposeList(var List : TValueRecord);
+    procedure DisposeList(var value : TValueRecord);
     procedure DisposeNil(var value : TValueRecord);
     procedure DisposeBoolean(var value : TValueRecord);
     procedure DisposeNumber(var value : TValueRecord);
-    procedure DisposeNative(var native : TValueRecord);
-    procedure DisposeString(var str : TValueRecord);
+    procedure DisposeNative(var value : TValueRecord);
+    procedure DisposeString(var value : TValueRecord);
     procedure DisposeValue(var value : TValueRecord);
     procedure DisposeFunction(var value : TValueRecord);
     procedure DisposeLoxFunction(var value: pLoxFunction);
@@ -319,9 +319,6 @@ begin
     result.Chunks := TChunks.Create(Name);//(Constants); //.Init;
 end;
 
-
-
-
 function TValueCreation.newNative(const NativeFn : TNativeFunction) : TValueRecord;
 var
   LoxNative : PLoxNative;
@@ -482,16 +479,14 @@ begin
   end;
 end;
 
-procedure TValueDisposal.DisposeList(var List : TValueRecord);
+procedure TValueDisposal.DisposeList(var value : TValueRecord);
 var
   p : pLoxList;
 begin
-  p := pLoxList(List.Obj);
+  p := pLoxList(Value.Obj);
   p.Items.Free;
   dispose(p);
-  p := nil;
-//  dispose(List);
-//  list := nil;
+  value.Obj := nil;
 end;
 
 procedure TValueDisposal.DisposeLoxFunction(var value: pLoxFunction);
@@ -507,47 +502,32 @@ begin
     disposeValue(constant);
   end;
   Value.Chunks.Free;
- // dispose(value);
- // Value := nil;
+  Dispose(Value);
 end;
 
 procedure TValueDisposal.DisposeFunction(var value : TValueRecord);
 var
-  i : integer;
   func : pLoxFunction;
-  constant : TValueRecord;
+
 begin
   if value.Kind <> lxFunction then raise exception.create('value for disposal is not a function');
-  func := getFunction(Value);
-  DisposeLoxFunction(func);
-  //Dispose(Value);
+  DisposeLoxFunction(pLoxFunction(Value.Obj));
+  Value.Obj := nil;
 end;
 
 
-procedure TValueDisposal.disposeNative(var native : TValueRecord);
-var
-  LoxNative : PLoxNative;
+procedure TValueDisposal.disposeNative(var value : TValueRecord);
 begin
-  if Native.Kind <> lxNative then raise exception.create('value for disposal is not a Native');
-
-  LoxNative :=  getNative(Native);
-  Dispose(LoxNative);
-  LoxNative := nil;
- // Dispose(Native);
- // Native := nil;
+  if value.Kind <> lxNative then raise exception.create('value for disposal is not a Native');
+  Dispose(pLoxNative(Value.Obj));
+  Value.Obj := nil;
 end;
 
-procedure TValueDisposal.disposeString(var str : TValueRecord);
-var
-  p : pLoxString;
+procedure TValueDisposal.disposeString(var value : TValueRecord);
 begin
-  if str.Kind <> lxString then raise exception.create('value for disposal is not a String');
-
-  p :=  GetLoxString(Str);
-  dispose(p);
-  p := nil;
-  //dispose(str);
-  //str := nil;
+  if value.Kind <> lxString then raise exception.create('value for disposal is not a String');
+  dispose(pLoxString(Value.obj));
+  value.Obj := nil;
 end;
 
 

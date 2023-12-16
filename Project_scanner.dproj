@@ -53,21 +53,6 @@
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
     </DCCReference>
-    <DCCReference Include="St">
-      <Form>$R *.res</Form>
-    </DCCReference>
-    <DCCReference Include="Sta">
-      <Form>$R *.res</Form>
-    </DCCReference>
-    <DCCReference Include="Stack">
-      <Form>$R *.res</Form>
-    </DCCReference>
-    <DCCReference Include="Stack.p">
-      <Form>$R *.res</Form>
-    </DCCReference>
-    <DCCReference Include="Stack.pa">
-      <Form>$R *.res</Form>
-    </DCCReference>
     <DCCReference Include="Stack.pas">
       <Form>$R *.res</Form>
     </DCCReference>

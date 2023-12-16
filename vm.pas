@@ -22,18 +22,11 @@ type
   private
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
-
-    FOPCode : integer;
-    MemStatus: TMemoryManagerState;
     FCall : integer;
     FRootFunction : TValueRecord;
-
     FHalt    : boolean;
-    FNatives : TNatives;
-
     FStack   : TStack;
     FFrames : TCallFrames;
-
     FGlobals : TValuePairs;
     FResults : TStrings;
 
@@ -569,11 +562,8 @@ end;
 
 function TVirtualMachine.CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
 var
-  value : TValueRecord;
   fn    : pLoxFunction;
 begin
-//  value := nil;
-  fn    := nil;
 
   result := false;
 
@@ -610,10 +600,7 @@ function TVirtualMachine.Call(
   const ArgCount : integer) : boolean;
 
 begin
-
   FCall := FCall + 1;
-
-  result := false;
 
   if not (argCount = func.Arity) then raise exception.create('param mismatch');
 
@@ -625,8 +612,7 @@ end;
 procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
-  ip : TInstructionPointer;
-  f : TCallFrame;
+
 begin
     AssertCurrentOp(OP_RETURN);
 
@@ -850,7 +836,7 @@ procedure TVirtualMachine.OpGetLocal;
 var
   index  : Integer;
   Value  : TValueRecord;
-  Count  : Integer;
+  
 begin
 
   assert(CurrentOpCode = byte(OP_Get_LOCAL), 'current instruction is not op define global');
@@ -903,8 +889,6 @@ var
    ConstantIndex : integer;
    Name   : TValueRecord;
    NameValue : pNameValue;
-
-   value : TValueRecord;
 begin
 
   assert(CurrentOpCode = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
