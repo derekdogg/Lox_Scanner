@@ -23,7 +23,6 @@ type
     FDepth : integer;
     FIsCaptured : Boolean;
     function getToken: TToken;
-    procedure setToken(const Value: TToken);
   protected
 
   public
@@ -68,12 +67,13 @@ implementation
 uses
  sysutils;
 
+
+////dumb, returns nothing...
 function DisposeLocal(value : TLocal) : boolean;
 begin
   assert(assigned(Value), ' value for disposal is nil');
   Value.Free;
-
-end;
+end; 
 
 
 
@@ -136,6 +136,7 @@ begin
   end;
 end;
 
+////dumb, something weird here.
 procedure TLocals.Remove(const Index: integer);
 var
   Local : TLocal;
@@ -171,13 +172,6 @@ function TLocal.getToken: TToken;
 begin
   result := FToken;
 end;
-
-procedure TLocal.setToken(const Value: TToken);
-begin
-  assert(assigned(value), 'token is nil for setting a local');
-  FToken := Value;
-end;
-
 
 procedure TLocal.ToStrings(const strings : TStrings);
 const s = 'Index : %s, Depth = %s, IsCaptured : %s';

@@ -717,11 +717,12 @@ begin
 end;
 
 
-
+   //dumb, what happens here if it fails? (line record is null)
   function TScanner.ScanLine(const LineRecord : TLine) : TTokens;
   var
     Token : TToken;
   begin
+    result := nil;
     if ln.LineRecordIsNull(LineRecord) then exit;
     ln.chars.Init(LineRecord.text);
 

@@ -3,7 +3,7 @@ object fmScript: TfmScript
   Top = 0
   Caption = 'Script'
   ClientHeight = 638
-  ClientWidth = 1101
+  ClientWidth = 1012
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,21 +16,23 @@ object fmScript: TfmScript
   object Splitter1: TSplitter
     Left = 0
     Top = 468
-    Width = 1101
+    Width = 1012
     Height = 4
     Cursor = crVSplit
     Align = alBottom
     ResizeStyle = rsLine
     ExplicitLeft = -2
     ExplicitTop = 477
+    ExplicitWidth = 1101
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1101
+    Width = 1012
     Height = 41
     Align = alTop
     TabOrder = 0
+    ExplicitWidth = 1101
     object Label1: TLabel
       Left = 520
       Top = 16
@@ -92,15 +94,16 @@ object fmScript: TfmScript
   object Panel2: TPanel
     Left = 0
     Top = 472
-    Width = 1101
+    Width = 1012
     Height = 166
     Align = alBottom
     Caption = 'Panel2'
     TabOrder = 1
+    ExplicitWidth = 1101
     object Panel3: TPanel
       Left = 1
       Top = 1
-      Width = 411
+      Width = 232
       Height = 164
       Align = alLeft
       Caption = 'Panel3'
@@ -108,7 +111,7 @@ object fmScript: TfmScript
       object MemLocals: TMemo
         Left = 1
         Top = 1
-        Width = 409
+        Width = 230
         Height = 162
         Align = alClient
         Color = clMenuText
@@ -121,20 +124,22 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitWidth = 409
       end
     end
     object Panel4: TPanel
-      Left = 412
+      Left = 233
       Top = 1
-      Width = 368
+      Width = 471
       Height = 164
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
+      ExplicitWidth = 458
       object MemRun: TMemo
         Left = 1
         Top = 1
-        Width = 366
+        Width = 469
         Height = 162
         Align = alClient
         Color = clMenuText
@@ -151,19 +156,19 @@ object fmScript: TfmScript
       end
     end
     object Panel5: TPanel
-      Left = 780
+      Left = 704
       Top = 1
-      Width = 320
+      Width = 307
       Height = 164
       Align = alRight
       Caption = 'Panel3'
       TabOrder = 2
       object MemCodes: TMemo
-        Left = 1
+        Left = -7
         Top = 1
-        Width = 318
+        Width = 313
         Height = 162
-        Align = alClient
+        Align = alRight
         Color = clMenuText
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clAqua
@@ -174,21 +179,23 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
+        ExplicitLeft = 6
       end
     end
   end
   object Panel6: TPanel
     Left = 0
     Top = 41
-    Width = 1101
+    Width = 1012
     Height = 427
     Align = alClient
     Caption = 'Panel6'
     TabOrder = 2
+    ExplicitWidth = 1101
     object memEdit: TRichEdit
       Left = 1
       Top = 1
-      Width = 1099
+      Width = 1010
       Height = 425
       Align = alClient
       Color = clMenuText
@@ -209,6 +216,7 @@ object fmScript: TfmScript
       ParentFont = False
       TabOrder = 0
       WantTabs = True
+      ExplicitWidth = 1099
     end
   end
 end

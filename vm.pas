@@ -431,17 +431,10 @@ var
   L,R : TValueRecord;
   Result : TValueRecord;
 begin
-
-  //this also means we assume the correct values are sitting in Stack...
-
     R := PopStack;
     L := PopStack;
-
     result := TAddition.Add(L,R);
-//    if assigned(result) then
     PushStack(result);
-
-
 end;
  
 
@@ -455,7 +448,7 @@ begin
   L := PopStack;
 
   L := TSubtraction.Subtract(L,R);
-  //assert(Result <> nil, 'result of subtraction was nil indicating failure');
+  //dumb
   PushStack(L);
 end;
 
@@ -467,8 +460,6 @@ var
   s : string;
 
 begin
-
-
     R := PopStack;
     L := PopStack;
 
@@ -486,18 +477,15 @@ procedure TVirtualMachine.OPPrint;
 var
   value : TValueRecord;
 begin
-
-  //value := CurrentFrame.Stack.Pop;
   value := PopStack;
 
-  FResults.Add(GetString(Value)); //all this does is pass the string to a TStrings object
+  FResults.Add(GetString(Value));
 end;
 
 
 procedure TVirtualMachine.PushStack(const value: TValueRecord);
 begin
   VMStack.Push(Value);
-
 end;
 
 function TVirtualMachine.CurrentFrame : TCallFrame;
@@ -523,6 +511,7 @@ begin
   FFrames.Push(Frame);
 end;
 
+//dumb
 procedure TVirtualMachine.PopFrame;
 var
   IP : TInstructionPointer;
@@ -534,9 +523,7 @@ begin
   Frame.Free;
 end;
 
-
-
-
+//dumb - try to break into two and then send through the actual pointer.
 function TVirtualMachine.CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
 var
   fn    : pLoxFunction;
@@ -577,7 +564,7 @@ function TVirtualMachine.Call(
   const ArgCount : integer) : boolean;
 
 begin
-  FCall := FCall + 1;
+  FCall := FCall + 1;   //dumb, useful for examining stack frame pops vs push
 
   if not (argCount = func.Arity) then raise exception.create('param mismatch');
 
@@ -589,7 +576,6 @@ end;
 procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
-
 begin
 
 
@@ -598,8 +584,6 @@ begin
     Result := PopStack;
 
     VMStack.StackTop := FFrames.Peek.StackTop;
-
-//    VMStack.DecreaseCapacity; //note 
 
     PushStack(result);
 
@@ -620,7 +604,7 @@ begin
 
   if not callValue(Callee,ArgCount) then
   begin
-    raise exception.create('failed to complete call value');
+    raise exception.create('failed to complete call value'); //dumb - need better way to handle blow-ups
   end;
 
 end;
@@ -641,7 +625,7 @@ begin
    b := NextInstruction;
    idx := FFrames.Peek.InstructionPointer.Index;
    offset := a shl 8 + b;
-   assert(FFrames.Peek.InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset');
+   assert(FFrames.Peek.InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
 end;
 
 
@@ -653,6 +637,7 @@ begin
   a := NextInstruction;
   b := NextInstruction;
   offset := a shl 8 + b;
+  //dumb - probably...smells
   assert(FFrames.Peek.InstructionPointer.Move(FFrames.Peek.InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
@@ -684,13 +669,15 @@ begin
       PushStack(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
-
+    //the comment here is actually ok. but what about negating strings? dumb - need to think on it.
 end;
 
 
 //it's very important when working with the stack as it is pointer based,
 // and what you might push back on is actually a global var in altered form.
 //therefore, for now, always use a result, and pop off old vals
+
+//not dumb - good point?
 procedure TVirtualMachine.OpDivide;
 var
   L,R, Result : TValueRecord;
@@ -720,24 +707,15 @@ end;
 procedure TVirtualMachine.OPNotEqual;
 var
   result : TValueRecord;
-
 begin
-
-
-
     result := BorrowChecker.NewBool(isFalsey(PopStack));
     PushStack(Result);
-   // FStackResults.Add(Result);
-  
 end;
 
 procedure TVirtualMachine.OPEqual;
 var
   L,R, Result : TValueRecord;
 begin
-
-
-
     R := PopStack;
     L := PopStack;
 
