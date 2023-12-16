@@ -7,7 +7,9 @@ uses
 type
 
 
- 
+  //dumb - this whole thing has outlived its purpose now. And does some seriously shady things.
+  //what we ideally want here is a scanner which can pick up on syntax errors before it passes its results to the compiler?
+  //little things like missing ; etc.
   TScanner = record
     TokenIndex : integer;
     Tokens : TTokens;
