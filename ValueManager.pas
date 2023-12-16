@@ -506,9 +506,6 @@ begin
 end;
 
 procedure TValueDisposal.DisposeFunction(var value : TValueRecord);
-var
-  func : pLoxFunction;
-
 begin
   if value.Kind <> lxFunction then raise exception.create('value for disposal is not a function');
   DisposeLoxFunction(pLoxFunction(Value.Obj));
