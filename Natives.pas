@@ -43,7 +43,7 @@ uses
     FileName : String;
 
   begin
-    result := BorrowChecker.newString(rVM,'');
+    (*result := BorrowChecker.newString(rVM,'');
     FileName := GetString(Values.Peek);
     if not SysUtils.FileExists(Filename) then exit;
 
@@ -53,7 +53,7 @@ uses
       SetString(result,Strings.Text);
     finally
       Strings.Free;
-    end;
+    end; *)
   end;
 
   function FileExists(const ArgCount: Integer;const Values : TStack) : TValueRecord;
@@ -61,11 +61,12 @@ uses
     fileName : string;
     exists : Boolean;
   begin
-    FileName := GetString(Values.Peek);
+    (*FileName := GetString(Values.Peek);
     result := BorrowChecker.newBool(False);
 
     if SysUtils.FileExists(Filename) then SetBoolean(result,true);
-
+    *)
+    
   end;
 
   function DateTime(const ArgCount: Integer;const Values : TStack): TValueRecord;

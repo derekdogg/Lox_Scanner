@@ -157,16 +157,15 @@ type
   end;
 
     function getNumber(const ValueRecord : TValueRecord)  : TNumber;
-    procedure SetNumber(var ValueRecord : TValueRecord; const value : TNumber);
+
     function BoolToString(const ValueRecord : TValueRecord)  : String;
     function getBoolean(const ValueRecord : TValueRecord)  : Boolean;
-    procedure setBoolean(var ValueRecord : TValueRecord;const value : Boolean);
-    procedure setObject(var ValueRecord : TValueRecord;const value : pLoxObject);
+
+
     function  getObject(const ValueRecord : TValueRecord) : pLoxObject;
     function  getFunction(const ValueRecord : TValueRecord) : pLoxFunction;
-    procedure setNull(var ValueRecord : TValueRecord;const value : Boolean);
     function getNull(const ValueRecord : TValueRecord): boolean;
-    procedure SetString(var ValueRecord : TValueRecord;Const value : String);
+
     function GetString(const ValueRecord : TValueRecord) : String;
     function getIsNumber(const ValueRecord : TValueRecord): Boolean;
     function getIsString(const ValueRecord : TValueRecord): Boolean;
@@ -175,10 +174,10 @@ type
     function getIsNull(const ValueRecord : TValueRecord): Boolean;
     function getIsNative(const ValueRecord : TValueRecord): Boolean;
     function getNative(const ValueRecord : TValueRecord): pLoxNative;
-    procedure setNative(var ValueRecord : TValueRecord;const Value: pLoxNative);
+
 
     function getKind(const ValueRecord : TValueRecord): TLoxKind;
-    procedure setKind(var ValueRecord : TValueRecord; const Value: TLoxKind);
+
     function getIsList(const ValueRecord : TValueRecord): Boolean;
     function getList(const ValueRecord : TValueRecord): pLoxList;
     function getIsBoolean(const ValueRecord : TValueRecord): Boolean;
@@ -592,18 +591,8 @@ begin
 
 end;
 
-procedure setNative(var ValueRecord : TValueRecord; const Value: pLoxNative);
-begin
-  ValueRecord.Kind := lxNative;
-  ValueRecord.Obj := Value;
-end;
 
-procedure  setNull(var ValueRecord : TValueRecord;const value : Boolean);
-begin
-  ValueRecord.Kind := lxNull;
-end;
-
-procedure  setObject(var ValueRecord : TValueRecord;const value : pLoxObject);
+procedure setObject(var ValueRecord : TValueRecord;const value : pLoxObject);
 begin
   ValueRecord.Kind := lxObject;
 end;
@@ -697,11 +686,6 @@ begin
   assert(GetIsBoolean(ValueRecord), 'value is not a boolean so can''t set it to one');
   ValueRecord.Kind := lxBoolean;
   ValueRecord.Bool := Value;
-end;
-
-procedure  setKind(var ValueRecord : TValueRecord; const Value: TLoxKind);
-begin
-  ValueRecord.Kind := Value;
 end;
 
 function  getIsBoolean(const ValueRecord : TValueRecord): Boolean;
