@@ -29,14 +29,11 @@ type
     FFrames : TCallFrames;
     FGlobals : TValuePairs;
     FResults : TStrings;
-
     procedure Execute;
-    procedure AssertCurrentOp(OpCode : TOpCodes);
     function CurrentFrame : TCallFrame;
     function InstructionPointer : TInstructionPointer;
     function CurrentOpCode : integer;
     function NextInstruction : integer;
-
     procedure Halt;
     function VMStack : TStack;
     procedure PushFrame(
@@ -113,6 +110,7 @@ begin
         (CurrentFrame <> nil) and
         (NextInstruction <> -1) do
   begin
+
     Case TOpCodes(CurrentOpCode) of
 
     OP_BUILD_LIST : begin
@@ -326,7 +324,7 @@ var
   index: Integer;
   List : pLoxList;
 begin
-  assert(CurrentOpCode = byte(OP_INDEX_SUBSCR));
+
   indexValue := PopStack;
   listValue := PopStack;
   index := round(indexValue.Number);
@@ -386,7 +384,6 @@ var
   constantIndex : integer;
   value : TValueRecord;
 begin
-   AssertCurrentOp(OP_CONSTANT);
 
    MoveNext;
 
@@ -403,9 +400,9 @@ procedure TVirtualMachine.OPGreater;
 var
   L,R,Result : TValueRecord;
 begin
-  AssertCurrentOp(OP_Greater);
 
-  try
+
+
     R := PopStack;
     L := PopStack;
 
@@ -413,9 +410,7 @@ begin
 
     PushStack(result);
    // FStackResults.Add(Result);
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
+   
 end;
 
 
@@ -423,21 +418,11 @@ procedure TVirtualMachine.OPLess;
 var
   L,R, Result : TValueRecord;
 begin
-  AssertCurrentOp(OP_LESS);
-  try
     R := PopStack;
     L := PopStack;
     Result := BorrowChecker.NewBool(l.Number < r.Number);
     PushStack(Result);
 
- except on E:exception do
-    HandleRunTimeError(e);
-  end;
-end;
-
-procedure TVirtualMachine.AssertCurrentOp(OpCode : TOpCodes);
-begin
-  Assert(CurrentOpCode = ord(OpCode),'Problem with current op code not equal to expected');
 end;
 
 
@@ -446,9 +431,9 @@ var
   L,R : TValueRecord;
   Result : TValueRecord;
 begin
-  AssertCurrentOp(OP_ADD);
+
   //this also means we assume the correct values are sitting in Stack...
-  try
+
     R := PopStack;
     L := PopStack;
 
@@ -456,17 +441,16 @@ begin
 //    if assigned(result) then
     PushStack(result);
 
-  except on E:exception do                     
-     HandleRunTimeError(e);
-  end;
+
 end;
  
+
 
 procedure TVirtualMachine.OPSubtract;
 var
   L,R : TValueRecord;
 begin
-  Assert(CurrentOpCode = byte(OP_SUBTRACT));
+
   R := PopStack;
   L := PopStack;
 
@@ -484,10 +468,7 @@ var
 
 begin
 
-  //we assume here we're sitting on an OP_MULTIPLY in the IP
-  Assert(CurrentOpCode = byte(OP_MULTIPLY));
-  //this also means we assume the correct values are sitting in Stack...
-  try
+
     R := PopStack;
     L := PopStack;
 
@@ -499,17 +480,13 @@ begin
       exit;
     end;
 
-
- except on E:exception do
-     HandleRunTimeError(e);
-  end;
 end;
 
 procedure TVirtualMachine.OPPrint;
 var
   value : TValueRecord;
 begin
-  AssertCurrentOp(OP_PRINT);
+
   //value := CurrentFrame.Stack.Pop;
   value := PopStack;
 
@@ -614,7 +591,7 @@ var
   result : TValueRecord;
 
 begin
-    AssertCurrentOp(OP_RETURN);
+
 
     FCall := FCall - 1;
 
@@ -635,7 +612,7 @@ var
   ArgCount : byte;
   callee : TValueRecord;
 begin
-  AssertCurrentOp(OP_CALL);
+
 
   ArgCount := NextInstruction;
 
@@ -659,7 +636,7 @@ var
   offset : integer;
   idx : integer;
 begin
-   AssertCurrentOp(OP_LOOP);
+  
    a := NextInstruction;
    b := NextInstruction;
    idx := FFrames.Peek.InstructionPointer.Index;
@@ -699,9 +676,6 @@ var
   R : TValueRecord;
 begin
 
-  Assert(CurrentOpCode = byte(OP_NEGATE));
-  //this also means we assume the correct values are sitting in Stack...
-  try
     R := PopStack;
 
     if (GetIsNumber(R)) then
@@ -710,9 +684,7 @@ begin
       PushStack(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
     end;
 
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
+
 end;
 
 
@@ -724,10 +696,6 @@ var
   L,R, Result : TValueRecord;
 begin
 
-  //we assume here we're sitting on an OP_DIVIDE in the IP
-  Assert(CurrentOpCode = byte(OP_DIVIDE));
-  //this also means we assume the correct values are sitting in Stack...
-  try
     R := PopStack;
     Assert(GetNumber(R) <> 0); //divide by zero exceptions.
     L := PopStack;
@@ -735,9 +703,7 @@ begin
     Result := BorrowChecker.NewNumber(GetNumber(L) / GetNumber(R));
 
     PushStack(Result);
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
+  
 end;
 
 Function TVirtualMachine.isFalsey(value : TValueRecord) : Boolean;
@@ -757,32 +723,28 @@ var
 
 begin
 
-  Assert(CurrentOpCode = ord(OP_NOT), 'Current instruction is <> NOT');
-  try
+
+
     result := BorrowChecker.NewBool(isFalsey(PopStack));
     PushStack(Result);
    // FStackResults.Add(Result);
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
+  
 end;
 
 procedure TVirtualMachine.OPEqual;
 var
   L,R, Result : TValueRecord;
 begin
-  Assert(CurrentOpCode = byte(OP_EQUAL), 'Current Instruction is <> EQUAL');
 
-  try
+
+
     R := PopStack;
     L := PopStack;
 
     Result := BorrowChecker.NewBool(GetString(r) = GetString(l));
     PushStack(result);
 
-  except on E:exception do
-     HandleRunTimeError(e);
-  end;
+
 end;
 
 
@@ -817,7 +779,7 @@ var
   value : TValueRecord;
 begin
 
-  assert(CurrentOpCode = byte(OP_Set_LOCAL), 'current instruction is not op define global');
+
 
   moveNext;
 
@@ -839,7 +801,7 @@ var
   
 begin
 
-  assert(CurrentOpCode = byte(OP_Get_LOCAL), 'current instruction is not op define global');
+
 
   moveNext;
 
@@ -891,7 +853,7 @@ var
    NameValue : pNameValue;
 begin
 
-  assert(CurrentOpCode = byte(OP_Get_GLOBAL), 'current instruction is not op define global');
+
 
   MoveNext;
 
@@ -917,7 +879,7 @@ var
   // bcode : pByteCode;
 begin
 
-  assert(CurrentOpCode = byte(OP_SET_GLOBAL), 'current instruction is not op set global');
+
 
   MoveNext;
 
@@ -982,7 +944,7 @@ var
    value  : TValueRecord;
 
 begin
-  assert(CurrentOpCode = ord(OP_DEFINE_GLOBAL), 'current instruction is not op define global');
+
   MoveNext;
   constantIndex := CurrentOpCode;
   name := FFrames.Peek.InstructionPointer.constant[constantIndex];
