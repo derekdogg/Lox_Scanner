@@ -348,7 +348,7 @@ Type
 
 
 
-
+  //default values to nil;
   TLoxKind = (lxNull,lxNumber,lxBoolean, lxObject, lxString, lxList,lxFunction, lxNative);
 
 

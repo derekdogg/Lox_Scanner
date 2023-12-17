@@ -206,7 +206,7 @@ object fmScript: TfmScript
         '}'
         ''
         ' '
-        'print fib(10); ')
+        'print fib(30); ')
       ParentFont = False
       TabOrder = 0
       WantTabs = True

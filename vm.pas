@@ -20,6 +20,7 @@ type
 
   TVirtualMachine = class
   private
+    FCurrentFrame : TCallFrame;
     FPrevOpCode : Integer;
     FOpCode : Integer;
     FInstructionPointer : TInstructionPointer;
@@ -33,8 +34,8 @@ type
     FGlobals : TValuePairs;
     FResults : TStrings;
     procedure Execute;
-    function CurrentFrame : TCallFrame;
-    function InstructionPointer : TInstructionPointer;
+    //function CurrentFrame : TCallFrame;
+//    function InstructionPointer : TInstructionPointer;
     function CurrentOpCode : integer;
     function NextInstruction : integer;
     procedure Halt;
@@ -110,7 +111,7 @@ uses
 procedure TVirtualMachine.Execute;
 begin
   while (FHalt = false) and
-        (CurrentFrame <> nil) and
+        (FCurrentFrame <> nil) and
         (NextInstruction <> -1) do
   begin
 
@@ -288,7 +289,7 @@ begin
 
   Result := INTERPRET_NONE;
 
-  if InstructionPointer.Count = 0 then exit;
+  if FInstructionPointer.Count = 0 then exit;
 
   Execute;
 
@@ -372,14 +373,10 @@ begin
 end;
 
 
-function TVirtualMachine.InstructionPointer : TInstructionPointer;
-begin
-  result :=  FInstructionPointer;//CurrentFrame.InstructionPointer;
-end;
 
 function TVirtualMachine.CurrentOpCode : integer;
 begin
-  result := InstructionPointer.Current;
+  result := FInstructionPointer.Current;
 end;
 
 procedure TVirtualMachine.OpConstant;
@@ -389,7 +386,7 @@ begin
 
    MoveNext;
 
-   value := InstructionPointer.Constant[CurrentOpCode]; //since the currentOpCode is actually an index into the constants.
+   value := FInstructionPointer.Constant[CurrentOpCode]; //since the currentOpCode is actually an index into the constants.
 
    PushStack(value);
 
@@ -446,9 +443,8 @@ begin
 
   R := PopStack;
   L := PopStack;
-
   L := TSubtraction.Subtract(L,R);
-  //dumb
+
   PushStack(L);
 end;
 
@@ -488,10 +484,10 @@ begin
   VMStack.Push(Value);
 end;
 
-function TVirtualMachine.CurrentFrame : TCallFrame;
+(*function TVirtualMachine.CurrentFrame : TCallFrame;
 begin
-  result := FFrames.peek;
-end;
+  result := FCurrentFrame; //FFrames.peek;
+end;*)
 
 
 procedure TVirtualMachine.PushFrame(
@@ -505,8 +501,6 @@ begin
   (*InstructionPointer := TInstructionPointer.create;
   InstructionPointer.Func := Func; *)
 
-
-
   FInstructionPointer.Func := Func;
   Frame := TCallFrame.Create(FInstructionPointer.Index, Func,FStack);
   FInstructionPointer.Index := -1; //reset to point to the current funcs opcode starting at zero (after move next);
@@ -518,31 +512,28 @@ end;
 //dumb
 procedure TVirtualMachine.PopFrame;
 var
-  IP : TInstructionPointer;
   Frame : TCallFrame;
 begin
   Frame := FFrames.Pop;
+  FCurrentFrame := FFrames.Peek;
   if FFrames.StackTop > 0 then
   begin
-    FInstructionPointer.Func  := FFrames.Peek.Func;
+    FInstructionPointer.Func  := FCurrentFrame.Func;
     FInstructionPointer.Index := Frame.PrevOpCode;
   end;
 
   Frame.Free;
+
+
 end;
 
 //dumb - try to break into two and then send through the actual pointer.
 function TVirtualMachine.CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
-var
-  fn    : pLoxFunction;
 begin
-
   result := false;
-
   if GetIsFunction(Callee) then
   begin
-    fn := GetFunction(callee);
-    result := call(fn, argCount);
+    result := call(GetFunction(callee), argCount);
     exit;
   end;
 
@@ -572,11 +563,15 @@ function TVirtualMachine.Call(
   const ArgCount : integer) : boolean;
 
 begin
+  assert(Func <> nil,'no function has been initialized');
+
   FCall := FCall + 1;   //dumb, useful for examining stack frame pops vs push
 
   if not (argCount = func.Arity) then raise exception.create('param mismatch');
 
   PushFrame(func,ArgCount);
+
+  FCurrentFrame := FFrames.Peek;
 
   result := true;
 end;
@@ -596,21 +591,19 @@ begin
     PushStack(result);
 
     PopFrame;
+
+
 end;
 
 
 procedure TVirtualMachine.OpCall;
 var
   ArgCount : byte;
-  callee : TValueRecord;
 begin
-
 
   ArgCount := NextInstruction;
 
-  callee := peekStack(ArgCount);
-
-  if not callValue(Callee,ArgCount) then
+  if not callValue(peekStack(ArgCount),ArgCount) then
   begin
     raise exception.create('failed to complete call value'); //dumb - need better way to handle blow-ups
   end;
@@ -619,8 +612,7 @@ end;
 
 function TVirtualMachine.NextInstruction : integer;
 begin
-  result := InstructionPointer.Next;
-
+  result := FInstructionPointer.Next;
 end;
 
 procedure TVirtualMachine.OPLoop;
@@ -632,9 +624,9 @@ begin
   
    a := NextInstruction;
    b := NextInstruction;
-   idx := InstructionPointer.Index;
+   idx := FInstructionPointer.Index;
    offset := a shl 8 + b;
-   assert(InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
+   assert(FInstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
 end;
 
 
@@ -647,7 +639,7 @@ begin
   b := NextInstruction;
   offset := a shl 8 + b;
   //dumb - probably...smells
-  assert(InstructionPointer.Move(InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
+  assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
 procedure TVirtualMachine.OpJumpFalse;
@@ -660,7 +652,7 @@ begin
    offset := a shl 8 + b;
    if (isFalsey(PeekStack)) then
    begin
-     assert(InstructionPointer.Move(InstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
+     assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
    end;
 end;
 
@@ -846,7 +838,7 @@ begin
 
   constantIndex := CurrentOpCode;
 
-  name := InstructionPointer.constant[constantIndex];
+  name := FInstructionPointer.constant[constantIndex];
 
   NameValue := FGlobals.Find(GetString(name));
 
@@ -872,7 +864,7 @@ begin
 
   constantIndex := CurrentOpCode;
 
-  name := InstructionPointer.Constant[constantIndex];
+  name := FInstructionPointer.Constant[constantIndex];
 
   value := PeekStack;
 
@@ -934,7 +926,7 @@ begin
 
   MoveNext;
   constantIndex := CurrentOpCode;
-  name := InstructionPointer.constant[constantIndex];
+  name := FInstructionPointer.constant[constantIndex];
   value := PeekStack;
   assert(GetIsString(name), 'name is not a string object');
   AddGlobal(GetString(name),value, false);
@@ -955,7 +947,7 @@ begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
   FResults := results;
 
-  FInstructionPointer := TInstructionPointer.Create;
+//  FInstructionPointer := TInstructionPointer.Create;
 
   FCall := 0;
 
@@ -977,7 +969,7 @@ end;
 
 destructor TVirtualMachine.destroy;
 begin
-   FInstructionPointer.Free;
+//   FInstructionPointer.Free;
 
    FStack.Free;
 

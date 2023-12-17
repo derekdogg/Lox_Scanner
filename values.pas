@@ -55,7 +55,7 @@ type
   TCodes = array of integer;
 
   TOpCode = class
-  const OP_CODE_MULTIPLIER = 2;
+  const OP_CODE_MULTIPLIER = 8;
   private
     FCodes : TCodes;
     FCount : integer;
@@ -157,7 +157,7 @@ type
      property OnPop : TOnStackPop read FOnStackPop write SetOnStackPop;
   end;
  
-  TInstructionPointer = class
+  TInstructionPointer = record
   private
     FFunction : PLoxFunction;
     FIndex    : integer;
@@ -175,8 +175,8 @@ type
 
     function Current : Integer;
     function Next : Integer;
-    constructor create;
-    destructor destroy; override;
+   // constructor create;
+//    destructor destroy; override;
     //constructor create(
     //    const loxFunction : PLoxFunction);
     property count : integer read getCount;
@@ -286,21 +286,22 @@ begin
   result := FFunction.Chunks[FIndex];
 end;
 
-constructor TInstructionPointer.create;
+(*constructor TInstructionPointer.create;
 begin
   fIndex := -1;
-end;
+end; *)
 
 function TInstructionPointer.Current: integer;
 begin
   result := getValue(FIndex);
 end;
 
+(*
 destructor TInstructionPointer.destroy;
 begin
   FFunction := nil;
   inherited destroy;
-end;
+end; *)
 
 function TInstructionPointer.Getconstant(const Index: integer): TValueRecord;
 begin
@@ -700,7 +701,6 @@ function TStack.Pop: TValueRecord;
 begin
   Assert(FStackTop > 0, 'no more items to pop');
   result := FItems[FStackTop-1];
-//  FillChar(FItems[VMStack.StackTop],sizeof(TValueRecord),#0);
   SetStackTop(FStackTop-1);
  // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;

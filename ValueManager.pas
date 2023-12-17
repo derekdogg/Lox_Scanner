@@ -549,7 +549,7 @@ procedure TValueDisposal.DisposeValue(var value : TValueRecord);
 begin
   if GetIsNull(Value) then
   begin
-    DisposeNil(Value);
+    //DisposeNil(Value);
     exit;
   end;
 
@@ -567,7 +567,7 @@ begin
 
   if GetIsNumber(Value) then
   begin
-    disposeNumber(value);
+    //disposeNumber(value);
     exit;
   end;
 
@@ -579,7 +579,7 @@ begin
 
   if GetIsBoolean(Value) then
   begin
-    disposeBoolean(Value);
+    //disposeBoolean(Value);
     exit;
   end;
 
@@ -674,10 +674,10 @@ begin
 
 end;
 
-function  getFunction(const ValueRecord : TValueRecord): pLoxFunction;
+function getFunction(const ValueRecord : TValueRecord): pLoxFunction;
 begin
   result := nil;
-  if  ValueRecord.Kind = lxFunction then
+  if ValueRecord.Kind = lxFunction then
      result := pLoxFunction(ValueRecord.Obj);
 end;
 
