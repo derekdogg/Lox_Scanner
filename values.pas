@@ -144,7 +144,6 @@ type
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
   public
-
      procedure Push(const value : TValueRecord);
      function Pop : TValueRecord;
      function Peek(const Distance : integer) : TValueRecord;overload;
@@ -157,8 +156,7 @@ type
      property OnPush : TOnStackPush read FOnStackPush write SetOnStackPush;
      property OnPop : TOnStackPop read FOnStackPop write SetOnStackPop;
   end;
-
-
+ 
   TInstructionPointer = class
   private
     FFunction : PLoxFunction;
@@ -167,11 +165,14 @@ type
     function Getconstant(const Index : integer) : TValueRecord;
     function getFunction: PLoxFunction;
     procedure setFunction(const Value: PLoxFunction);
+    function GetIndex : integer;
     function GetValue(const Index : integer) : Integer;
+
+    procedure setIndex(const Value: integer);
   public
     function Move(const index : integer) : boolean;
 
-    function Index : integer;
+
     function Current : Integer;
     function Next : Integer;
     constructor create;
@@ -179,7 +180,7 @@ type
     //constructor create(
     //    const loxFunction : PLoxFunction);
     property count : integer read getCount;
-
+    property Index : integer read getIndex write setIndex;
     property constant[const index : integer] : TValueRecord read getConstant;
     property code[const index : integer] :  integer read GetValue; Default;
     property Func : PLoxFunction read getFunction write setFunction;
@@ -187,23 +188,29 @@ type
 
  TCallFrames = class;
 
+
+
  TCallFrame = class
  private
+   FPrevOPCode         : integer;
    FStackTop           : integer;
-   FInstructionPointer : TInstructionPointer;
+   FFunction           : pLoxFunction;
+  // FInstructionPointer : TInstructionPointer;
    FStack              : TStack;
 
    function  getValue(const index: integer): TValueRecord;
    procedure setValue(const index: integer; const Value: TValueRecord);
  public
     constructor create(
-      const InstructionPointer : TInstructionPointer;
+      const PrevOpCode : Integer;
+      const Func  : PLoxFunction;
       const Stack : TStack);
    destructor destroy;override;
-   property InstructionPointer : TInstructionPointer read FInstructionPointer;
-
+//   property InstructionPointer : TInstructionPointer read FInstructionPointer;
+   property Func : pLoxFunction read FFunction;
    property Value[const index : integer] : TValueRecord read getValue write setValue;default;
    property StackTop : integer read FStackTop write FStackTop;
+   property PrevOpCode : integer read FPrevOpCode;
 
  end;
 
@@ -245,6 +252,7 @@ type
     procedure Push(const CallFrame : TCallFrame);
     function Pop : TCallFrame;
     function Peek : TCallFrame;
+    function StackTop : integer;
   end;
 
 
@@ -269,6 +277,8 @@ function TInstructionPointer.getFunction: PLoxFunction;
 begin
   result := FFunction;
 end;
+
+
 
 function TInstructionPointer.GetValue(const Index : integer) : integer;
 begin
@@ -297,7 +307,7 @@ begin
   result := FFunction.Chunks.Constant[Index];
 end;
 
-function TInstructionPointer.Index: integer;
+function TInstructionPointer.getIndex: integer;
 begin
   result := FIndex;
 end;
@@ -330,11 +340,24 @@ begin
   FFunction := Value;
 end;
 
+procedure TInstructionPointer.setIndex(const Value: integer);
+begin
+  Assert(FFunction.Chunks.CodeCount > 0, 'can''t set index as there is no opcodes');
+  Assert(Value >= -1, 'opcode index is less than -1');
+  Assert(Value < FFunction.Chunks.CodeCount, 'op code index is > FFunction.Chunks.CodeCount');
+  FIndex := Value;
+end;
+
 procedure TCallFrames.Push(const CallFrame : TCallFrame);
 begin
   FFrames.Push(CallFrame);
 end;
 
+
+function TCallFrames.StackTop: integer;
+begin
+  result := FFrames.StackTop;
+end;
 
 constructor TCallFrames.create;
 begin
@@ -371,19 +394,21 @@ begin
 end;  *)
 
 constructor TCallFrame.create(
-  const Instructionpointer : TInstructionPointer;
+  const PrevOpCode : Integer;
+  const Func  : pLoxFunction;
   const Stack : TStack);
 begin
   Assert(Assigned(Stack),'no stack injected');
-  FInstructionPointer := InstructionPointer;
+//  FInstructionPointer := InstructionPointer;
+  FPrevOpCode := PrevOpCode;
+  FFunction := Func;
   FStack := Stack;
 end;
 
 destructor TCallFrame.destroy;
 begin
-  //FInstructionPointer.free;
-  FInstructionPointer := nil; //not free'd as injected
-  FStack := nil;              //ditto
+
+
   inherited;
 end;
 

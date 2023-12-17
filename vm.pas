@@ -20,6 +20,9 @@ type
 
   TVirtualMachine = class
   private
+    FPrevOpCode : Integer;
+    FOpCode : Integer;
+    FInstructionPointer : TInstructionPointer;
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
     FCall : integer;
@@ -369,27 +372,24 @@ begin
 end;
 
 
-(*function TVirtualMachine.InstructionPointer : TInstructionPointer;
+function TVirtualMachine.InstructionPointer : TInstructionPointer;
 begin
-  result := CurrentFrame.InstructionPointer;
-end; *)
+  result :=  FInstructionPointer;//CurrentFrame.InstructionPointer;
+end;
 
 function TVirtualMachine.CurrentOpCode : integer;
 begin
-  result := FFrames.peek.InstructionPointer.Current;
+  result := InstructionPointer.Current;
 end;
 
 procedure TVirtualMachine.OpConstant;
 var
-  constantIndex : integer;
   value : TValueRecord;
 begin
 
    MoveNext;
 
-   constantIndex := CurrentOpCode;
-
-   value := FFrames.peek.InstructionPointer.Constant[constantIndex];
+   value := InstructionPointer.Constant[CurrentOpCode]; //since the currentOpCode is actually an index into the constants.
 
    PushStack(value);
 
@@ -498,14 +498,18 @@ procedure TVirtualMachine.PushFrame(
   const func : PLoxFunction;
   const ArgCount : integer) ;
 var
-  InstructionPointer : TInstructionPointer;
+
   Frame : TCallFrame;
 begin
   //we could probably just keep reususing the IP as long as you return to the current OPCode (before call here) after return.
-  InstructionPointer := TInstructionPointer.create;
-  InstructionPointer.Func := Func;
+  (*InstructionPointer := TInstructionPointer.create;
+  InstructionPointer.Func := Func; *)
 
-  Frame := TCallFrame.Create(InstructionPointer,FStack);
+
+
+  FInstructionPointer.Func := Func;
+  Frame := TCallFrame.Create(FInstructionPointer.Index, Func,FStack);
+  FInstructionPointer.Index := -1; //reset to point to the current funcs opcode starting at zero (after move next);
   Frame.StackTop :=  VMStack.StackTop-ArgCount-1;
 
   FFrames.Push(Frame);
@@ -517,9 +521,13 @@ var
   IP : TInstructionPointer;
   Frame : TCallFrame;
 begin
-  Frame := FFrames.Pop; //pop off the current frame
-  IP := Frame.InstructionPointer;
-  IP.free;
+  Frame := FFrames.Pop;
+  if FFrames.StackTop > 0 then
+  begin
+    FInstructionPointer.Func  := FFrames.Peek.Func;
+    FInstructionPointer.Index := Frame.PrevOpCode;
+  end;
+
   Frame.Free;
 end;
 
@@ -611,7 +619,8 @@ end;
 
 function TVirtualMachine.NextInstruction : integer;
 begin
-  result := FFrames.Peek.InstructionPointer.Next;
+  result := InstructionPointer.Next;
+
 end;
 
 procedure TVirtualMachine.OPLoop;
@@ -623,9 +632,9 @@ begin
   
    a := NextInstruction;
    b := NextInstruction;
-   idx := FFrames.Peek.InstructionPointer.Index;
+   idx := InstructionPointer.Index;
    offset := a shl 8 + b;
-   assert(FFrames.Peek.InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
+   assert(InstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
 end;
 
 
@@ -638,7 +647,7 @@ begin
   b := NextInstruction;
   offset := a shl 8 + b;
   //dumb - probably...smells
-  assert(FFrames.Peek.InstructionPointer.Move(FFrames.Peek.InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
+  assert(InstructionPointer.Move(InstructionPointer.Index + offset) = true, 'failed to move to jump offset');
 end;
 
 procedure TVirtualMachine.OpJumpFalse;
@@ -651,7 +660,7 @@ begin
    offset := a shl 8 + b;
    if (isFalsey(PeekStack)) then
    begin
-     assert(FFrames.Peek.InstructionPointer.Move(FFrames.Peek.InstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
+     assert(InstructionPointer.Move(InstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
    end;
 end;
 
@@ -837,7 +846,7 @@ begin
 
   constantIndex := CurrentOpCode;
 
-  name := FFrames.Peek.InstructionPointer.constant[constantIndex];
+  name := InstructionPointer.constant[constantIndex];
 
   NameValue := FGlobals.Find(GetString(name));
 
@@ -863,7 +872,7 @@ begin
 
   constantIndex := CurrentOpCode;
 
-  name := FFrames.Peek.InstructionPointer.Constant[constantIndex];
+  name := InstructionPointer.Constant[constantIndex];
 
   value := PeekStack;
 
@@ -925,13 +934,18 @@ begin
 
   MoveNext;
   constantIndex := CurrentOpCode;
-  name := FFrames.Peek.InstructionPointer.constant[constantIndex];
+  name := InstructionPointer.constant[constantIndex];
   value := PeekStack;
   assert(GetIsString(name), 'name is not a string object');
   AddGlobal(GetString(name),value, false);
   popStack;
 end;
 
+
+(*function TVirtualMachine.InstructionPointer: TInstructionPointer;
+begin
+  result := FInstructionPointer;
+end; *)
 
 Constructor TVirtualMachine.Create(
   const results : TStrings);
@@ -940,6 +954,8 @@ var
 begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
   FResults := results;
+
+  FInstructionPointer := TInstructionPointer.Create;
 
   FCall := 0;
 
@@ -958,13 +974,10 @@ begin
 end;
 
 
-function TVirtualMachine.InstructionPointer: TInstructionPointer;
-begin
-  result := FFrames.Peek.InstructionPointer;
-end;
 
 destructor TVirtualMachine.destroy;
 begin
+   FInstructionPointer.Free;
 
    FStack.Free;
 

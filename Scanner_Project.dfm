@@ -32,7 +32,6 @@ object fmScript: TfmScript
     Height = 41
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 1101
     object Label1: TLabel
       Left = 520
       Top = 16
@@ -99,7 +98,6 @@ object fmScript: TfmScript
     Align = alBottom
     Caption = 'Panel2'
     TabOrder = 1
-    ExplicitWidth = 1101
     object Panel3: TPanel
       Left = 1
       Top = 1
@@ -124,7 +122,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitWidth = 409
       end
     end
     object Panel4: TPanel
@@ -135,7 +132,6 @@ object fmScript: TfmScript
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
-      ExplicitWidth = 458
       object MemRun: TMemo
         Left = 1
         Top = 1
@@ -179,7 +175,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitLeft = 6
       end
     end
   end
@@ -191,7 +186,6 @@ object fmScript: TfmScript
     Align = alClient
     Caption = 'Panel6'
     TabOrder = 2
-    ExplicitWidth = 1101
     object memEdit: TRichEdit
       Left = 1
       Top = 1
@@ -216,7 +210,6 @@ object fmScript: TfmScript
       ParentFont = False
       TabOrder = 0
       WantTabs = True
-      ExplicitWidth = 1099
     end
   end
 end

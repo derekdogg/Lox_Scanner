@@ -94,10 +94,13 @@ var
    VM :  TVirtualMachine;
 begin
 
+
    VM := TVirtualMachine.Create(MemRun.Lines);
    try
+      MemRun.Lines.Add(DateTimeToStr(now));
       VM.Run(LoxFunction);
    finally
+     MemRun.Lines.Add(DateTimeToStr(now));
      vm.Free;
      BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
 
