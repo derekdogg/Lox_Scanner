@@ -50,6 +50,7 @@ implementation
 
 
 uses
+  dateutils,
   typinfo,
   loxtypes,
   charIterator,
@@ -58,7 +59,8 @@ uses
 
   TokenArray,
   compiler,
-  vm,
+  //vm,
+  newVm, //10 seconds quicker on fib(35)
   Table,
   Locals,
   ValueManager;
@@ -69,7 +71,7 @@ uses
 
 procedure TfmScript.btnClearClick(Sender: TObject);
 begin
-  memEdit.Lines.clear;
+  memRun.Lines.clear;
 end;
 
 
@@ -92,15 +94,19 @@ end;
 procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
    VM :  TVirtualMachine;
+   s  : integer;
 begin
 
 
+
+  s := MilliSecondOfTheDay(now);
+
    VM := TVirtualMachine.Create(MemRun.Lines);
    try
-      MemRun.Lines.Add(DateTimeToStr(now));
       VM.Run(LoxFunction);
+      MemRun.Lines.Add(inttostr( MilliSecondOfTheDay(now) - s));
    finally
-     MemRun.Lines.Add(DateTimeToStr(now));
+
      vm.Free;
      BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
 
@@ -163,11 +169,9 @@ procedure TfmScript.Button1Click(Sender: TObject);
 
       exit;
     end;
-    
+
     result := fib(n - 2) + fib(n - 1);
   end;
-
-
 
 var
   a : integer;

@@ -49,6 +49,7 @@
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Natives.pas" />
+    <DCCReference Include="NewVm.pas" />
     <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
@@ -61,7 +62,6 @@
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="ValueManager.pas" />
     <DCCReference Include="values.pas" />
-    <DCCReference Include="vm.pas" />
   </ItemGroup>
 </Project>
 <!-- EurekaLog First Line

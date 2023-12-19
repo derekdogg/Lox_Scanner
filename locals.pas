@@ -7,10 +7,7 @@ uses
 
 Const
   MAX_LOCALS = 256;
-  MAX_CAPACITY = 1000; //lets keep it reasonable - note this is not the size of the allocated array pNameValueItems.
-  INCREMENT_CAPACITY_BY = 2;
-  NUM_SLOTS = 10;
-  GROWTH_FACTOR  = 2;
+
 
 type
 
@@ -44,12 +41,7 @@ type
     procedure setLocal(const index: integer; const Value: TLocal);
     function getCount: integer;
     function getLast: TLocal;
-
-  protected
-
-
   public
-    procedure ToString(const Strings : TStrings);
     procedure Remove(const Index : integer);
     function Add(const name : String; const token : TToken) : TLocal;
     Constructor create;
@@ -122,25 +114,13 @@ begin
   result := FItems[Index];
 end;
 
-procedure TLocals.ToString(const Strings: TStrings);
-var
-  i : integer;
-  Local : TLocal;
-begin
-  assert(Assigned(Strings),'no strings assigned for print to');
-  for i := 0 to FItems.Count-1 do
-  begin
-    Local := FItems[i];
-
-    Local.ToStrings(Strings);
-  end;
-end;
-
-////dumb, something weird here.
 procedure TLocals.Remove(const Index: integer);
 var
   Local : TLocal;
 begin
+  assert(Index >=0, 'index is not > zero');
+  assert(Index < FItems.count , 'index is not < count');
+
   Local := FItems[Index];
   FItems.Delete(index);
   DisposeLocal(Local);

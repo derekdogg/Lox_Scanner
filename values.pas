@@ -130,13 +130,14 @@ type
   TBlock_Capacity = 8..256;
 
   TStack = class
+  const STACK_MAX = 4 * high(TBlock_Capacity);
   private
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
     FCapacity : integer;
     FStackTop : integer;
-    FItems : array of TValueRecord;
-    function GetItem(const Index: integer): TValueRecord;
+    FItems :  array of TValueRecord;
+    function  GetItem(const Index: integer): TValueRecord;
     procedure SetItem(const Index: integer; const Value: TValueRecord);
     procedure SetOnStackPop(const Value: TOnStackPop);
     procedure SetOnStackPush(const Value: TOnStackPush);
@@ -156,7 +157,7 @@ type
      property OnPush : TOnStackPush read FOnStackPush write SetOnStackPush;
      property OnPop : TOnStackPop read FOnStackPop write SetOnStackPop;
   end;
- 
+
   TInstructionPointer = record
   private
     FFunction : PLoxFunction;
@@ -204,7 +205,8 @@ type
     constructor create(
       const PrevOpCode : Integer;
       const Func  : PLoxFunction;
-      const Stack : TStack);
+      const Stack : TStack;
+      const StackTop : integer);
    destructor destroy;override;
 //   property InstructionPointer : TInstructionPointer read FInstructionPointer;
    property Func : pLoxFunction read FFunction;
@@ -217,7 +219,7 @@ type
   TCallFrameList = Array of TCallFrame;
 
   TFrameStack = class
-  const Frame_Stack_Mulitplier = 4;
+  const Frame_Stack_Mulitplier = 255;
   private
     FCapacity   : integer;
     FStackTop  : integer; //note this points the next places a frame will go
@@ -397,13 +399,15 @@ end;  *)
 constructor TCallFrame.create(
   const PrevOpCode : Integer;
   const Func  : pLoxFunction;
-  const Stack : TStack);
+  const Stack : TStack;
+  const StackTop : integer);
 begin
   Assert(Assigned(Stack),'no stack injected');
 //  FInstructionPointer := InstructionPointer;
   FPrevOpCode := PrevOpCode;
   FFunction := Func;
   FStack := Stack;
+  FStackTop := StackTop;
 end;
 
 destructor TCallFrame.destroy;
@@ -735,8 +739,8 @@ end;
 procedure TStack.SetStackTop(const value: integer);
 begin
   Assert(Value >= 0, 'You idiot, the stack top is below zero');
-
-  if value >= FCapacity then
+  Assert(Value < STACK_MAX, 'trying to set stack top beyond the absolute max');
+  while (value >= FCapacity) and (Value < STACK_MAX) do
   begin
     IncreaseCapacity;
   end;

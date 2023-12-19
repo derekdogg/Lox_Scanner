@@ -6,7 +6,7 @@ uses
   Scanner_Project in 'Scanner_Project.pas' {fmScript},
   LoxTypes in 'LoxTypes.pas',
   Exceptions in 'Exceptions.pas',
-  vm in 'vm.pas',
+  NewVm in 'NewVm.pas',
   TokenArray in 'TokenArray.pas',
   compiler in 'compiler.pas',
   table in 'table.pas',
