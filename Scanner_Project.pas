@@ -144,6 +144,7 @@ begin
    cc := TCompilerController.Create(Tokens,Scanner,TYPE_SCRIPT);
    try
      LoxFunction := cc.DoCompile;
+     if cc.Stop then exit;
      Interpret(LoxFunction);
 
    finally

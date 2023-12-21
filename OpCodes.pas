@@ -2,166 +2,60 @@ unit OpCodes;
 
 interface
 
-type
-
-    TOpCodes = (
-        OP_NULL,
-        OP_NIL,
-        OP_TRUE,
-        OP_FALSE,
-        OP_POP,
-        OP_GET_LOCAL,
-        OP_SET_LOCAL,
-        OP_GET_GLOBAL,
-        OP_DEFINE_GLOBAL,
-        OP_SET_GLOBAL,
-        OP_GET_UPVALUE,
-        OP_SET_UPVALUE,
-        OP_GET_PROPERTY,
-        OP_SET_PROPERTY,
-        OP_GET_SUPER,
-        OP_EQUAL,
-        OP_GREATER,
-        OP_LESS,
-        OP_ADD,
-        OP_SUBTRACT,
-        OP_MULTIPLY,
-        OP_DIVIDE,
-        OP_NOT,
-        OP_NEGATE,
-        OP_PRINT,
-        OP_JUMP,
-        OP_JUMP_IF_FALSE,
-        OP_LOOP,
-        OP_CALL,
-        OP_INVOKE,
-        OP_SUPER_INVOKE,
-        OP_CLOSURE,
-        OP_CLOSE_UPVALUE,
-        OP_RETURN,
-        OP_CLASS,
-        OP_INHERIT,
-        OP_METHOD,
-        OP_CONSTANT,
-        OP_BUILD_LIST,
-        OP_INDEX_SUBSCR,
-        OP_STORE_SUBSCR
-);
-
-  
-
 const
-
-  TOP_Code_name : Array[OP_NULL..OP_STORE_SUBSCR] of string  = (
-   'OP_NULL',
-//> op-constant
-
-//< op-constant
-//> Types of Values literal-ops
-  'OP_NIL',
-  'OP_TRUE',
-  'OP_FALSE',
-//< Types of Values literal-ops
-//> Global Variables pop-op
-  'OP_POP',
-//< Global Variables pop-op
-//> Local Variables get-local-op
-  'OP_GET_LOCAL',
-//< Local Variables get-local-op
-//> Local Variables set-local-op
-  'OP_SET_LOCAL',
-//< Local Variables set-local-op
-//> Global Variables get-global-op
-  'OP_GET_GLOBAL',
-//< Global Variables get-global-op
-//> Global Variables define-global-op
-  'OP_DEFINE_GLOBAL',
-//< Global Variables define-global-op
-//> Global Variables set-global-op
-  'OP_SET_GLOBAL',
-//< Global Variables set-global-op
-//> Closures upvalue-ops
-  'OP_GET_UPVALUE',
-  'OP_SET_UPVALUE',
-//< Closures upvalue-ops
-//> Classes and Instances property-ops
-  'OP_GET_PROPERTY',
-  'OP_SET_PROPERTY',
-//< Classes and Instances property-ops
-//> Superclasses get-super-op
-  'OP_GET_SUPER',
-//< Superclasses get-super-op
-//> Types of Values comparison-ops
-  'OP_EQUAL',
-  'OP_GREATER',
-  'OP_LESS',
-//< Types of Values comparison-ops
-//> A Virtual Machine binary-ops
-  'OP_ADD',
-  'OP_SUBTRACT',
-  'OP_MULTIPLY',
-  'OP_DIVIDE',
-//> Types of Values not-op
-  'OP_NOT',
-//< Types of Values not-op
-//< A Virtual Machine binary-ops
-//> A Virtual Machine negate-op
-  'OP_NEGATE',
-//< A Virtual Machine negate-op
-//> Global Variables op-print
-  'OP_PRINT',
-//< Global Variables op-print
-//> Jumping Back and Forth jump-op
-  'OP_JUMP',
-//< Jumping Back and Forth jump-op
-//> Jumping Back and Forth jump-if-false-op
-  'OP_JUMP_IF_FALSE',
-//< Jumping Back and Forth jump-if-false-op
-//> Jumping Back and Forth loop-op
-  'OP_LOOP',
-//< Jumping Back and Forth loop-op
-//> Calls and Functions op-call
-  'OP_CALL',
-//< Calls and Functions op-call
-//> Methods and Initializers invoke-op
-  'OP_INVOKE',
-//< Methods and Initializers invoke-op
-//> Superclasses super-invoke-op
-  'OP_SUPER_INVOKE',
-//< Superclasses super-invoke-op
-//> Closures closure-op
-  'OP_CLOSURE',
-//< Closures closure-op
-//> Closures close-upvalue-op
-  'OP_CLOSE_UPVALUE',
-//< Closures close-upvalue-op
-  'OP_RETURN',
-//> Classes and Instances class-op
-  'OP_CLASS',
-//< Classes and Instances class-op
-//> Superclasses inherit-op
-  'OP_INHERIT',
-//< Superclasses inherit-op
-//> Methods and Initializers method-op
-  'OP_METHOD' ,
-  'OP_CONSTANT',
-  'OP_BUILD_LIST',
-        'OP_INDEX_SUBSCR',
-        'OP_STORE_SUBSCR'
-//< Methods and Initializers method-op;
-);
+ 
+        OP_NULL = 0;
+        OP_NIL= 1;
+        OP_TRUE= 2;
+        OP_FALSE=3 ;
+        OP_POP= 4;
+        OP_GET_LOCAL=5 ;
+        OP_SET_LOCAL=6;
+        OP_GET_GLOBAL=7 ;
+        OP_DEFINE_GLOBAL=8 ;
+        OP_SET_GLOBAL=9;
+        OP_GET_UPVALUE=10 ;
+        OP_SET_UPVALUE=11 ;
+        OP_GET_PROPERTY=12 ;
+        OP_SET_PROPERTY=13 ;
+        OP_GET_SUPER=14 ;
+        OP_EQUAL=15 ;
+        OP_GREATER=16 ;
+        OP_LESS= 17;
+        OP_ADD= 18;
+        OP_SUBTRACT= 19;
+        OP_MULTIPLY= 20;
+        OP_DIVIDE= 21;
+        OP_NOT= 22;
+        OP_NEGATE= 23;
+        OP_PRINT= 24;
+        OP_JUMP= 25;
+        OP_JUMP_IF_FALSE= 26;
+        OP_LOOP= 27;
+        OP_CALL= 28;
+        OP_INVOKE= 29;
+        OP_SUPER_INVOKE= 30;
+        OP_CLOSURE= 31;
+        OP_CLOSE_UPVALUE= 32;
+        OP_RETURN= 33;
+        OP_CLASS= 34;
+        OP_INHERIT= 35;
+        OP_METHOD= 36;
+        OP_CONSTANT= 37;
+        OP_BUILD_LIST= 38;
+        OP_INDEX_SUBSCR= 39;
+        OP_STORE_SUBSCR= 40;
 
 
- function opCodeToStr(Const opCode : TOpCodes) : String;
+
+
+
+
+
 
 implementation
-uses
- typinfo;
- 
-function opCodeToStr(Const opCode : TOpCodes) : String;
-begin
-  result := GetEnumName(typeInfo(TOpCodes ), Ord(opCode));
-end;
+
+
 
 
 end.

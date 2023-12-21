@@ -8,6 +8,9 @@ uses
   values;
 
 
+  //I really hate this code, I think it's a rewrite here - too hard to refactor sensibly.
+
+
 Const MAX_CAPACITY = Maxint div 16;
 
 type
@@ -22,13 +25,13 @@ type
 
 
   pNameValues = ^TNameValues;
-  TNameValues = array[0..MAX_CAPACITY - 1] of pNameValue;
+  TNameValues = array[0..MAX_CAPACITY - 1] of  pNameValue;
 
 
   TValuePairs = record
   const
     // MAX_CAPACITY   = cMaxTokens;
-    NUM_SLOTS      = 64;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
+    NUM_SLOTS      = 1024;  //<== keep this small for now for testing how things get resized, and slot allocation etc.
     GROWTH_FACTOR  = 2;  //<== 4,8,16,32,64,128 etc
   private
     FResizeCount   : integer;
@@ -170,19 +173,22 @@ begin
 
   Hash := GetHashString(name); //get the hash for debug before exit purposes; (i.e. to check it is a good hash).
   if FCount = 0 then exit; //empty so no clashes
+
   HashIndex :=  Hash and (slotcount -1);
+
   assert(inbounds(HashIndex,FCapacity),'index for Hash to seek exceeds dictionary limits');
 
   //forwards from ideal index
   index := HashIndex;
-  if GetItem(index,items) = nil then exit; //we check the ideal index, if nothing in the slot, there can't be any matching strings
+
+ // if GetItem(index,items) = nil then exit; //we check the ideal index, if nothing in the slot, there can't be any matching strings
 
   //if we get here, then another string is in the ideal index, and the real string is maybe sitting somewhere else.
   while (Index < SlotCount) and (result = nil) do
   begin
     prospect := GetItem(index,items);
 
-    if assigned(prospect) and (GetHashString(prospect.name) = hash) then
+    if assigned(prospect) and (prospect.name = name) then
     begin
       result := prospect;
       exit;
@@ -206,7 +212,6 @@ begin
       inc(Index);
     end;
   end;
-
 end;
 
 

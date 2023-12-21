@@ -54,9 +54,6 @@
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
     </DCCReference>
-    <DCCReference Include="Stack.pas">
-      <Form>$R *.res</Form>
-    </DCCReference>
     <DCCReference Include="subtraction.pas" />
     <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />

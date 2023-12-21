@@ -69,6 +69,7 @@ type
 
   TCompilerController = class
   private
+    FStop : boolean;
     FCompilers : TCompilers;
     FCurrent : TCompiler;
     FParseRules : TParseRules;
@@ -116,9 +117,9 @@ type
 
 
     //----------CHUNKS---------------------------------------------------------
-    procedure Emit(const Operand : TOpCodes; const  value : Integer);overload;
-    procedure Emit(const Operand : TOpCodes);overload;
-    procedure Emit(const value : integer);overload;
+    procedure Emit(const Operand : Integer; const  value : Integer);overload;
+    procedure Emit(const Operand : Integer);overload;
+
     procedure EmitConstant(const value : TValueRecord);
     function EndCompiler: pLoxFunction;
 
@@ -126,7 +127,7 @@ type
     procedure markInitialized;
     procedure funDeclaration;
     procedure patchJump(const offset : integer);
-    function emitJump(const instruction : TOpCodes) : integer;
+    function emitJump(const instruction : Integer) : integer;
     procedure ifStatement;
 
 
@@ -184,8 +185,7 @@ type
 
     destructor destroy;override;
 
-    //property Current : TCompiler read fCurrent write fCurrent;
-
+    property Stop : Boolean read FStop;
 
 
   end;
@@ -199,6 +199,8 @@ uses sysutils, valueManager;
 
 function TCompilerController.advance : boolean;
 begin
+  result := false;
+  if FStop then exit;
   result := FTokens.MoveNext <> nil;
 end;
 
@@ -209,6 +211,7 @@ var
   text : string;
   Value : TValueRecord;
 begin
+  if FStop then exit;
   Token := FTokens.Previous;
   if Token = nil then exit;
 
@@ -223,12 +226,14 @@ end;
 
 procedure TCompilerController.grouping(const canAssign : boolean);
 begin
+   if FStop then exit;
    expression;
    consume(tkclosebracket, 'Expect '')'' after expression.');  //right bracket
 end;
 
 procedure TCompilerController.literal(const CanAssign: boolean);
 begin
+  if FStop then exit;
   case  FTokens.Previous.Kind of
     tkFalse : begin
        Emit(OP_FALSE);
@@ -246,28 +251,30 @@ procedure TCompilerController.Unary(const canAssign: boolean);
 var
   TokenKind : TTokenKind;
 begin
+  if FStop then exit;
   TokenKind := FTokens.previous.Kind;
   parsePrecedence(PREC_UNARY);
   case TokenKind of
     tkMinus : Emit(OP_NEGATE);
     tkBang  : Emit(OP_NOT);
   end;
-
 end;
 
 procedure TCompilerController.expression;
 begin
+  if FStop then exit;
   parsePrecedence(PREC_ASSIGNMENT);
 end;
 
 procedure TCompilerController.consume(const TokenKind : TTokenKind; const Message : String);
 begin
+  if FStop then exit;
   if FTokens.Current.Kind = TokenKind then
   begin
     Advance;
     Exit;
   end;
-  error(Message) //dumb, as it does jackshit - actually very dumb dumb as called from all over the place...and will fail badly here
+  error(Message);
 end;
 
 
@@ -278,8 +285,17 @@ var
   elseJump : integer;
   endJump  : integer;
 begin
+  if FStop then exit;
+
   elseJump := emitJump(OP_JUMP_IF_FALSE);
   endJump := emitJump(OP_JUMP);
+
+  if (elseJump = -1) or (endJump = -1) then
+  begin
+    FStop := true;
+    exit;
+  end;
+
 
   patchJump(elseJump);
   Emit(OP_POP);
@@ -288,12 +304,11 @@ begin
   patchJump(endJump);
 end;
 
-
-
 Procedure TCompilerController.and_(const canAssign : boolean);
 var
   endJump : integer;
 begin
+  if FStop then exit;
   endJump := emitJump(OP_JUMP_IF_FALSE);
   Emit(OP_POP);
   parsePrecedence(PREC_AND);
@@ -303,6 +318,7 @@ end;
 
 procedure TCompilerController.printStatement;
 begin
+  if FStop then exit;
   expression;
   consume(tkSemiColon, 'Expect ";" after value.');
   Emit(OP_PRINT);
@@ -310,21 +326,22 @@ end;
 
 procedure TCompilerController.ExpressionStatement;
 begin
+  if FStop then exit;
   Expression;
   Consume(tkSemiColon, 'Expect ";" after value.');
   Emit(OP_POP);
 end;
 
-
-Function TCompilerController.TokenName(const Token : TToken) : String;
+function TCompilerController.TokenName(const Token : TToken) : String;
 var
   txt : string;
 begin
+  if FStop then exit;
   txt := FScanner.ln.items[Token.Line].text;
   result := copy(txt,token.Start,token.length);
 end;
 
-Function TCompilerController.resolveLocal(
+function TCompilerController.resolveLocal(
   const Compiler : TCompiler;
   const Token : TToken) : integer;
 var
@@ -334,6 +351,7 @@ var
   a,b : string;
 
 begin
+  if FStop then exit;
   result := -1;
 
   a := TokenName(Token);
@@ -349,7 +367,7 @@ begin
     begin
       if (local.depth = -1) then
       begin
-        error('Can''t read local variable in its own initializer.');//dumb, as it does jackshit
+        error('Can''t read local variable in its own initializer.');
       end;
 
       result :=  i;
@@ -364,11 +382,11 @@ end;
 
 procedure TCompilerController.NamedVariable(const Token : TToken;const CanAssign : Boolean);
 var
-   getOp,setOp : TOpCodes;
+   getOp,setOp : Integer;
    Idx : integer;
    Value : TValueRecord;
 begin
-
+  if FStop then exit;
   Idx := resolveLocal(FCurrent,Token);
 
   if (Idx <> -1) then
@@ -397,17 +415,20 @@ end;
 
 Procedure TCompilerController.variable(const CanAssign : boolean);
 begin
+  if FStop then exit;
   namedVariable(FTokens.previous, CanAssign);
 end;
 
 procedure TCompilerController.markInitialized;
 begin
+  if FStop then exit;
   if FCurrent.ScopeDepth = 0 then exit;
   FCurrent.Locals.Last.Depth := FCurrent.ScopeDepth;
 end;
 
 procedure TCompilerController.defineVariable(const constantIdx : integer);
 begin
+  if FStop then exit;
   if (FCurrent.scopeDepth > 0) then  // If we're in a nested scope, mark the variable as initialized locally.
   begin
     MarkInitialized;
@@ -422,16 +443,18 @@ var
   infixRule : TParseFn;
   canAssign : boolean;
 begin
+  if FStop then exit;
+
   if not advance then
   begin
-    error('Advance Called when no further tokens' + TTokenName[FTokens.Current.kind]);//dumb, as it does jackshit
+    error('Advance Called when no further tokens' + TTokenName[FTokens.Current.kind]);
     exit;
   end;
 
   prefixRule := FParseRules[FTokens.Previous.kind].prefix;
   if (@prefixRule = nil) then
   begin
-    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);//dumb, as it does jackshit
+    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);
     exit;
   end;
 
@@ -445,7 +468,7 @@ begin
     infixRule := FParseRules[FTokens.previous.Kind].infix;
     if (@InfixRule = nil) then
     begin
-      error('No infix rule. Expected.');//dumb, as it does jackshit
+      error('No infix rule. Expected.');
       exit;
     end;
     infixRule(canAssign);
@@ -453,7 +476,7 @@ begin
 
   if (canAssign And match(tkEqual)) then
   begin
-     error('Invalid assignment target.');//dumb, as it does jackshit - or fails very badly...
+     error('Invalid assignment target.');
   end;
 end;
 
@@ -463,6 +486,7 @@ var
   Value : TValueRecord;
   Name  : String;
 begin
+  if FStop then exit;
   consume(tkIdentifier, errorMessage);
 
   if FCurrent.ScopeDepth > 0 then
@@ -481,7 +505,9 @@ function TCompilerController.identifiersEqual(const a, b: TToken): Boolean;
 var
   txt1,txt2 : string;
 begin
-  false;
+  result := false;
+
+  if FStop then exit;
 
   if a.kind <> b.kind then exit;
 
@@ -497,7 +523,7 @@ procedure TCompilerController.RemoveLocal;
 var
   Local : TLocal;
 begin
-
+  if FStop then exit;
   while (FCurrent.locals.Count > 0) and (FCurrent.Locals.Last.depth > FCurrent.scopeDepth) do
   begin
     Emit(OP_POP);
@@ -509,10 +535,11 @@ procedure TCompilerController.AddLocal(const Token: TToken);
 var
   Local: TLocal;
 begin
+  if FStop then exit;
   Assert(Assigned(token),'token being added to local is nil');
   if FCurrent.Locals.Count = MAX_LOCALS then
   begin
-    Error('Too many local variables in function.');//dumb, as it does jackshit
+    Error('Too many local variables in function.');
     Exit;
   end;
   Local := FCurrent.Locals.Add(TokenName(Token), token);
@@ -527,6 +554,7 @@ var
   token: TToken; // Assuming TToken is a pointer to the Token struct.
   local : TLocal;
 begin
+  if FStop then exit;
   if FCurrent.ScopeDepth = 0 then
     Exit;
 
@@ -543,7 +571,7 @@ begin
 
     if identifiersEqual(token, FCurrent.Locals[i].token) then
     begin
-      error('Already a variable with this name in this scope.');//dumb, as it does jackshit
+      error('Already a variable with this name in this scope.');
       exit;
     end;
   end;
@@ -556,6 +584,7 @@ procedure TCompilerController.varDeclaration;
 var
   constantIdx : Integer;
 begin
+  if FStop then exit;
 
   constantIdx := parseVariable('Expect variable name.');
 
@@ -575,6 +604,7 @@ end;
 
 Procedure TCompilerController.beginScope;
 begin
+  if FStop then exit;
   FCurrent.ScopeDepth := FCurrent.ScopeDepth + 1;
 
 end;
@@ -582,44 +612,58 @@ end;
 
 procedure TCompilerController.block;
 begin
-
-  while (not checkKind(tkCloseBrace) and not checkKind(tkEOF)) do
+  if FStop then exit;
+  while (FStop = false) and
+        (not checkKind(tkCloseBrace) and
+        (not checkKind(tkEOF))) do
   begin
     declaration;
   end;
-  consume(tkCloseBrace, 'Expect "}" after block.');
 
+  if not FStop then
+    consume(tkCloseBrace, 'Expect "}" after block.');
 end;
 
 
 procedure TCompilerController.endScope;
 begin
-
+  if FStop then exit;
   FCurrent.ScopeDepth := FCurrent.ScopeDepth -1;
   removeLocal;
 end;
+
+
 
 procedure TCompilerController.PatchJump(const OffSet: Integer);
 var
   Jump: Integer;
 begin
+  if FStop then exit;
+
+  assert(Offset >= 0, 'patch jump offset is < 0');
+
   // -2 to adjust for the bytecode for the jump offset itself.
   Jump := FCurrent.Func.Chunks.CodeCount - OffSet - 2;
 
   if Jump > MAX_JUMP then
-    Error('Too much code to jump over.');//dumb, as it does jackshit
+    Error('Too much code to jump over.');
 
+  FCurrent.Func.Chunks[OffSet] := Jump;
+
+  (*
   FCurrent.Func.Chunks[OffSet]   := (Jump shr 8) and $FF;
   FCurrent.Func.Chunks[OffSet+1] := Jump and $FF;
+  *)
 end;
 
 
-function TCompilerController.emitJump(const instruction : TOpCodes) : integer;
+function TCompilerController.emitJump(const instruction : Integer) : integer;
 begin
+  result := -1;
+  if FStop then exit;
   Emit(instruction);
-  Emit($FF); //255
-  Emit($FF); //255
-  result :=  FCurrent.Func.Chunks.Codecount - 2;
+  Emit($FF);
+  result :=  FCurrent.Func.Chunks.Codecount - 1;
 end;
 
 
@@ -631,6 +675,7 @@ var
   elseJump : integer;
 
 begin
+  if FStop then exit;
   consume(tkOpenBracket,'Expect "(" after "if".');
 
   expression;
@@ -658,6 +703,7 @@ end;
 
 procedure TCompilerController.Subscript(const canAssign: Boolean);
 begin
+  if FStop then exit;
   ParsePrecedence(PREC_OR);
   Consume(tkCloseSquareBracket, 'Expect '']'' after index.');
 
@@ -678,6 +724,7 @@ procedure TCompilerController.ListInit(const canAssign: Boolean);
 var
   ItemCount : integer;
 begin
+  if FStop then exit;
   itemCount := 0;
   
   if not CheckKind(tkCloseSquareBracket) then
@@ -693,7 +740,7 @@ begin
 
       if itemCount = 256 then
       begin
-        Error('Cannot have more than 256 items in a list literal.');//dumb, as it does jackshit
+        Error('Cannot have more than 256 items in a list literal.');
       end;
       Inc(itemCount);
     until not Match(tkComma);
@@ -711,14 +758,19 @@ procedure TCompilerController.emitLoop(const loopStart : integer);
 var
   offset : integer;
 begin
+  if FStop then exit;
   Emit(OP_LOOP);
 
   offset := FCurrent.Func.Chunks.CodeCount - loopStart + 2;
-  if (offset > MAX_JUMP) then error('Loop body too large.');//dumb, as it does jackshit
+  if (offset > MAX_JUMP) then error('Loop body too large.');
+
+  Emit(Offset);
+  (*
+
 
   Emit((offset shr 8) and $ff);
   Emit(offset and $ff);
-
+  *)
 end;
  
 procedure TCompilerController.whileStatement;
@@ -726,6 +778,8 @@ var
   exitJump : integer;
   loopStart : integer;
 begin
+  if FStop then exit;
+
   loopStart := FCurrent.Func.Chunks.Codecount;
 
   consume(tkOpenBracket, 'Expect "(" after while.');
@@ -747,13 +801,10 @@ begin
   Emit(OP_POP); 
 
 end;
-
-
-
-
+ 
 procedure TCompilerController.returnStatement;
 begin
-
+  if FStop then exit;
   if (FCurrent.Func.FuncKind = TYPE_SCRIPT) then
   begin
     raise exception.create('Cant return from top-level code.');
@@ -777,6 +828,7 @@ end;
 
 procedure TCompilerController.statement;
 begin
+  if FStop then exit;
   if (match(tkComment)) then
   begin
     exit;
@@ -828,17 +880,22 @@ end;
 //this pile of dogshit needs working on, boy.
 procedure TCompilerController.Error(const msg: String);
 begin
+  FStop := true;
   Showmessage(msg);
 end;
 
 
 function TCompilerController.checkKind(const Kind : TTokenKind) : boolean;
 begin
+  result := false;
+  if FStop then exit;
   result := FTokens.Current.Kind = Kind;
 end;
 
 function TCompilerController.match(const Expected : TTokenKind) : boolean;
 begin
+  result := false;
+  if FStop then exit;
   result := CheckKind(Expected);
   if not result then exit;
   advance;
@@ -847,28 +904,28 @@ end;
 
 
 function TCompilerController.argumentList: Byte;
-var
-  argCount: Byte;
 begin
-  argCount := 0;
+  result := 0;
+  if FStop then exit;
   if not (FTokens.Current.Kind = tkcloseBracket) then
   begin
     repeat   //looking at the c code is this equivalent looping?
       expression;
-      if argCount = 255 then
+      if result = 255 then
       begin
         error('Can''t have more than 255 arguments.');
       end;
-      Inc(argCount);
+      Inc(result);
     until not match(tkComma);
   end;
   consume(tkcloseBracket, 'Expect '')'' after arguments.');
-  Result := argCount;
+
 end;
 
 
 procedure TCompilerController.EmitConstant(const value : TValueRecord);
 begin
+  if FStop then exit;
   FCurrent.Func.Chunks.EmitConstant(value);
 end;
 
@@ -879,6 +936,7 @@ var
   Token : TToken;
   Text  : String;
 begin
+  if FStop then exit;
   Token := FTokens.previous;
   text := TokenName(Token);
   Value := BorrowChecker.NewString(rCompiler,Text);
@@ -891,6 +949,7 @@ procedure TCompilerController.call(const canAssign : boolean);
 var
   argCount : byte;
 begin
+  if FStop then exit;
   argCount := argumentList; //dumb?
   Emit(OP_CALL, argCount);
 end;
@@ -900,6 +959,7 @@ var
   TokenKind : TTokenKind;
   rule : TParseRule;
 begin
+  if FStop then exit;
   TokenKind := FTokens.Previous.Kind;
   rule := FParseRules[FTokens.Previous.Kind];
   parsePrecedence(TPrecedence(ord(rule.Precedence) + 1));
@@ -937,18 +997,17 @@ begin
     tkSlash             : Emit(OP_DIVIDE);
     else
     begin
-      raise exception.create('A token kind not catered for in a binary operation was encountered');  //dumb, as it does jackshit
+      raise exception.create('A token kind not catered for in a binary operation was encountered');
     end;
   end
-
-
 end;
 
 //virtual machine calls compile from interpret...
 function TCompilerController.DoCompile : pLoxFunction;
 begin
+  FStop := false;
   advance;
-  while not Match(tkEOF) do
+  while (FStop = false) and (not Match(tkEOF))   do
   begin
     Declaration;
   end;
@@ -957,8 +1016,9 @@ begin
 end;
 
 
-procedure TCompilerController.Emit(const Operand : TOpCodes);
+procedure TCompilerController.Emit(const Operand : Integer);
 begin
+  if FStop then exit;
   FCurrent.Func.Chunks.Emit(Operand);
 end;
 
@@ -967,6 +1027,8 @@ function TCompilerController.EndCompiler: pLoxFunction;
 var
   fn : pLoxFunction;
 begin
+  result := nil;
+  if FStop then exit;
   Emit(OP_NIL);
   Emit(OP_RETURN);
   fn := FCurrent.Func;
@@ -984,6 +1046,7 @@ end;
    constantIdx : integer;
    name : string;
 begin
+   if FStop then exit;
    name := TokenName(FTokens.previous);
 
    Compiler := FCompilers.Add(Name,FunctionKind,FCurrent);
@@ -1019,14 +1082,11 @@ begin
 end;
 
 
-procedure TCompilerController.Emit(const value: integer);
-begin
-  FCurrent.Func.Chunks.Emit(Value);
-end;
 
-procedure TCompilerController.Emit(const Operand: TOpCodes;
+procedure TCompilerController.Emit(const Operand: Integer;
   const value: Integer);
 begin
+  if FStop then exit;
   FCurrent.Func.Chunks.Emit(Operand,Value);
 end;
 
@@ -1034,6 +1094,7 @@ procedure TCompilerController.funDeclaration;
 var
   globalIdx : integer;
 begin
+  if FStop then exit;
   globalIdx := parseVariable('Expect function name.');
   markInitialized;
   DoFunction(TYPE_FUNCTION);
@@ -1042,6 +1103,7 @@ end;
 
 procedure TCompilerController.declaration;
 begin
+  if FStop then exit;
   if match(tkfun) then
   begin
      funDeclaration;
@@ -1059,6 +1121,7 @@ end;
 
 procedure TCompilerController.SetRuleForOpen_bracket;
 begin
+ 
   with FParseRules[tkOpenbracket] do
   begin
      Prefix := grouping;

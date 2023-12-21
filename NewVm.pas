@@ -11,10 +11,7 @@ uses
   opcodes,
   natives,
   AdapterCalls;
-
-
-
-
+ 
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
@@ -36,13 +33,13 @@ type
 
   TVirtualMachine = class
   private
+    FNameValue    : pNameValue;
     FCurrentFrame : TFrame;
     FInstructionPointerIdx : Integer;
     FOpCode : Integer;
     FInstructionPointer : TInstructionPointer;
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
-    FCall : integer;
     FRootFunction : TValueRecord;
     FHalt    : boolean;
     FStack   : TStack;
@@ -57,7 +54,7 @@ type
     function CurrentOpCode : integer;
     function NextInstruction : integer;
     procedure Halt;
-
+    
     procedure PushFrame(
       const func : PLoxFunction;
       const ArgCount : integer);
@@ -66,7 +63,7 @@ type
     function PeekStack : TValueRecord;overload;
     function PeekStack(const distance : integer) : TValueRecord;overload;
     procedure PushStack(const value : TValueRecord);
-    procedure MoveNext;
+
     procedure OpConstant;
     Procedure OPAdd;
     Procedure OpSubtract;
@@ -131,7 +128,7 @@ begin
         (NextInstruction <> -1) do
   begin
 
-    Case TOpCodes(CurrentOpCode) of
+    Case CurrentOpCode of
 
     OP_BUILD_LIST : begin
        OpBuildList;
@@ -284,7 +281,7 @@ begin
 
       OP_Return :
       begin
-          
+
          OpReturn;
       end;
 
@@ -396,45 +393,30 @@ begin
 end;
 
 procedure TVirtualMachine.OpConstant;
-var
-  value : TValueRecord;
 begin
-
-   MoveNext;
-
-   value := FInstructionPointer.Constant[CurrentOpCode]; //since the currentOpCode is actually an index into the constants.
-
-   PushStack(value);
-
-end;  
+   PushStack(FInstructionPointer.Constant[NextInstruction]);
+end;
 
 
 procedure TVirtualMachine.OPGreater;
 var
-  L,R,Result : TValueRecord;
+  L,R : TValueRecord;
 begin
-
-
-
     R := PopStack;
     L := PopStack;
-
-    Result := BorrowChecker.NewBool(l.Number > r.Number);
-
-    PushStack(result);
-   // FStackResults.Add(Result);
-   
+    PushStack(BorrowChecker.NewBool(l.Number > r.Number));
 end;
+
 
 
 procedure TVirtualMachine.OPLess;
 var
-  L,R, Result : TValueRecord;
+  L,R : TValueRecord;
 begin
     R := PopStack;
     L := PopStack;
-    Result := BorrowChecker.NewBool(l.Number < r.Number);
-    PushStack(Result);
+
+    PushStack(BorrowChecker.NewBool(l.Number < r.Number));
 
 end;
 
@@ -442,26 +424,26 @@ end;
 procedure TVirtualMachine.OPAdd;
 var
   L,R : TValueRecord;
-  Result : TValueRecord;
+
 begin
     R := PopStack;
     L := PopStack;
-    result := TAddition.Add(L,R);
-    PushStack(result);
+
+    PushStack(TAddition.Add(L,R));
 end;
- 
 
 
 procedure TVirtualMachine.OPSubtract;
 var
   L,R : TValueRecord;
+
 begin
 
   R := PopStack;
-  L := PopStack;
-  L := TSubtraction.Subtract(L,R);
 
-  PushStack(L);
+  L := PopStack;
+
+  PushStack(TSubtraction.Subtract(L,R));
 end;
 
 procedure TVirtualMachine.OpMultiply;
@@ -499,14 +481,6 @@ procedure TVirtualMachine.PushStack(const value: TValueRecord);
 begin
   FStack.Push(Value);
 end;
-
-(*function TVirtualMachine.CurrentFrame : TCallFrame;
-begin
-  result := FCurrentFrame; //FFrames.peek;
-end;*)
-
-
-
 
 //dumb - try to break into two and then send through the actual pointer.
 function TVirtualMachine.CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
@@ -546,14 +520,13 @@ function TVirtualMachine.Call(
 begin
   assert(Func <> nil,'no function has been initialized');
 
-  FCall := FCall + 1;   //dumb, useful for examining stack frame pops vs push
-
-  if not (argCount = func.Arity) then raise exception.create('param mismatch');
+  if not (argCount = func.Arity) then
+  begin
+    raise exception.create('param mismatch');
+  end;
 
   PushFrame(func,ArgCount);
-
-
-
+ 
   result := true;
 end;
 
@@ -561,19 +534,13 @@ procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
 begin
+    Result := PopStack; //result of the function
 
+    FStack.StackTop :=  FCurrentFrame.StackTop;
 
-    FCall := FCall - 1;
-
-    Result := PopStack;
-
-    FStack.StackTop :=  FCurrentFrame.StackTop;//FFrames.Peek.StackTop;
-
-    PushStack(result);
+    PushStack(result); //push result to new location in stack.
 
     PopFrame;
-
-
 end;
 
 
@@ -597,43 +564,23 @@ begin
 end;
 
 procedure TVirtualMachine.OPLoop;
-var
-  a,b : integer;
-  offset : integer;
-  idx : integer;
 begin
-  
-   a := NextInstruction;
-   b := NextInstruction;
-   idx := FInstructionPointer.Index;
-   offset := a shl 8 + b;
-   assert(FInstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
+   assert(FInstructionPointer.Increment(-NextInstruction) = true, 'failed to move to loop offset'); //dumb - probably...smells
 end;
+
 
 
 procedure TVirtualMachine.OPJump;
-var
-  a,b : integer;
-  offset : integer;
 begin
-  a := NextInstruction;
-  b := NextInstruction;
-  offset := a shl 8 + b;
-  //dumb - probably...smells
-  assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump offset');
+  assert(FInstructionPointer.Increment(NextInstruction) = true, 'failed to move to jump offset');
 end;
 
+
 procedure TVirtualMachine.OpJumpFalse;
-var
-  a,b : integer;
-  offset : integer;
 begin
-   a := NextInstruction;
-   b := NextInstruction;
-   offset := a shl 8 + b;
    if (isFalsey(PeekStack)) then
    begin
-     assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
+     assert(FInstructionPointer.Increment(NextInstruction) = true, 'failed to move to jump false offset');
    end;
 end;
 
@@ -648,18 +595,11 @@ begin
     if (GetIsNumber(R)) then
     begin
       Result := BorrowChecker.newNumber(- R.Number);
-      PushStack(Result);             // note in crafting interpreters, to optimise this you could just negate the actual value without pushing and popping, I think).
+      PushStack(Result);
     end;
 
-    //the comment here is actually ok. but what about negating strings? dumb - need to think on it.
 end;
 
-
-//it's very important when working with the stack as it is pointer based,
-// and what you might push back on is actually a global var in altered form.
-//therefore, for now, always use a result, and pop off old vals
-
-//not dumb - good point?
 procedure TVirtualMachine.OpDivide;
 var
   L,R, Result : TValueRecord;
@@ -687,50 +627,34 @@ end;
 
 
 procedure TVirtualMachine.OPNotEqual;
-var
-  result : TValueRecord;
 begin
-    result := BorrowChecker.NewBool(isFalsey(PopStack));
-    PushStack(Result);
+  PushStack(BorrowChecker.NewBool(isFalsey(PopStack)));
 end;
 
 procedure TVirtualMachine.OPEqual;
 var
-  L,R, Result : TValueRecord;
+  L,R : TValueRecord;
 begin
     R := PopStack;
     L := PopStack;
-
-    Result := BorrowChecker.NewBool(GetString(r) = GetString(l));
-    PushStack(result);
-
-
+    PushStack(BorrowChecker.NewBool(GetString(r) = GetString(l)));
 end;
 
 
 procedure TVirtualMachine.OpTrue;
-var
-  value : TValueRecord;
 begin
-  value := BorrowChecker.newBool(true);
-  PushStack(value);
+  PushStack(BorrowChecker.newBool(true));
 end;
 
 
 procedure TVirtualMachine.OpFalse;
-var
-  Value : TValueRecord;
 begin
-  Value := BorrowChecker.NewBool(False);
-  PushStack(Value);
+  PushStack(BorrowChecker.NewBool(False));
 end;
 
 procedure TVirtualMachine.OpNil;
-var
-  value : TValueRecord;
 begin
-  Value := BorrowChecker.NewNil;
-  PushStack(value);
+  PushStack(BorrowChecker.NewNil);
 end;
 
 
@@ -767,8 +691,7 @@ begin
   FInstructionPointer.Func := Func;
   FInstructionPointer.Index := -1; //reset to point to the current funcs opcode starting at zero (after move next);
 end;
-
-
+ 
 
 procedure TVirtualMachine.PopFrame;
 var
@@ -790,17 +713,13 @@ end;
 
 procedure TVirtualMachine.OPSetLocal;
 begin
-  moveNext;
-  FStack[FCurrentFrame.StackTop + CurrentOpCode] := PeekStack;
+  FStack[FCurrentFrame.StackTop + NextInstruction] := PeekStack;
 end;
-
-
 
 
 procedure TVirtualMachine.OpGetLocal;
 begin
-  moveNext;
-  PushStack(FStack[FCurrentFrame.StackTop + CurrentOpCode]);
+  PushStack(FStack[FCurrentFrame.StackTop + NextInstruction]);
 end;
 
 
@@ -834,18 +753,11 @@ end;
 
 procedure TVirtualMachine.OPGetGlobal;
 var
-   ConstantIndex : integer;
    Name   : TValueRecord;
    NameValue : pNameValue;
 begin
 
-
-
-  MoveNext;
-
-  constantIndex := CurrentOpCode;
-
-  name := FInstructionPointer.constant[constantIndex];
+  name := FInstructionPointer.constant[NextInstruction];
 
   NameValue := FGlobals.Find(GetString(name));
 
@@ -858,25 +770,20 @@ end;
 
 procedure TVirtualMachine.DoSetGlobal;
 var
-   ConstantIndex : integer;
    Name   : TValueRecord;
    value  : TValueRecord;
    NameValue : pNameValue;
   // bcode : pByteCode;
 begin
 
-  MoveNext;
-
-  constantIndex := CurrentOpCode;
-
-  name := FInstructionPointer.Constant[constantIndex];
+  name := FInstructionPointer.Constant[NextInstruction];
 
   value := PeekStack;
 
   assert(GetIsString(name), 'name is not a string object');
 
   NameValue := FGlobals.Find(GetString(name));
-
+ 
   assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
 
   NameValue.Value := Value;
@@ -897,10 +804,6 @@ begin
   assert(assigned(FGlobals.AddNameValue(Name,value, OwnValue)), 'failed to add to hash table');
 end;
 
-procedure TVirtualMachine.MoveNext;
-begin
-  Assert(NextInstruction <> -1,'Expected constant value following constant operation');
-end;
 
 function TVirtualMachine.PeekStack: TValueRecord;
 begin
@@ -923,15 +826,10 @@ end;
 
 procedure TVirtualMachine.OpDefineGlobal;
 var
-   ConstantIndex : integer;
    Name   : TValueRecord;
    value  : TValueRecord;
-
 begin
-
-  MoveNext;
-  constantIndex := CurrentOpCode;
-  name := FInstructionPointer.constant[constantIndex];
+  name := FInstructionPointer.constant[NextInstruction];
   value := PeekStack;
   assert(GetIsString(name), 'name is not a string object');
   AddGlobal(GetString(name),value, false);
@@ -954,7 +852,7 @@ begin
 
 //  FInstructionPointer := TInstructionPointer.Create;
 
-  FCall := 0;
+  //FCall := 0;
 
   FStack := TStack.Create;
   FStack.OnPush := CaptureStackPush;

@@ -115,7 +115,7 @@ begin
         (NextInstruction <> -1) do
   begin
 
-    Case TOpCodes(CurrentOpCode) of
+    Case CurrentOpCode of
 
     OP_BUILD_LIST : begin
        OpBuildList;
@@ -278,6 +278,26 @@ begin
 
 
 end;
+
+procedure TVirtualMachine.OPLoop;
+begin
+   assert(FInstructionPointer.Increment(-NextInstruction) = true, 'failed to move to loop offset'); //dumb - probably...smells
+end;
+
+
+procedure TVirtualMachine.OPJump;
+begin
+  assert(FInstructionPointer.increment(NextInstruction) = true, 'failed to move to jump offset');
+end;
+
+procedure TVirtualMachine.OpJumpFalse;
+begin
+   if (isFalsey(PeekStack)) then
+   begin
+     assert(FInstructionPointer.increment(NextInstruction) = true, 'failed to move to jump false offset');
+   end;
+end;
+
 
 function TVirtualMachine.Run(const func : PLoxFunction) : TInterpretResult;
 begin
@@ -615,46 +635,7 @@ begin
   result := FInstructionPointer.Next;
 end;
 
-procedure TVirtualMachine.OPLoop;
-var
-  a,b : integer;
-  offset : integer;
-  idx : integer;
-begin
-  
-   a := NextInstruction;
-   b := NextInstruction;
-   idx := FInstructionPointer.Index;
-   offset := a shl 8 + b;
-   assert(FInstructionPointer.Move(idx - offset) = true, 'failed to move to loop offset'); //dumb - probably...smells
-end;
 
-
-procedure TVirtualMachine.OPJump;
-var
-  a,b : integer;
-  offset : integer;
-begin
-  a := NextInstruction;
-  b := NextInstruction;
-  offset := a shl 8 + b;
-  //dumb - probably...smells
-  assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump offset');
-end;
-
-procedure TVirtualMachine.OpJumpFalse;
-var
-  a,b : integer;
-  offset : integer;
-begin
-   a := NextInstruction;
-   b := NextInstruction;
-   offset := a shl 8 + b;
-   if (isFalsey(PeekStack)) then
-   begin
-     assert(FInstructionPointer.Move(FInstructionPointer.Index + offset) = true, 'failed to move to jump false offset');
-   end;
-end;
 
 procedure TVirtualMachine.OpNegate;
 var

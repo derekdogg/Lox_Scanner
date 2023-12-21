@@ -50,12 +50,12 @@ type
 
 
 
-  TOnChunk = procedure(const Operand : TOpCodes) of object;
+  TOnChunk = procedure(const Operand : Integer) of object;
 
   TCodes = array of integer;
 
   TOpCode = class
-  const OP_CODE_MULTIPLIER = 8;
+  const OP_CODE_MULTIPLIER = 256; //keep this at the minimum, because affects patch jumping.
   private
     FCodes : TCodes;
     FCount : integer;
@@ -88,9 +88,9 @@ type
     function getConstantCount: integer;
     function GetCodeCount : Integer;
   public
-     procedure Emit(const Operand : TOpCodes; const  value : Integer);overload;
+     procedure Emit(const Operand : Integer; const  value : Integer);overload;
      procedure Emit(const Value : Integer); overload;
-     procedure Emit(const Operand : TOpCodes);overload;
+
 
      function AddConstant(const value : TValueRecord) : integer;
      procedure EmitConstant(const value : TValueRecord);
@@ -130,7 +130,6 @@ type
   TBlock_Capacity = 8..256;
 
   TStack = class
-  const STACK_MAX = 4 * high(TBlock_Capacity);
   private
     FOnStackPush : TOnStackPush;
     FOnStackPop  : TOnStackPop;
@@ -172,7 +171,7 @@ type
     procedure setIndex(const Value: integer);
   public
     function Move(const index : integer) : boolean;
-
+    function increment(const index : integer) : boolean;
 
     function Current : Integer;
     function Next : Integer;
@@ -315,7 +314,11 @@ begin
   result := FIndex;
 end;
 
- 
+function TInstructionPointer.increment(const index : integer) : boolean;
+begin
+  result := Move(FIndex + index);
+end;
+
 function TInstructionPointer.Move(const index: integer): boolean;
 begin
   result := false;
@@ -330,10 +333,13 @@ end;
 function TInstructionPointer.Next: integer;
 begin
   result := -1;
+
   if FFunction.Chunks.CodeCount = 0 then exit;
 
   inc(FIndex);
+
   if FIndex = FFunction.Chunks.CodeCount then exit;
+
   result := Current;
 end;
 
@@ -455,19 +461,13 @@ begin
   result := FItems[index];
 end;
 
-
-procedure TChunks.Emit(const Operand : TOpCodes);
-begin
-  FCode.Add(ord(Operand));
-end;
-
 procedure TChunks.Emit(const value : integer);
 begin
   FCode.Add(value);
 end;
 
 
-procedure TChunks.Emit(const Operand : TOpCodes; const  value : integer);
+procedure TChunks.Emit(const Operand : Integer; const  value : integer);
 begin
   emit(Operand);
   emit(Value);
@@ -528,7 +528,7 @@ begin
 end;
 
 
-{ TOpCodes }
+{ Integer }
 
 function TOpCode.Add(const value: integer) : integer;
 begin
@@ -739,8 +739,8 @@ end;
 procedure TStack.SetStackTop(const value: integer);
 begin
   Assert(Value >= 0, 'You idiot, the stack top is below zero');
-  Assert(Value < STACK_MAX, 'trying to set stack top beyond the absolute max');
-  while (value >= FCapacity) and (Value < STACK_MAX) do
+
+  while (value >= FCapacity) do
   begin
     IncreaseCapacity;
   end;
