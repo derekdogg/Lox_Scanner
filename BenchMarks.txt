@@ -1,0 +1,6 @@
+Bench marks fib(40);
+
+102334155
+534252ms
+
+8 mins
