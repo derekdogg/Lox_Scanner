@@ -2,7 +2,8 @@ unit compiler;
 
 interface
 
-uses dialogs,classes,LOXTypes, TokenArray, Scanner, locals,values, opCodes;
+uses
+  dialogs,Classes,LOXTypes, TokenArray, Scanner, Locals, Values, OpCodes;
 
 
 type
@@ -47,6 +48,8 @@ type
 
   //dumb - there is something fucked up with this, but I'm too tired and time-short to fix it right now.
   //why have a list of compilers when all you really care about is a list PloxFunctions, at best? Right?
+
+  //probably, a stack of function makes more sense here.
   TCompilers = class
   private
     FItems : TList;
@@ -207,7 +210,6 @@ end;
 procedure TCompilerController.Number(const canAssign : boolean);
 var
   token : TToken;
-  number : double;
   text : string;
   Value : TValueRecord;
 begin
@@ -228,7 +230,7 @@ procedure TCompilerController.grouping(const canAssign : boolean);
 begin
    if FStop then exit;
    expression;
-   consume(tkclosebracket, 'Expect '')'' after expression.');  //right bracket
+   consume(tkclosebracket, 'Expect '')'' after expression.');
 end;
 
 procedure TCompilerController.literal(const CanAssign: boolean);
@@ -650,10 +652,6 @@ begin
 
   FCurrent.Func.Chunks[OffSet] := Jump;
 
-  (*
-  FCurrent.Func.Chunks[OffSet]   := (Jump shr 8) and $FF;
-  FCurrent.Func.Chunks[OffSet+1] := Jump and $FF;
-  *)
 end;
 
 
@@ -661,7 +659,7 @@ function TCompilerController.emitJump(const instruction : Integer) : integer;
 begin
   result := -1;
   if FStop then exit;
-  Emit(instruction);
+  Emit(Instruction);
   Emit($FF);
   result :=  FCurrent.Func.Chunks.Codecount - 1;
 end;
@@ -1060,9 +1058,9 @@ begin
    begin
       repeat
         Compiler.Func.arity := Compiler.FFunc.arity + 1;
-        if Compiler.Func.arity > 255 then
+        if Compiler.Func.arity > 20 then
         begin
-          raise exception.create('Cant have more than 255 parameters.');
+          raise exception.create('Cant have more than 20 parameters.');
         end;
         constantIdx :=  ParseVariable('Expect parameter name.');
         DefineVariable(constantIdx);
