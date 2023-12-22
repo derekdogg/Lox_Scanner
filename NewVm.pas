@@ -6,13 +6,14 @@ uses
   sysutils,
   classes,
   LOXTypes,
-  Table,
+  HashTable,
   values,
   opcodes,
   natives,
   AdapterCalls;
  
 type
+
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
 
@@ -33,7 +34,7 @@ type
 
   TVirtualMachine = class
   private
-    FNameValue    : pNameValue;
+
     FCurrentFrame : TFrame;
     FInstructionPointerIdx : Integer;
     FOpCode : Integer;
@@ -45,7 +46,7 @@ type
     FStack   : TStack;
     FFrames : TFrameItems;
     FFrameStackTop : integer;
-    FGlobals : TValuePairs;
+    FGlobals : TGlobals;
     FResults : TStrings;
 
     procedure Execute;
@@ -89,15 +90,10 @@ type
     procedure HandleRunTimeError(const E: Exception);
     procedure OPJumpFalse;
     procedure OpJump;
-    function Call(const Func : pLoxfunction; const ArgCount : integer) : boolean;
+    function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
     procedure OpCall;
     procedure OpReturn;
-    function CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
     Function isFalsey(value : TValueRecord) : Boolean;
-    Procedure AddGlobal(
-      const name : string;
-      const Value : TValueRecord;
-      const ownValue : boolean);
     procedure OpBuildList;
     procedure OpIndexSubscriber;
     procedure OpStoreSubscriber;
@@ -438,10 +434,10 @@ var
   L,R : TValueRecord;
 
 begin
-
   R := PopStack;
-
   L := PopStack;
+
+
 
   PushStack(TSubtraction.Subtract(L,R));
 end;
@@ -468,12 +464,8 @@ begin
 end;
 
 procedure TVirtualMachine.OPPrint;
-var
-  value : TValueRecord;
 begin
-  value := PopStack;
-
-  FResults.Add(GetString(Value));
+  FResults.Add(GetString(PopStack));
 end;
 
 
@@ -482,25 +474,7 @@ begin
   FStack.Push(Value);
 end;
 
-//dumb - try to break into two and then send through the actual pointer.
-function TVirtualMachine.CallValue(const callee : TValueRecord; ArgCount : integer) : boolean;
-begin
-  result := false;
-  if GetIsFunction(Callee) then
-  begin
-    result := call(GetFunction(callee), argCount);
-    exit;
-  end;
-
-(*  if GetIsNative(Callee) then
-  begin
-     value := GetNative(Callee).Native(ArgCount,FStack);
-     PushStack(value);
-     result := true;
-     exit;
-  end; *)
-end;
-
+ 
 
 
 procedure TVirtualMachine.CaptureStackPop(const stack: TStack);
@@ -515,7 +489,7 @@ end;
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
-  const ArgCount : integer) : boolean;
+  const ArgCount : byte) : boolean;
 
 begin
   assert(Func <> nil,'no function has been initialized');
@@ -547,14 +521,29 @@ end;
 procedure TVirtualMachine.OpCall;
 var
   ArgCount : byte;
+  Value : TValueRecord;
 begin
+
 
   ArgCount := NextInstruction;
 
-  if not callValue(peekStack(ArgCount),ArgCount) then
+  Value := peekStack(ArgCount);
+
+  if GetIsFunction(Value) then
   begin
-    raise exception.create('failed to complete call value'); //dumb - need better way to handle blow-ups
+    assert(call(GetFunction(Value), argCount) = true, 'failed to execute function');
+    exit;
   end;
+
+(*  if GetIsNative(Callee) then
+  begin
+     value := GetNative(Callee).Native(ArgCount,FStack);
+     PushStack(value);
+     result := true;
+     exit;
+  end; *)
+
+
 
 end;
 
@@ -565,14 +554,14 @@ end;
 
 procedure TVirtualMachine.OPLoop;
 begin
-   assert(FInstructionPointer.Increment(-NextInstruction) = true, 'failed to move to loop offset'); //dumb - probably...smells
+   assert(FInstructionPointer.Increment(-NextInstruction-1) = true, 'failed to move to loop offset');  
 end;
 
 
 
 procedure TVirtualMachine.OPJump;
 begin
-  assert(FInstructionPointer.Increment(NextInstruction) = true, 'failed to move to jump offset');
+  assert(FInstructionPointer.Increment(NextInstruction-1) = true, 'failed to move to jump offset');
 end;
 
 
@@ -580,7 +569,7 @@ procedure TVirtualMachine.OpJumpFalse;
 begin
    if (isFalsey(PeekStack)) then
    begin
-     assert(FInstructionPointer.Increment(NextInstruction) = true, 'failed to move to jump false offset');
+     assert(FInstructionPointer.Increment(NextInstruction-1) = true, 'failed to move to jump false offset');
    end;
 end;
 
@@ -691,7 +680,7 @@ begin
   FInstructionPointer.Func := Func;
   FInstructionPointer.Index := -1; //reset to point to the current funcs opcode starting at zero (after move next);
 end;
- 
+
 
 procedure TVirtualMachine.PopFrame;
 var
@@ -708,7 +697,6 @@ begin
     FInstructionPointer.Func  :=  FCurrentFrame.Fn;
     FInstructionPointer.Index :=  FCurrentFrame.InstructionpointerIdx;
   end;
-
 end;
 
 procedure TVirtualMachine.OPSetLocal;
@@ -751,42 +739,45 @@ begin
 end;
 
 
+procedure TVirtualMachine.OpDefineGlobal;
+var
+   NameValue : TNameValue;
+begin
+  nameValue.Name := GetString(FInstructionPointer.constant[NextInstruction]);
+  NameValue.Value := PeekStack;
+  FGlobals.add(NameValue);
+  popStack;
+end;
+
 procedure TVirtualMachine.OPGetGlobal;
 var
-   Name   : TValueRecord;
-   NameValue : pNameValue;
+   NameValue : TNameValue;
+   index : integer;
 begin
-
-  name := FInstructionPointer.constant[NextInstruction];
-
-  NameValue := FGlobals.Find(GetString(name));
-
-  Assert(NameValue <> nil, 'expected value does not exist in globals');
-
-  PushStack(NameValue.value);
-
+  //look up value in hash table to see if it exists
+  NameValue.Name := GetString(FInstructionPointer.constant[NextInstruction]);
+  index := FGlobals.IndexOf(NameValue);
+  assert(Index >= 0, 'Failed to locate global : ' + NameValue.Name);
+  PushStack(FGlobals.Get(Index).Value );
 end;
 
 
 procedure TVirtualMachine.DoSetGlobal;
 var
-   Name   : TValueRecord;
-   value  : TValueRecord;
-   NameValue : pNameValue;
-  // bcode : pByteCode;
+   NameValue : TNameValue;
+   Index : integer;
 begin
 
-  name := FInstructionPointer.Constant[NextInstruction];
+  nameValue.Name := GetString(FInstructionPointer.Constant[NextInstruction]);
+  NameValue.Value := PeekStack;
 
-  value := PeekStack;
+  Index := FGlobals.IndexOf(NameValue);
 
-  assert(GetIsString(name), 'name is not a string object');
+  if Index >= 0 then
+  begin
+    FGlobals.setValue(Index,NameValue);
+  end;
 
-  NameValue := FGlobals.Find(GetString(name));
- 
-  assert(NameValue <> nil, 'Could not locate global in entries to set its new value');
-
-  NameValue.Value := Value;
 end;
 
 
@@ -796,13 +787,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.AddGlobal(
-  const name : string;
-  const Value : TValueRecord;
-  const ownValue : boolean);
-begin
-  assert(assigned(FGlobals.AddNameValue(Name,value, OwnValue)), 'failed to add to hash table');
-end;
+
 
 
 function TVirtualMachine.PeekStack: TValueRecord;
@@ -824,17 +809,6 @@ begin
   //FTempStack.Push(Result);
 end;
 
-procedure TVirtualMachine.OpDefineGlobal;
-var
-   Name   : TValueRecord;
-   value  : TValueRecord;
-begin
-  name := FInstructionPointer.constant[NextInstruction];
-  value := PeekStack;
-  assert(GetIsString(name), 'name is not a string object');
-  AddGlobal(GetString(name),value, false);
-  popStack;
-end;
 
 
 (*function TVirtualMachine.InstructionPointer: TInstructionPointer;
@@ -860,7 +834,7 @@ begin
  
   FHalt    := false;
 
-  FGlobals.Init;
+  FGlobals := TGlobals.Create;
 
   RegisterNatives;
 
@@ -876,7 +850,7 @@ begin
 
    FStack.Free;
 
-   FGlobals.finalize;
+   FGlobals.Free;
 
    //FFrames.free;
 

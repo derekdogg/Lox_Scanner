@@ -4,9 +4,6 @@ interface
 
 uses classes, LoxTypes, OpCodes;
 
-
-
-
 type
 
   TNumber = Double;
@@ -46,27 +43,21 @@ type
     Native    : TNativeFunction;
   end;
 
-  TEightBytes = array[0..7] of byte;
-
-
-
   TOnChunk = procedure(const Operand : Integer) of object;
 
-  TCodes = array of integer;
+
 
   TOpCode = class
-  const OP_CODE_MULTIPLIER = 256; //keep this at the minimum, because affects patch jumping.
+  const OP_CODE_CAPACITY = 256; //keep this at the minimum, because affects patch jumping?? Interesting observation....
   private
-    FCodes : TCodes;
+    FCodes : array of integer;
     FCount : integer;
     FCapacity : integer;
     procedure GrowCapacity;
-    function getCapacity : integer;
+
     function getCode(const index: integer): integer;
     procedure setCode(const index, Value: integer);
     function getCount: integer;
-  protected
-
   public
     function Add(const value : integer) : integer;
     constructor create;
@@ -78,7 +69,6 @@ type
 
   TChunks = class
   private
-    FOnChunk   : TOnChunk;
     FCode      : TOpCode;
     FConstants : TStack;
     function getCode(const index: integer): integer;
@@ -109,7 +99,7 @@ type
   TLoxFunction = record
     LoxObject : TLoxObject;
     FuncKind  : TFunctionKind;
-    Arity     : integer; // The arity field stores the number of parameters the function expects.
+    Arity     : byte; // The arity field stores the number of parameters the function expects.
     Name      : String;
     Chunks    : TChunks;
   end;
@@ -544,7 +534,7 @@ end;
 constructor TOpCode.create;
 begin
   FCount := 0;
-  FCapacity :=  OP_CODE_MULTIPLIER;
+  FCapacity :=  OP_CODE_CAPACITY;
   SetLength(FCodes, FCapacity);
 end;
 
@@ -554,10 +544,6 @@ begin
   inherited;
 end;
 
-function TOpCode.getCapacity: integer;
-begin
-  result := FCapacity;
-end;
 
 function TOpCode.getCode(const index: integer): integer;
 begin

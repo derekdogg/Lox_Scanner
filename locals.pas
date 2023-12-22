@@ -23,7 +23,7 @@ type
   protected
 
   public
-    Constructor Create(Const Name : String; const token : TToken);
+    constructor create(Const Name : String; const token : TToken);
     destructor destroy; override;
     procedure ToStrings(const strings : TStrings);
     property Token : TToken read getToken;// write setToken;
@@ -32,7 +32,6 @@ type
     property IsCaptured : Boolean read FIsCaptured write FIsCaptured;
     property Name : string read fName;
   end;
-
 
   TLocals = class
   private

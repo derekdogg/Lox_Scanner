@@ -324,26 +324,14 @@ Type
     Kind     : TObjectKind;
     IsMarked : Boolean;
     Next     : pLoxObject;
-    procedure Init;
   end;
 
 
 
   pLoxString = ^TLoxString;
   TLoxString = record
-  private
-    FObj    : TLoxObject;
-    Fchars  : String;
-    Fhash   : UInt64;
-    function getChars: string;
-    function getHash: UInt64;
-    procedure hashString;
-    procedure setChars(const Value: String);
-  public
-    Property Obj    : TLoxObject read FObj;
-    Property Chars  : string read getChars write setChars;
-    Property Hash   : Uint64 read getHash;
-    procedure Init;
+    Obj    : TLoxObject;
+    Chars  : String;
   end;
 
 
@@ -400,12 +388,6 @@ begin
    result := @value^;
 end; *)
 
-
-
-
-
-
-
 function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
 begin
   assert(Assigned(pObject));
@@ -419,40 +401,6 @@ begin
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
 
-
-
-
-
-
-(*
-function StrPCopy(const Source: AnsiString; Dest: PAnsiChar): PAnsiChar;
-begin
-  Move(PAnsiChar(Source)^, Dest^, Length(Source) + 1); // +1 for the 0 char
-  Result := Dest;
-end;  *)
-
-
-
-procedure TLoxObject.Init;
-begin
-  fillchar(Self,sizeof(Self),#0);
-end;
-
-function TLoxString.getChars: String;
-begin
-  result := FChars;
-end;
-
-function TLoxString.getHash: UInt64;
-begin
-  result := FHash;
-end;
-
-procedure TLoxString.setChars(const Value: String);
-begin
-  FChars := Value;
-  hashString;
-end;
 
 
 function GetHashString(const value : string) : UInt64;
@@ -480,21 +428,6 @@ begin
     result := ((result XOR ord(value[i]))* FNV_prime) and $FFFFFFFF;
   end;
 end;
-
-
-procedure TLoxString.hashString;
-begin
-  FHash :=  getHashString(FChars)
-end;
-
-
-procedure TLoxString.Init;
-begin
-  fillchar(Self,sizeof(Self),#0);
-  FObj.Kind := OBJ_STRING;
-  FHash := 0;
-end;
-
 
 
 

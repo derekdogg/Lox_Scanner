@@ -164,8 +164,11 @@ procedure TfmScript.Button1Click(Sender: TObject);
 
   function fib(n : integer) : integer;
   begin
+    MemRun.Lines.add(inttostr(n));
     if (n < 2) then
     begin
+
+
       result := n;
 
       exit;
@@ -178,13 +181,17 @@ var
   a : integer;
 begin
   MemRun.Lines.clear;
-  MemRun.Lines.beginUpdate;
-  a := fib(40);
+
+  a := fib(5);
   MemRun.Lines.add(inttostr(a));
 
 
-  MemRun.Lines.EndUpdate;
+
 end;
 
 end.
+
+
+
+
 

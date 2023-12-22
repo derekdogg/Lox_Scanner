@@ -9,9 +9,9 @@ uses
 
 
   //I really hate this code, I think it's a rewrite here - too hard to refactor sensibly.
+  //this code will get called all the time, btw, so it makes sense to make this super efficient...And I'm not convinced it is.
 
-
-Const MAX_CAPACITY = Maxint div 16;
+const MAX_CAPACITY = Maxint div 16;
 
 type
 
@@ -50,10 +50,10 @@ type
     procedure InsertItem(const index : integer; value : pNameValue; const Items : pNameValues);
     function FindNewKeyAndAddValue(const value : pNameValue; const items : pNameValues) : boolean;
     function Add(const value : pNameValue) : boolean;
-
+    function ItemSize : integer;
   public
     function Find(const name  : string) : pNameValue;
-    function ItemSize : integer;
+
     function InBounds(const index : integer; const capacity : Integer) : boolean;
     function SlotCount : integer;
     function Capacity : integer;

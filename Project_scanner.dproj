@@ -46,6 +46,7 @@
     <DCCReference Include="Addition.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="Exceptions.pas" />
+    <DCCReference Include="HashTable.pas" />
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Natives.pas" />
@@ -55,7 +56,6 @@
       <Form>fmScript</Form>
     </DCCReference>
     <DCCReference Include="subtraction.pas" />
-    <DCCReference Include="table.pas" />
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="ValueManager.pas" />
     <DCCReference Include="values.pas" />

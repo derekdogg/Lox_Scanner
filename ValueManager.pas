@@ -162,8 +162,8 @@ type
     function getBoolean(const ValueRecord : TValueRecord)  : Boolean;
 
 
-    function  getObject(const ValueRecord : TValueRecord) : pLoxObject;
-    function  getFunction(const ValueRecord : TValueRecord) : pLoxFunction;
+    function getObject(const ValueRecord : TValueRecord) : pLoxObject;
+    function getFunction(const ValueRecord : TValueRecord) : pLoxFunction;
     function getNull(const ValueRecord : TValueRecord): boolean;
 
     function GetString(const ValueRecord : TValueRecord) : String;
@@ -260,9 +260,7 @@ end;
 
 function TValueCreation.NewValue(const Requester: TRequester; const Kind: TLoxKind; const Obj: Pointer): TValueRecord;
 begin
-  //New(Result);
   FillChar(Result, SizeOf(result), #0);
-//  Result.Requester := Requester;
   Result.Kind := Kind;
   Result.Obj := Obj;
 end;
@@ -270,8 +268,8 @@ end;
 function TValueCreation.NewLoxString(const Str: String): pLoxString;
 begin
   New(Result);
-  Result.Init;
-  Result.Chars := Str;
+  FillChar(Result^,Sizeof(TLoxString),#0);
+  result.Chars := Str;
 end;
 
 function TValueCreation.NewString(const Requester: TRequester; const Txt: String): TValueRecord;
@@ -471,11 +469,7 @@ end;
 
 procedure TValueManager.SaveValue(const value: TValueRecord);
 begin
-  if FOwnValues then
-  begin
-//     if value.Requester = vm then
-//     FCompilerItems.add(value);
-  end;
+
 end;
 
 procedure TValueDisposal.DisposeList(var value : TValueRecord);
@@ -630,10 +624,10 @@ end;
 function GetString(const ValueRecord : TValueRecord): String;
 var
   Obj : pLoxObject;
-  fun : pLoxFunction;
+
 begin
   case  ValueRecord.Kind of
-   lxObject : begin
+    lxObject : begin
        Obj := GetObject(ValueRecord);
        case Obj.Kind of
          OBJ_STRING : begin
@@ -643,9 +637,7 @@ begin
    end;
 
    lxFunction : begin
-       fun := getFunction(ValueRecord);
-       result := fun^.name;
-
+       result := pLoxFunction(ValueRecord.Obj).Name;
    end;
 
    lxBoolean : begin
