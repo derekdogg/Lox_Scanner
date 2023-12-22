@@ -10,42 +10,8 @@ uses
 
 type
 
-  (* whilst I generally think this is on the right track,
-     there is a lot of memory fragmentation happening here.
-
-     to understand more fully this issue, I will endeavour to set limits on the
-     amount of memory available in any lox program.
-
-     I will do that by setting limits on, for example, the number of functions,
-     the number of "numbers" etc,
-
-     basically, what I'm gonna do, is grab memory up-front, and then allocate from
-     memory pools of a reasonable size. I will probably allow multiple resize up to a point though
-     so the limit will be based on max capacity, with a minimum stipulated as well.
-
-     so that's not gonna be easy...
-
-     but it will hopefully mean that after a program runs, the memory is a known
-     entity.
-
-     What would be a reasonable "chunk" of memory to attempt to grab?
-
-     Answer : I have no idea.
-
-     However, we can also add in some code to allow a user to set these limits.
-
-     This is before we get to the Garbage collection of memory btw.
-
-     it's on the radar, and will be done asap.
-
-   *)
-
-
   TValueDisposal = class
     procedure DisposeList(var value : TValueRecord);
-    procedure DisposeNil(var value : TValueRecord);
-    procedure DisposeBoolean(var value : TValueRecord);
-    procedure DisposeNumber(var value : TValueRecord);
     procedure DisposeNative(var value : TValueRecord);
     procedure DisposeString(var value : TValueRecord);
     procedure DisposeValue(var value : TValueRecord);
@@ -520,32 +486,11 @@ begin
   value.Obj := nil;
 end;
 
-
-procedure TValueDisposal.DisposeBoolean(var value : TValueRecord);
-begin
-  //dispose(value);
-  //Value := nil;
-end;
-
-procedure TValueDisposal.DisposeNil(var value: TValueRecord);
-begin
-  //dispose(Value);
-  //Value := nil;
-end;
-
-procedure TValueDisposal.DisposeNumber(var value : TValueRecord);
-begin
-   //dispose(value);
-   //Value := nil;
-end;
-
 procedure TValueDisposal.DisposeValue(var value : TValueRecord);
 begin
-  if GetIsNull(Value) then
-  begin
-    //DisposeNil(Value);
-    exit;
-  end;
+  if GetIsBoolean(Value) or
+     GetIsNull(Value) or
+     GetIsNumber(Value) then exit; //all of these don't have pointers
 
   if GetIsList(Value) then
   begin
@@ -559,22 +504,10 @@ begin
     exit;
   end;
 
-  if GetIsNumber(Value) then
-  begin
-    //disposeNumber(value);
-    exit;
-  end;
-
   if GetIsNative(Value) then
   begin
      disposeNative(Value);
      exit;
-  end;
-
-  if GetIsBoolean(Value) then
-  begin
-    //disposeBoolean(Value);
-    exit;
   end;
 
   if GetIsFunction(Value) then
@@ -764,10 +697,7 @@ begin
    assert(GetIsNumber(ValueRecord), 'value is not a number so can''t set it to one');
    ValueRecord.Kind := lxNumber;
    ValueRecord.Number := Value;
-
 end;
-
-
 
 { TNumberMemory }
 
@@ -808,7 +738,7 @@ begin
   for i := 0 to FStack.StackTop-1 do
   begin
     Val := FStack.Pop;
-    FDisposal.DisposeNumber(Val);
+   // FDisposal.DisposeNumber(Val);
   end;
   FStack.Free;
   inherited;

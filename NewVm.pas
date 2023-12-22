@@ -88,14 +88,12 @@ type
     procedure OpIndexSubscriber;
     procedure OpStoreSubscriber;
     function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
-    function isFalsey(value : TValueRecord) : Boolean;
+    function isFalsey(const value : TValueRecord) : Boolean;
     procedure CaptureStackPush(Const stack : TStack);
     procedure CaptureStackPop(Const stack : TStack);
   public
     function Run(const func : PLoxFunction) : TInterpretResult;
-
-    constructor create(
-       const results : TStrings);
+    constructor create(const results : TStrings);
     destructor Destroy; override;
     property OnPush : TOnStackPush read FOnStackPush write FOnStackPush;
     property OnPop : TOnStackPop read FOnStackPop write FOnStackPop;
@@ -171,6 +169,7 @@ begin
     OP_CALL : OpCall;
 
     OP_Return : OpReturn;
+
     end;
 
   end;
@@ -414,7 +413,6 @@ var
   Value : TValueRecord;
 begin
 
-
   ArgCount := NextInstruction;
 
   Value := peekStack(ArgCount);
@@ -481,7 +479,7 @@ end;
 
 procedure TVirtualMachine.OpDivide;
 var
-  L,R, Result : TValueRecord;
+   L,R, Result : TValueRecord;
 begin
 
     R := PopStack;
@@ -494,13 +492,15 @@ begin
   
 end;
 
-Function TVirtualMachine.isFalsey(value : TValueRecord) : Boolean;
+Function TVirtualMachine.isFalsey(const value : TValueRecord) : Boolean;
 begin
-  result :=
-    (Value.Kind = lxNull) OR
-    ((Value.Kind = lxBoolean) and (GetBoolean(Value) = false)) OR
-    ((Value.Kind = lxNumber) and (GetNumber(Value) <= 0)) OR
-    ((GetIsString(Value)) and (lowercase(GetString(Value)) = 'false'));
+  result := false;
+  case Value.Kind of
+    lxNull    : result := true;
+    lxBoolean : result := Value.Bool = false;
+    lxNumber  : result := Value.Number <= 0;
+    lxString  : result := lowercase(trim(GetString(Value))) = 'false';
+  end;
 end;
 
 
@@ -578,7 +578,7 @@ end;
 
 procedure TVirtualMachine.OPSetLocal;
 begin
-  FStack[FCurrentFrame.StackTop + NextInstruction] := PeekStack;
+  FStack[FCurrentFrame.StackTop + NextInstruction] := PeekStack;  //noting that next instruction here is the index of the local on the stack? Still a bit hazy on locals
 end;
  
 procedure TVirtualMachine.OpGetLocal;
