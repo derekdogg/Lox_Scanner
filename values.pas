@@ -54,7 +54,6 @@ type
     FCount : integer;
     FCapacity : integer;
     procedure GrowCapacity;
-
     function getCode(const index: integer): integer;
     procedure setCode(const index, Value: integer);
     function getCount: integer;
@@ -74,23 +73,17 @@ type
     function getCode(const index: integer): integer;
     procedure setCode(const index, Value: integer);
     function getConstant(const index: integer): TValueRecord;
-
     function getConstantCount: integer;
     function GetCodeCount : Integer;
   public
      procedure Emit(const Operand : Integer; const  value : Integer);overload;
      procedure Emit(const Value : Integer); overload;
-
-
      function AddConstant(const value : TValueRecord) : integer;
      procedure EmitConstant(const value : TValueRecord);
-
      constructor Create(const FunctionName : String);
      destructor destroy;override;
-
      property Code[const index : integer] : integer read getCode write setCode; default;
      property Constant[const index : integer] : TValueRecord read getConstant;
-
      property ConstantCount : integer read getConstantCount;
      property CodeCount : integer read getCodeCount;
   end;
@@ -277,22 +270,11 @@ begin
   result := FFunction.Chunks[FIndex];
 end;
 
-(*constructor TInstructionPointer.create;
-begin
-  fIndex := -1;
-end; *)
-
 function TInstructionPointer.Current: integer;
 begin
   result := getValue(FIndex);
 end;
 
-(*
-destructor TInstructionPointer.destroy;
-begin
-  FFunction := nil;
-  inherited destroy;
-end; *)
 
 function TInstructionPointer.Getconstant(const Index: integer): TValueRecord;
 begin
@@ -517,9 +499,6 @@ begin
   inherited;
 end;
 
-
-{ Integer }
-
 function TOpCode.Add(const value: integer) : integer;
 begin
   result := FCount;
@@ -732,8 +711,7 @@ begin
   end;
 
   FStackTop := Value;
-
-
+ 
 end;
 
 end.

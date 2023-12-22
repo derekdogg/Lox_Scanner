@@ -618,7 +618,6 @@ begin
   if getBoolean(ValueRecord) = true then result := 'True'
   else
     result := 'False';
-
 end;
 
 function GetString(const ValueRecord : TValueRecord): String;

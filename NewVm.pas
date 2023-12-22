@@ -34,7 +34,6 @@ type
 
   TVirtualMachine = class
   private
-
     FCurrentFrame : TFrame;
     FInstructionPointerIdx : Integer;
     FOpCode : Integer;
@@ -48,23 +47,17 @@ type
     FFrameStackTop : integer;
     FGlobals : TGlobals;
     FResults : TStrings;
-
     procedure Execute;
-    //function CurrentFrame : TCallFrame;
-//    function InstructionPointer : TInstructionPointer;
     function CurrentOpCode : integer;
     function NextInstruction : integer;
     procedure Halt;
-    
-    procedure PushFrame(
-      const func : PLoxFunction;
-      const ArgCount : integer);
+    procedure PushFrame(const func : PLoxFunction;const ArgCount : integer);
     procedure  popFrame;
     function PopStack : TValueRecord;
     function PeekStack : TValueRecord;overload;
     function PeekStack(const distance : integer) : TValueRecord;overload;
     procedure PushStack(const value : TValueRecord);
-
+    procedure RegisterNatives;
     procedure OpConstant;
     Procedure OPAdd;
     Procedure OpSubtract;
@@ -82,26 +75,23 @@ type
     procedure OpNil;
     procedure OpDefineGlobal;
     procedure OPGETGLOBAL;
-    procedure RegisterNatives;
-    procedure DoSetGlobal;
+    procedure OPSetGlobal;
     procedure OpPOP;
     procedure OpGetLocal;
     procedure OPSetLocal;
     procedure HandleRunTimeError(const E: Exception);
     procedure OPJumpFalse;
     procedure OpJump;
-    function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
     procedure OpCall;
     procedure OpReturn;
-    Function isFalsey(value : TValueRecord) : Boolean;
     procedure OpBuildList;
     procedure OpIndexSubscriber;
     procedure OpStoreSubscriber;
-
+    function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
+    function isFalsey(value : TValueRecord) : Boolean;
     procedure CaptureStackPush(Const stack : TStack);
     procedure CaptureStackPop(Const stack : TStack);
   public
-//    function Result : TByteCode;
     function Run(const func : PLoxFunction) : TInterpretResult;
 
     constructor create(
@@ -126,161 +116,61 @@ begin
 
     Case CurrentOpCode of
 
-    OP_BUILD_LIST : begin
-       OpBuildList;
-    end;
+    OP_BUILD_LIST : OpBuildList;
 
+    OP_INDEX_SUBSCR : OpIndexSubscriber;
 
-    OP_INDEX_SUBSCR : begin
-       OpIndexSubscriber;
-    end;
+    OP_STORE_SUBSCR : OpStoreSubscriber;
 
-    OP_STORE_SUBSCR : begin
-      OpStoreSubscriber;
-    end;
+    OP_CONSTANT     : OpConstant;
 
-      OP_CONSTANT : begin
-         OpConstant;
-      end;
+    OP_DEFINE_GLOBAL: OpDefineGlobal;
 
+    OP_POP : OpPOP;
 
-      OP_DEFINE_GLOBAL: begin
+    OP_SET_GLOBAL: OPSetGlobal;
 
-          OpDefineGlobal;
-       end;
+    OP_GET_GLOBAL: OPGetGlobal;
 
-      OP_POP : Begin
+    OP_GET_LOCAL: OpGetLocal;
 
-         OpPOP;
-      end;
+    OP_SET_LOCAL: OPSetLocal;
 
+    OP_Nil : OpNil;
 
-      OP_SET_GLOBAL:
-      begin
+    OP_TRUE : OpTrue;
 
-        DoSetGlobal;
-      end;
+    OP_FALSE : OpFalse;
 
+    OP_GREATER : OPgreater;
 
+    OP_LESS : OPless;
 
-      OP_GET_GLOBAL:
-      begin
+    OP_EQUAL : OPEqual;
 
-        OPGetGlobal;
-      end;
+    OP_NOT : OPNotEqual;
 
+    OP_ADD : OPAdd;
 
-      OP_GET_LOCAL:
-      begin
-        OpGetLocal;
-      end;
+    OP_SUBTRACT : OPSubtract;
 
-      OP_SET_LOCAL:
-      begin
+    OP_DIVIDE : OPdivide;
 
-        OPSetLocal;
-      end;
+    OP_MULTIPLY : OPMultiply;
 
+    OP_NEGATE : OpNegate;
 
-      OP_Nil  : begin
+    OP_PRINT  : OPPrint;
 
-         OpNil;
-      end;
+    OP_JUMP_IF_FALSE : OPJumpFalse;
 
-      OP_TRUE : begin
+    OP_JUMP: OpJump;
 
-         OpTrue;
-      end;
+    OP_LOOP: Oploop;
 
-      OP_FALSE : begin
+    OP_CALL : OpCall;
 
-         OpFalse;
-      end;
-
-      OP_GREATER : begin
-
-         OPgreater;
-      end;
-
-      OP_LESS : begin
-
-         OPless;
-      end;
-
-      OP_EQUAL : begin
-
-        OPequal;
-      end;
-
-      OP_NOT : begin
-       
-        OPNotEqual;
-      end;
-
-
-      OP_ADD : begin
-
-        OPAdd;
-      end;
-
-      OP_SUBTRACT : begin
-        OPSubtract;
-      end;
-
-
-      OP_DIVIDE : begin
-
-        OPdivide;
-      end;
-
-      OP_MULTIPLY : begin
-
-         OPMultiply;
-      end;
-
-      OP_NEGATE : begin
-
-         OpNegate;
-      end;
-
-      OP_PRINT  : begin
-
-         OPPrint;
-      end;
-
-
-      OP_JUMP_IF_FALSE:
-      begin
-
-         OPJumpFalse;
-      end;
-
-
-      OP_JUMP:
-      begin
-
-         OpJump;
-      end;
-
-
-       OP_LOOP:
-       begin
-
-         Oploop;
-       end;
-
-      OP_CALL :
-      begin
-         OpCall;
-      end;
-
-
-      OP_Return :
-      begin
-
-         OpReturn;
-      end;
-
+    OP_Return : OpReturn;
     end;
 
   end;
@@ -647,19 +537,6 @@ begin
 end;
 
 
-(*procedure TVirtualMachine.PushFrame(
-  const func : PLoxFunction;
-  const ArgCount : integer) ;
-var
-  Frame : TCallFrame;
-begin
-  Frame := TCallFrame.Create(FInstructionPointer.Index, Func,FStack,FStack.StackTop-ArgCount-1);
-  FFrames.Push(Frame);
-
-  FInstructionPointer.Func := Func;
-  FInstructionPointer.Index := -1; //reset to point to the current funcs opcode starting at zero (after move next);
-end; *)
-
 procedure TVirtualMachine.PushFrame(
   const func : PLoxFunction;
   const ArgCount : integer) ;
@@ -703,8 +580,7 @@ procedure TVirtualMachine.OPSetLocal;
 begin
   FStack[FCurrentFrame.StackTop + NextInstruction] := PeekStack;
 end;
-
-
+ 
 procedure TVirtualMachine.OpGetLocal;
 begin
   PushStack(FStack[FCurrentFrame.StackTop + NextInstruction]);
@@ -762,7 +638,7 @@ begin
 end;
 
 
-procedure TVirtualMachine.DoSetGlobal;
+procedure TVirtualMachine.OPSetGlobal;
 var
    NameValue : TNameValue;
    Index : integer;
@@ -780,15 +656,10 @@ begin
 
 end;
 
-
 procedure TVirtualMachine.OpPOP;
 begin
   FStack.pop;
 end;
-
-
-
-
 
 function TVirtualMachine.PeekStack: TValueRecord;
 begin
@@ -803,58 +674,29 @@ end;
 function TVirtualMachine.PopStack : TValueRecord;
 begin
   Result := FStack.Pop;
-
-  //add to temp stack
-
-  //FTempStack.Push(Result);
 end;
 
-
-
-(*function TVirtualMachine.InstructionPointer: TInstructionPointer;
-begin
-  result := FInstructionPointer;
-end; *)
-
-Constructor TVirtualMachine.Create(
+constructor TVirtualMachine.Create(
   const results : TStrings);
 var
   Value : TValueRecord;
 begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
   FResults := results;
-
-//  FInstructionPointer := TInstructionPointer.Create;
-
-  //FCall := 0;
-
   FStack := TStack.Create;
   FStack.OnPush := CaptureStackPush;
   FStack.OnPop :=  CaptureStackPop;
- 
   FHalt    := false;
-
   FGlobals := TGlobals.Create;
-
   RegisterNatives;
-
-//  FFrames := TCallFrames.create;
-
 end;
 
 
 
 destructor TVirtualMachine.destroy;
 begin
-//   FInstructionPointer.Free;
-
-   FStack.Free;
-
-   FGlobals.Free;
-
-   //FFrames.free;
-
-  
+  FStack.Free;
+  FGlobals.Free;
 end;
 
 

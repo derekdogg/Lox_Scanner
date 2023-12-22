@@ -46,13 +46,6 @@ const
         OP_INDEX_SUBSCR= 39;
         OP_STORE_SUBSCR= 40;
 
-
-
-
-
-
-
-
 implementation
 
 
