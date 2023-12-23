@@ -18,7 +18,7 @@ type
     Panel5: TPanel;
     MemLocals: TMemo;
     MemRun: TMemo;
-    MemCodes: TMemo;
+    MemStack: TMemo;
     Panel6: TPanel;
     memEdit: TRichEdit;
     Splitter1: TSplitter;
@@ -33,8 +33,8 @@ type
   private
     { Private declarations }
     procedure Interpret(const LoxFunction : pLoxFunction);
-    procedure LogStackPush(Const stack : TStack);
-    procedure LogStackPop(Const stack : TStack);
+    procedure LogStackPush(const Value : TValueRecord);
+    procedure LogStackPop(const Value : TValueRecord);
 
   public
     { Public declarations }
@@ -75,18 +75,18 @@ begin
 end;
 
 
-procedure TFmScript.LogStackPush(Const stack : TStack);
+procedure TFmScript.LogStackPush(Const Value : TValueRecord);
 begin
-  Edit1.Text := inttostr(Stack.StackTop);
-  Edit2.Text := inttostr(Stack.Capacity);
+  MemStack.Lines.Add(GetString(Value));
+  //sleep(500);
   Application.processMessages;
 
 end;
 
-procedure TFmScript.LogStackPop(Const stack : TStack);
+procedure TFmScript.LogStackPop(Const Value : TValueRecord);
 begin
-  Edit1.Text := inttostr(Stack.StackTop);
-  Edit2.Text := inttostr(Stack.Capacity);
+  MemStack.Lines.Delete(MemStack.Lines.Count-1);
+  //sleep(500);
   Application.processMessages;
 end;
 
@@ -96,12 +96,12 @@ var
    VM :  TVirtualMachine;
    s  : integer;
 begin
-
-
-
+ 
   s := MilliSecondOfTheDay(now);
 
    VM := TVirtualMachine.Create(MemRun.Lines);
+  // Vm.OnPush := LogStackPush;
+  // VM.OnPop := LogStackPop;
    try
       VM.Run(LoxFunction);
       MemRun.Lines.Add(inttostr( MilliSecondOfTheDay(now) - s));
@@ -132,7 +132,7 @@ begin
 
   //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
-  MemCodes.Lines.clear;
+  MemStack.Lines.clear;
   MemLocals.Lines.clear;
 
   try

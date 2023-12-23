@@ -8,3 +8,4 @@ Bench marks fib(40);
 
 
 470934 = 7.8 mins
+297628 =4.96046667 mins (with less indirection in InstructionPointer.)

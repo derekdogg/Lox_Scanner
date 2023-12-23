@@ -106,23 +106,17 @@ type
      Items     : TStack;
   end;
 
-  TOnStackPush = procedure(Const stack : TStack) of object;
-  TOnStackPop  = procedure(Const stack : TStack) of object;
-
 
   TBlock_Capacity = 8..256;
 
   TStack = class
   private
-    FOnStackPush : TOnStackPush;
-    FOnStackPop  : TOnStackPop;
     FCapacity : integer;
     FStackTop : integer;
     FItems :  array of TValueRecord;
     function  GetItem(const Index: integer): TValueRecord;
     procedure SetItem(const Index: integer; const Value: TValueRecord);
-    procedure SetOnStackPop(const Value: TOnStackPop);
-    procedure SetOnStackPush(const Value: TOnStackPush);
+
   protected
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
@@ -136,12 +130,11 @@ type
      property Capacity : integer read FCapacity;
      property Item[Const Index : integer] : TValueRecord read GetItem write SetItem; default;
      property StackTop : integer read FStackTop write SetStackTop;
-     property OnPush : TOnStackPush read FOnStackPush write SetOnStackPush;
-     property OnPop : TOnStackPop read FOnStackPop write SetOnStackPop;
   end;
 
   TInstructionPointer = record
   private
+    
     FFunction : PLoxFunction;
     FIndex    : integer;
     function getCount: integer;
@@ -156,7 +149,7 @@ type
     function Move(const index : integer) : boolean;
     function increment(const index : integer) : boolean;
 
-    function Current : Integer;
+    //function Current : Integer;
     function Next : Integer;
    // constructor create;
 //    destructor destroy; override;
@@ -270,10 +263,10 @@ begin
   result := FFunction.Chunks[FIndex];
 end;
 
-function TInstructionPointer.Current: integer;
+(*function TInstructionPointer.Current: integer;
 begin
   result := getValue(FIndex);
-end;
+end; *)
 
 
 function TInstructionPointer.Getconstant(const Index: integer): TValueRecord;
@@ -312,7 +305,9 @@ begin
 
   if FIndex = FFunction.Chunks.CodeCount then exit;
 
-  result := Current;
+
+
+  result :=  FFunction.Chunks[FIndex];
 end;
 
 
@@ -670,6 +665,7 @@ function TStack.Pop: TValueRecord;
 begin
   Assert(FStackTop > 0, 'no more items to pop');
   result := FItems[FStackTop-1];
+
   SetStackTop(FStackTop-1);
  // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;
@@ -691,15 +687,6 @@ begin
   FItems[Index] := Value;
 end;
 
-procedure TStack.SetOnStackPop(const Value: TOnStackPop);
-begin
-  FOnStackPop := Value;
-end;
-
-procedure TStack.SetOnStackPush(const Value: TOnStackPush);
-begin
-  FOnStackPush := Value;
-end;
 
 procedure TStack.SetStackTop(const value: integer);
 begin

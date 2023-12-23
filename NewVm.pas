@@ -32,14 +32,17 @@ type
     StackTop : integer;
   end; *)
 
+  TStackEvent = procedure(const value : TValueRecord) of object;
+
+
   TVirtualMachine = class
   private
     FCurrentFrame : TFrame;
     FInstructionPointerIdx : Integer;
     FOpCode : Integer;
     FInstructionPointer : TInstructionPointer;
-    FOnStackPush : TOnStackPush;
-    FOnStackPop  : TOnStackPop;
+    FOnStackPush : TStackEvent;
+    FOnStackPop  : TStackEvent;
     FRootFunction : TValueRecord;
     FHalt    : boolean;
     FStack   : TStack;
@@ -48,7 +51,7 @@ type
     FGlobals : TGlobals;
     FResults : TStrings;
     procedure Execute;
-    function CurrentOpCode : integer;
+//    function CurrentOpCode : integer;
     function NextInstruction : integer;
     procedure Halt;
     procedure PushFrame(const func : PLoxFunction;const ArgCount : integer);
@@ -89,14 +92,12 @@ type
     procedure OpStoreSubscriber;
     function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
     function isFalsey(const value : TValueRecord) : Boolean;
-    procedure CaptureStackPush(Const stack : TStack);
-    procedure CaptureStackPop(Const stack : TStack);
   public
     function Run(const func : PLoxFunction) : TInterpretResult;
     constructor create(const results : TStrings);
     destructor Destroy; override;
-    property OnPush : TOnStackPush read FOnStackPush write FOnStackPush;
-    property OnPop : TOnStackPop read FOnStackPop write FOnStackPop;
+    property OnPush : TStackEvent read FOnStackPush write FOnStackPush;
+    property OnPop : TStackEvent read FOnStackPop write FOnStackPop;
   end;
  
 
@@ -106,13 +107,26 @@ uses
   dialogs, addition, subtraction, valueManager;
 
 procedure TVirtualMachine.Execute;
+var
+  CurrentInstruction : integer;
 begin
+
+  CurrentInstruction := FInstructionPointer.Next;
+
   while (FHalt = false) and
         (FFrameStackTop > 0) and
-        (NextInstruction <> -1) do
+        (CurrentInstruction <> -1) do
   begin
 
-    Case CurrentOpCode of
+    Case CurrentInstruction of
+
+    OP_CALL : OpCall;
+
+    OP_Return : OpReturn;
+
+    OP_ADD : OPAdd;
+
+    OP_SUBTRACT : OPSubtract;
 
     OP_BUILD_LIST : OpBuildList;
 
@@ -147,11 +161,7 @@ begin
     OP_EQUAL : OPEqual;
 
     OP_NOT : OPNotEqual;
-
-    OP_ADD : OPAdd;
-
-    OP_SUBTRACT : OPSubtract;
-
+ 
     OP_DIVIDE : OPdivide;
 
     OP_MULTIPLY : OPMultiply;
@@ -166,11 +176,10 @@ begin
 
     OP_LOOP: Oploop;
 
-    OP_CALL : OpCall;
-
-    OP_Return : OpReturn;
 
     end;
+    CurrentInstruction := FInstructionPointer.Next;
+
 
   end;
 
@@ -272,10 +281,10 @@ end;
 
 
 
-function TVirtualMachine.CurrentOpCode : integer;
+(*function TVirtualMachine.CurrentOpCode : integer;
 begin
-  result := FInstructionPointer.Current;
-end;
+  result :=  FInstructionPointer.Current;
+end; *)
 
 procedure TVirtualMachine.OpConstant;
 begin
@@ -357,24 +366,6 @@ begin
   FResults.Add(GetString(PopStack));
 end;
 
-
-procedure TVirtualMachine.PushStack(const value: TValueRecord);
-begin
-  FStack.Push(Value);
-end;
-
- 
-
-
-procedure TVirtualMachine.CaptureStackPop(const stack: TStack);
-begin
-  if assigned(FOnStackPop) then FOnStackPop(stack);
-end;
-
-procedure TVirtualMachine.CaptureStackPush(const stack: TStack);
-begin
-   if assigned(FOnStackPush) then FOnStackPush(stack);
-end;
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
@@ -582,8 +573,11 @@ begin
 end;
  
 procedure TVirtualMachine.OpGetLocal;
+var
+  idx : integer;
 begin
-  PushStack(FStack[FCurrentFrame.StackTop + NextInstruction]);
+  idx := NextInstruction;
+  PushStack(FStack[FCurrentFrame.StackTop + idx]);
 end;
 
 
@@ -674,7 +668,15 @@ end;
 function TVirtualMachine.PopStack : TValueRecord;
 begin
   Result := FStack.Pop;
+  if assigned(FOnStackPop) then FOnStackPop(result);
 end;
+
+procedure TVirtualMachine.PushStack(const value: TValueRecord);
+begin
+  FStack.Push(Value);
+  if assigned(FOnStackPush) then FOnStackPush(value);
+end;
+
 
 constructor TVirtualMachine.Create(
   const results : TStrings);
@@ -684,8 +686,6 @@ begin
   assert(Assigned(results),'No way to display results as no string storage passed in');
   FResults := results;
   FStack := TStack.Create;
-  FStack.OnPush := CaptureStackPush;
-  FStack.OnPop :=  CaptureStackPop;
   FHalt    := false;
   FGlobals := TGlobals.Create;
   RegisterNatives;
