@@ -118,6 +118,9 @@ begin
         (CurrentInstruction <> -1) do
   begin
 
+   //if CurrentInstruction = OP_CALL then OpCall
+   //else
+
     Case CurrentInstruction of
 
     OP_CALL : OpCall;
@@ -196,7 +199,7 @@ begin
 
   Result := INTERPRET_NONE;
 
-  if FInstructionPointer.Count = 0 then exit;
+  if FInstructionPointer.CodeCount = 0 then exit;
 
   Execute;
 
@@ -533,6 +536,7 @@ procedure TVirtualMachine.PushFrame(
   const ArgCount : integer) ;
 begin
   assert(FFrameStackTop < high(Byte), 'Frame Stack pointer beyond limit');
+  assert(FStack.StackTop-ArgCount-1 >= 0, 'not > 0');
   if FFrameStackTop > 0 then
   begin
     //bookmark where the instruction pointer is for the current callframe, to return to later.
@@ -540,8 +544,6 @@ begin
   end;
 
   FFrames[FFrameStackTop].Fn := Func;
-
-  assert(FStack.StackTop-ArgCount-1 >= 0, 'not > 0');
   FFrames[FFrameStackTop].StackTop := FStack.StackTop-ArgCount-1;
   FFrameStackTop := FFrameStackTop + 1;
   FCurrentFrame := FFrames[FFrameStackTop-1];
@@ -551,9 +553,6 @@ end;
 
 
 procedure TVirtualMachine.PopFrame;
-var
-  Frame : TCallFrame;
-  InstructionPointerIdx : integer;
 begin
   assert(FFrameStackTop > 0);
 
@@ -573,11 +572,8 @@ begin
 end;
  
 procedure TVirtualMachine.OpGetLocal;
-var
-  idx : integer;
 begin
-  idx := NextInstruction;
-  PushStack(FStack[FCurrentFrame.StackTop + idx]);
+  PushStack(FStack[FCurrentFrame.StackTop + NextInstruction]);
 end;
 
 

@@ -217,7 +217,7 @@ begin
   Token := FTokens.Previous;
   if Token = nil then exit;
 
-  text := TokenName(Token);
+  text := TokenName(Token);               
 
   Value := BorrowChecker.NewNumber(strToFloat(text));
 
