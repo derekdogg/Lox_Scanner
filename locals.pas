@@ -5,49 +5,40 @@ interface
 uses
   classes,LOXTypes;
 
-Const
-  MAX_LOCALS = 256;
-
-
 type
 
 
-  TLocal = class
-  private
-    FName  : String;
-    FIndex : integer;
-    FToken : TToken;
-    FDepth : integer;
-    FIsCaptured : Boolean;
-    function getToken: TToken;
-  protected
+  TLocal = record
+    Name  : String;
 
-  public
-    constructor create(Const Name : String; const token : TToken);
-    destructor destroy; override;
-    procedure ToStrings(const strings : TStrings);
-    property Token : TToken read getToken;// write setToken;
-    property Index : Integer read FIndex;
-    property Depth : integer read FDepth write FDepth;
-    property IsCaptured : Boolean read FIsCaptured write FIsCaptured;
-    property Name : string read fName;
+    Token : TToken;
+    Depth : integer;
+    IsCaptured : Boolean;
   end;
 
+
+  TLocalList = array of TLocal;
+
   TLocals = class
+  const Local_Capacity = 256;
   private
-    FItems : TList;
+    FItems : TLocalList;
+    FCapacity  : integer;
+    FCount  : integer;
     function getLocal(const index: integer): TLocal;
     procedure setLocal(const index: integer; const Value: TLocal);
     function getCount: integer;
     function getLast: TLocal;
+    procedure IncreaseCapacity;
+    procedure SetCount(const Value: integer);
   public
-    procedure Remove(const Index : integer);
+    //procedure Remove(const Index : integer);
     function Add(const name : String; const token : TToken) : TLocal;
     Constructor create;
     Destructor Destroy; override;
     property Item[const index : integer] : TLocal read getLocal write setLocal;default;
     property Last : TLocal read getLast;
-    property Count : integer read getCount;
+    property Count : integer read getCount write SetCount;
   end;
 
 
@@ -56,51 +47,47 @@ type
 
 implementation
 uses
- sysutils;
-
-
-////dumb, returns nothing...
-function DisposeLocal(value : TLocal) : boolean;
-begin
-  assert(assigned(Value), ' value for disposal is nil');
-  Value.Free;
-end; 
-
+  sysutils;
 
 
 
 { TLocals }
 
-function TLocals.Add(Const Name : String; const token : TToken): TLocal;
+function TLocals.Add(Const Name : String; const Token : TToken): TLocal;
 begin
+  if FCount = FCapacity then increaseCapacity;
+
   assert(assigned(token), 'token added to local is nil');
-  result := TLocal.Create(Name,token);
-  result.FName := Name;
-  result.FIndex := Count;
-  FItems.Add(result);
+
+  FItems[FCount].Name := Name;
+
+  FItems[FCount].Token := Token;
+
+  FItems[FCount].Depth := -1;
+
+  FItems[FCount].isCaptured := False;
+
+  FCount := FCount + 1;
 end;
 
 constructor TLocals.create;
 begin
-  FItems := TList.create;
+  FCount := 0;
+  FCapacity := Local_Capacity;
+  SetLength(FItems,FCapacity);
+
 end;
 
 destructor TLocals.Destroy;
-var
-  i : integer;
 begin
 
-  for i := FItems.Count-1 downto 0 do
-  begin
-    TLocal(FItems[i]).free;
-  end;
-  FItems.Free;
+
   inherited;
 end;
 
 function TLocals.getCount: integer;
 begin
-  result := FItems.count;
+  result := FCount;
 end;
 
 function TLocals.getLast: TLocal;
@@ -113,7 +100,20 @@ begin
   result := FItems[Index];
 end;
 
-procedure TLocals.Remove(const Index: integer);
+procedure TLocals.IncreaseCapacity;
+begin
+  FCapacity := FCapacity * 2;
+  SetLength(FItems,FCapacity);
+end;
+
+procedure TLocals.SetCount(const Value: integer);
+begin
+  assert(Value >=0, 'value is < 0');
+  assert(Value < FCapacity, 'value is > Capacity');
+  FCount := Value;
+end;
+
+(*procedure TLocals.Remove(const Index: integer);
 var
   Local : TLocal;
 begin
@@ -123,7 +123,7 @@ begin
   Local := FItems[Index];
   FItems.Delete(index);
   DisposeLocal(Local);
-end;
+end; *)
 
 procedure TLocals.setLocal(const index: integer; const Value: TLocal);
 begin
@@ -132,6 +132,7 @@ end;
 
 { TLocal }
 
+(*
 constructor TLocal.Create(const name : string; const token: TToken);
 begin
   inherited create;
@@ -151,21 +152,7 @@ function TLocal.getToken: TToken;
 begin
   result := FToken;
 end;
+           *)
 
-procedure TLocal.ToStrings(const strings : TStrings);
-const s = 'Index : %s, Depth = %s, IsCaptured : %s';
-var
-  txt : string;
-begin
-  (*
-      Token : TToken;
-    Depth : integer;
-    IsCaptured : Boolean;
-  *)
-  txt := format(s,[inttostr(index),inttostr(depth),booltostr(IsCaptured)]);
-  strings.add(txt);
-  //Token.ToStrings(strings);
-
-end;
 
 end.

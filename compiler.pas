@@ -350,7 +350,7 @@ var
   i : integer;
   local : TLocal;
 
-  a,b : string;
+  a : string;
 
 begin
   if FStop then exit;
@@ -361,9 +361,8 @@ begin
   for i := Compiler.Locals.Count-1 downto 0 do
   begin
     Local := Compiler.locals[i];
-    if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
 
-    b := TokenName(Local.Token);
+    if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
 
     if identifiersEqual(Token, local.Token) then
     begin
@@ -372,8 +371,7 @@ begin
         error('Can''t read local variable in its own initializer.');
       end;
 
-      result :=  i;
-
+      result := i;
       exit;
     end;
   end;
@@ -422,10 +420,17 @@ begin
 end;
 
 procedure TCompilerController.markInitialized;
+var
+  Last : TLocal;
 begin
   if FStop then exit;
   if FCurrent.ScopeDepth = 0 then exit;
-  FCurrent.Locals.Last.Depth := FCurrent.ScopeDepth;
+
+  Last := FCurrent.Locals.Last;
+  Last.Depth := FCurrent.ScopeDepth;
+  FCurrent.Locals[FCurrent.Locals.Count-1] := Last;
+
+//  FCurrent.Locals.Last.Depth := FCurrent.ScopeDepth;
 end;
 
 procedure TCompilerController.defineVariable(const constantIdx : integer);
@@ -524,31 +529,27 @@ end;
 procedure TCompilerController.RemoveLocal;
 var
   Local : TLocal;
+  i : integer;
 begin
   if FStop then exit;
+  i := 0;
   while (FCurrent.locals.Count > 0) and (FCurrent.Locals.Last.depth > FCurrent.scopeDepth) do
   begin
     Emit(OP_POP);
-    FCurrent.Locals.Remove(FCurrent.Locals.Count-1);
+    inc(i);
+    //FCurrent.Locals.Remove(FCurrent.Locals.Count-1);
   end;
+  FCurrent.Locals.Count := FCurrent.Locals.Count - i; //effectively discarding everything now out of scope
 end;
 
 procedure TCompilerController.AddLocal(const Token: TToken);
-var
-  Local: TLocal;
 begin
   if FStop then exit;
+
   Assert(Assigned(token),'token being added to local is nil');
-  if FCurrent.Locals.Count = MAX_LOCALS then
-  begin
-    Error('Too many local variables in function.');
-    Exit;
-  end;
-  Local := FCurrent.Locals.Add(TokenName(Token), token);
-//  Local.Token := Token;
-  local.depth := -1 ; //declare undefined
-  Local.isCaptured := False; //presumably for future captures
-end;
+
+  FCurrent.Locals.Add(TokenName(Token), token);
+ end;
 
 procedure TCompilerController.declareLocalVariable;
 var
