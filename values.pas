@@ -14,15 +14,103 @@ type
   TValueRecord = record
     //requester : TRequester;
     case Kind: TLoxKind of
-      lxBoolean      :   (Bool    : Boolean);
-      lxNumber       :   (Number  : TNumber);
       lxObject       :   (Obj     : Pointer);
+      lxNumber       :   (Number  : TNumber);
+      lxBoolean      :   (Bool    : Boolean);
+
   end;
 
-//  TValueStack = class;
-  TStack = class;
 
-  TNativeFunction = function(const ArgCount: Integer; const Values : TStack): pValueRecord;
+
+  TOnChunk = procedure(const Operand : Integer) of object;
+
+
+  TOpCode = record
+  const OP_CODE_CAPACITY = 256; //keep this at the minimum, because affects patch jumping?? Interesting observation....
+  private
+    FCodes : array of integer;
+    FCount : integer;
+    FCapacity : integer;
+    procedure GrowCapacity;
+    function getCode(const index: integer): integer;
+    procedure setCode(const index, Value: integer);
+    function getCount: integer;
+  public
+    function Add(const value : integer) : integer;
+    procedure Init;
+    property Code[const index : integer] : integer read getCode write setCode; default;
+    property Count : integer read getCount;
+  end;
+
+
+
+
+
+
+  TBlock_Capacity = 8..256;
+
+  StackList = array of TValueRecord;
+
+  TStack = record
+  private
+    FCapacity : integer;
+    FStackTop : integer;
+    FItems :  StackList;
+
+
+     procedure IncreaseCapacity;
+     procedure SetStackTop(const value : integer);
+  public
+     procedure SetItem(const Index: integer; const Value: TValueRecord);
+     function  GetItem(const Index: integer): TValueRecord;
+     procedure Add;
+     procedure Subtract;
+     procedure Less;
+     function isFalse : boolean;
+     function Push(const value : TValueRecord) : integer;
+     function Pop : TValueRecord;
+     function Peek(const Distance : integer) : TValueRecord;overload;
+     function Peek : TValueRecord; overload;
+     procedure Init(const Block_Capacity : TBlock_Capacity = 256);
+     property Items : StackList read FItems;
+     property Capacity : integer read FCapacity;
+     property Item[Const Index : integer] : TValueRecord read GetItem write SetItem; default;
+     property StackTop : integer read FStackTop write SetStackTop;
+  end;
+
+  pLoxFunction = ^TLoxFunction;
+  TLoxFunction = record
+    LoxObject  : TLoxObject;
+    FuncKind   : TFunctionKind;
+    Arity      : byte; // The arity field stores the number of parameters the function expects.
+    Name       : String;
+    Codes      : TOpCode;
+    Constants  : TStack;
+    function getCode(const index: integer): integer;
+    procedure setCode(const index, Value: integer);
+    function getConstant(const index: integer): TValueRecord;
+    function getConstantCount: integer;
+    function GetCodeCount : Integer;
+    procedure Emit(const Operand : Integer; const  value : Integer);overload;
+    procedure Emit(const Value : Integer); overload;
+    function AddConstant(const value : TValueRecord) : integer;
+    procedure EmitConstant(const value : TValueRecord);
+    constructor Create(const FunctionName : String);
+    
+  end;
+
+
+  pLoxList = ^TLoxList;
+
+
+  TLoxList = record
+     LoxObject : TLoxObject;
+     Name      : string;
+     Items     : TStack;
+  end;
+
+
+   TNativeFunction = function(const ArgCount: Integer; const Values : TStack): pValueRecord;
 
   TNatives = class
   private
@@ -43,129 +131,32 @@ type
     Native    : TNativeFunction;
   end;
 
-  TOnChunk = procedure(const Operand : Integer) of object;
-
-
-
-  TOpCode = class
-  const OP_CODE_CAPACITY = 256; //keep this at the minimum, because affects patch jumping?? Interesting observation....
-  private
-    FCodes : array of integer;
-    FCount : integer;
-    FCapacity : integer;
-    procedure GrowCapacity;
-    function getCode(const index: integer): integer;
-    procedure setCode(const index, Value: integer);
-    function getCount: integer;
-  public
-    function Add(const value : integer) : integer;
-    constructor create;
-    destructor destroy; override;
-    property Code[const index : integer] : integer read getCode write setCode; default;
-    property Count : integer read getCount;
-  end;
-
-
-  TChunks = class
-  private
-    FCode      : TOpCode;
-    FConstants : TStack;
-    function getCode(const index: integer): integer;
-    procedure setCode(const index, Value: integer);
-    function getConstant(const index: integer): TValueRecord;
-    function getConstantCount: integer;
-    function GetCodeCount : Integer;
-  public
-     procedure Emit(const Operand : Integer; const  value : Integer);overload;
-     procedure Emit(const Value : Integer); overload;
-     function AddConstant(const value : TValueRecord) : integer;
-     procedure EmitConstant(const value : TValueRecord);
-     constructor Create(const FunctionName : String);
-     destructor destroy;override;
-     property Codes : TOPCode read FCode;
-     property Constants : TStack read FConstants;
-     property Code[const index : integer] : integer read getCode write setCode; default;
-     property Constant[const index : integer] : TValueRecord read getConstant;
-     property ConstantCount : integer read getConstantCount;
-     property CodeCount : integer read getCodeCount;
-  end;
-
-  pLoxFunction = ^TLoxFunction;
-  TLoxFunction = record
-    LoxObject : TLoxObject;
-    FuncKind  : TFunctionKind;
-    Arity     : byte; // The arity field stores the number of parameters the function expects.
-    Name      : String;
-    Chunks    : TChunks;
-  end;
-
-  pLoxList = ^TLoxList;
-
-
-  TLoxList = record
-     LoxObject : TLoxObject;
-     Name      : string;
-     Items     : TStack;
-  end;
-
-
-  TBlock_Capacity = 8..256;
-
-  TStack = class
-  private
-    FCapacity : integer;
-    FStackTop : integer;
-    FItems :  array of TValueRecord;
-    function  GetItem(const Index: integer): TValueRecord;
-    procedure SetItem(const Index: integer; const Value: TValueRecord);
-
-  protected
-     procedure IncreaseCapacity;
-     procedure SetStackTop(const value : integer);
-  public
-     procedure Push(const value : TValueRecord);
-     function Pop : TValueRecord;
-     function Peek(const Distance : integer) : TValueRecord;overload;
-     function Peek : TValueRecord; overload;
-     constructor Create(const Block_Capacity : TBlock_Capacity = 256);
-     destructor Destroy;override;
-     property Capacity : integer read FCapacity;
-     property Item[Const Index : integer] : TValueRecord read GetItem write SetItem; default;
-     property StackTop : integer read FStackTop write SetStackTop;
-  end;
 
   TInstructionPointer = record
   private
     FCodeCount : integer;
-    FFunction : PLoxFunction;
-    FIndex    : integer;
-    FCodes    : TOpCode;
+    FFunction  : PLoxFunction;
+    FIndex     : integer;
+    FCodes     : TOpCode;
     FConstants : TStack;
-
     function Getconstant(const Index : integer) : TValueRecord;
-    function getFunction: PLoxFunction;
     procedure setFunction(const Value: PLoxFunction);
-
     function GetValue(const Index : integer) : Integer;
-
     procedure setIndex(const Value: integer);
   public
     function Move(const index : integer) : boolean;
     function increment(const index : integer) : boolean;
-
-    //function Current : Integer;
     function Next : Integer;
-   // constructor create;
-//    destructor destroy; override;
-    //constructor create(
-    //    const loxFunction : PLoxFunction);
+
     property CodeCount : integer read FCodeCount;
     property Index : integer read FIndex write FIndex;
     property constant[const index : integer] : TValueRecord read getConstant;
     property code[const index : integer] :  integer read GetValue; Default;
-    property Func : PLoxFunction read getFunction write setFunction;
+    property Func : PLoxFunction write setFunction;
   end;
 
+
+  procedure PrintOpCodes(const fn : TLoxFunction; const destination : TStrings);
 
 
 implementation
@@ -176,14 +167,12 @@ uses
   Exceptions,
   ValueManager;
 
- 
-
-
-
-function TInstructionPointer.getFunction: PLoxFunction;
-begin
-  result := FFunction;
-end;
+  procedure PrintOpCodes(const fn : TLoxFunction; const destination : TStrings);
+  var
+    i : integer;
+  begin
+    //for i := 0 to fn.Code
+  end;
 
 
 
@@ -192,12 +181,6 @@ begin
   assert((index >= 0) and (index < FCodeCount));
   result := FCodes[FIndex];
 end;
-
-(*function TInstructionPointer.Current: integer;
-begin
-  result := getValue(FIndex);
-end; *)
-
 
 function TInstructionPointer.Getconstant(const Index: integer): TValueRecord;
 begin
@@ -238,9 +221,9 @@ end;
 procedure TInstructionPointer.setFunction(const Value: PLoxFunction);
 begin
   FFunction := Value;
-  FCodes     := Value.Chunks.Codes;
+  FCodes     := Value.Codes;
   FCodeCount := FCodes.Count;
-  FConstants := Value.Chunks.Constants;
+  FConstants := Value.Constants;
 end;
 
 procedure TInstructionPointer.setIndex(const Value: integer);
@@ -275,71 +258,69 @@ begin
   result := FItems[index];
 end;
 
-procedure TChunks.Emit(const value : integer);
+procedure TLoxFunction.Emit(const value : integer);
 begin
-  FCode.Add(value);
+  Codes.Add(value);
 end;
 
 
-procedure TChunks.Emit(const Operand : Integer; const  value : integer);
+procedure TLoxFunction.Emit(const Operand : Integer; const  value : integer);
 begin
   emit(Operand);
   emit(Value);
 end;
 
-function TChunks.getCode(const index: integer): integer;
+function TLoxFunction.getCode(const index: integer): integer;
 begin
-  result := FCode[index];
+  result := Codes[index];
 end;
 
-function TChunks.getConstant(const index: integer): TValueRecord;
+function TLoxFunction.getConstant(const index: integer): TValueRecord;
 begin
-  result := FConstants[Index];
+  result := Constants[Index];
 end;
 
-function TChunks.getConstantCount: integer;
+function TLoxFunction.getConstantCount: integer;
 begin
-  result := FConstants.StackTop;
-end;
-
-
-procedure TChunks.setCode(const index, Value: integer);
-begin
-  FCode[Index] := Value;
+  result := Constants.StackTop;
 end;
 
 
-function TChunks.AddConstant(const value: TValueRecord): integer;
+procedure TLoxFunction.setCode(const index, Value: integer);
 begin
-  FConstants.Push(Value);
-  result := FConstants.StackTop-1;
+  Codes[Index] := Value;
 end;
 
 
-procedure TChunks.EmitConstant(const value : TValueRecord);
+function TLoxFunction.AddConstant(const value: TValueRecord): integer;
 begin
-  FConstants.Push(value);
-  Emit(OP_CONSTANT,FConstants.StackTop-1);
+  result := Constants.Push(Value);
 end;
 
 
-function TChunks.GetCodeCount: Integer;
+procedure TLoxFunction.EmitConstant(const value : TValueRecord);
 begin
-  result := FCode.Count;
+  Emit(OP_CONSTANT,Constants.Push(value));
 end;
 
-constructor TChunks.Create;
+
+function TLoxFunction.GetCodeCount: Integer;
 begin
-  FCode := TOpCode.Create;
-  FConstants := TStack.Create(8);
+  result := Codes.Count;
 end;
 
-destructor TChunks.destroy;
+constructor TLoxFunction.Create;
+begin
+  Codes.Init; // := TOpCode.Create;
+  Constants.init(8);
+end;
+
+(*destructor TLoxFunction.destroy;
 begin
   FCode.Free;
-  FConstants.Free;
+//  FConstants.Free;
   inherited;
-end;
+end; *)
 
 function TOpCode.Add(const value: integer) : integer;
 begin
@@ -352,18 +333,13 @@ begin
   inc(FCount);
 end;
 
-constructor TOpCode.create;
+procedure TOpCode.Init;
 begin
   FCount := 0;
   FCapacity :=  OP_CODE_CAPACITY;
   SetLength(FCodes, FCapacity);
 end;
 
-destructor TOpCode.destroy;
-begin
-
-  inherited;
-end;
 
 
 function TOpCode.getCode(const index: integer): integer;
@@ -393,17 +369,11 @@ end;
 
 { TStack }
 
-constructor TStack.Create(const Block_Capacity : TBlock_Capacity=256);
+procedure TStack.Init(const Block_Capacity : TBlock_Capacity=256);
 begin
   FCapacity := Block_Capacity;
   SetLength(FItems,FCapacity);
   FStackTop := 0;
-end;
-
-
-destructor TStack.Destroy;
-begin
-  inherited;
 end;
 
 function TStack.GetItem(const Index: integer): TValueRecord;
@@ -424,6 +394,40 @@ begin
   result := FItems[FStackTop-1];
 end;
 
+procedure TStack.Add;
+begin
+  FItems[FStackTop-2].Number := FItems[FStackTop-2].Number + FItems[FStackTop-1].Number;
+  FStackTop := FStackTop -1;
+end;
+
+procedure TStack.Subtract;
+begin
+  FItems[FStackTop-2].Number := FItems[FStackTop-2].Number - FItems[FStackTop-1].Number;
+  FStackTop := FStackTop -1;
+end;
+
+procedure TStack.Less;
+begin
+  FItems[FStackTop-2].Bool := FItems[FStackTop-2].Number < FItems[FStackTop-1].Number;
+  FItems[FStackTop-2].Kind := lxBoolean;
+  FStackTop := FStackTop -1;
+end;
+
+
+function TStack.isFalse : boolean;
+var
+  value : TValueRecord;
+begin
+  result := false;
+  Value := FItems[FStackTop-1];
+  case Value.Kind of
+    lxBoolean : result := Value.Bool = false;
+    lxNumber  : result := Value.Number <= 0;
+    lxString  : result := lowercase(trim(GetString(Value))) = 'false';
+    lxNull    : result := true;
+  end;
+end;
+
 function TStack.Peek(const Distance: integer): TValueRecord;
 begin
   assert(FStackTop > 0, 'Nothing on the stack');
@@ -441,9 +445,12 @@ begin
  // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;
 
-procedure TStack.Push(const value: TValueRecord);
-begin
 
+
+
+function TStack.Push(const value: TValueRecord) : integer;
+begin
+  result := FStackTop;
   FItems[FStackTop] := Value;
   SetStackTop(FStackTop+1);
 

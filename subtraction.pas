@@ -5,27 +5,8 @@ interface
 uses
   dialogs,values, sysutils;
 
-type
+  function Subtract(const L,R : TValueRecord) : TValueRecord;
 
-  TNullSubtraction = class
-    class function LeftNullSubtraction(const L,R : TValueRecord) : TValueRecord;
-    class function RightNullSubtraction(const L,R : TValueRecord) : TValueRecord;
-    class function BothNullSubtraction(const L,R : TValueRecord) : TValueRecord;
-  end;
-
- TStringSubtraction = class
-    class function SubtractStrings(const L,R : TValueRecord) : TValueRecord;
-    class function SubtractNumber(const L,R : TValueRecord) : TValueRecord;
- //   class function SubtractNull(const L,R : TValueRecord) : TValueRecord;
-  end;
-
-
-  TSubtraction = class
-     class function SubtractNulls(const L,R : TValueRecord) : TValueRecord;
-     class function SubtractNumbers(const L,R : TValueRecord) : TValueRecord;
-     class function SubtractStrings(const L,R : TValueRecord) : TValueRecord;
-     class function Subtract(const L,R : TValueRecord) : TValueRecord;
-  end;
 
 
 implementation
@@ -33,7 +14,10 @@ uses
   ValueManager;
 
 
-class function TNullSubtraction.LeftNullSubtraction(const L,R : TValueRecord) : TValueRecord;
+
+
+
+function  LeftNullSubtraction(const L,R : TValueRecord) : TValueRecord;
 begin
   (*result := nil;
   if not assigned(L) then exit;
@@ -43,7 +27,7 @@ begin
   result := R; *)
 end;
 
-class function TNullSubtraction.RightNullSubtraction(const L,R : TValueRecord) : TValueRecord;
+  function RightNullSubtraction(const L,R : TValueRecord) : TValueRecord;
 begin
   (*result := nil;
   if not assigned(L) then exit;
@@ -54,7 +38,7 @@ begin
   result := L; *)
 end;
 
-class function TNullSubtraction.BothNullSubtraction(const L,R : TValueRecord) : TValueRecord;
+ function  BothNullSubtraction(const L,R : TValueRecord) : TValueRecord;
 begin
  (* result := nil;
   if not assigned(L) then exit;
@@ -67,7 +51,7 @@ begin
 end;
 
 
-class function TSubtraction.SubtractNulls(const L,R : TValueRecord) : TValueRecord;
+  function  SubtractNulls(const L,R : TValueRecord) : TValueRecord;
 begin
   (*result := nil;
   if not assigned(L) then exit;
@@ -84,7 +68,7 @@ begin
   if assigned(result) then exit;  *)
 end;
 
-class function TSubtraction.SubtractNumbers(const L, R: TValueRecord): TValueRecord;
+function SubtractNumbers(const L, R: TValueRecord): TValueRecord;
 begin
   //result := nil;
   //if not assigned(L) then exit;
@@ -99,7 +83,7 @@ end;
 
 
 
-class function TSubtraction.SubtractStrings(const L, R: TValueRecord): TValueRecord;
+function SubtractStrings(const L, R: TValueRecord): TValueRecord;
 begin
   (*result := nil;
   if not assigned(L) then exit;
@@ -115,7 +99,7 @@ begin
   *)
 end;
 
-class function TSubtraction.Subtract(const L,R : TValueRecord) : TValueRecord;
+function Subtract(const L,R : TValueRecord) : TValueRecord; overload;
 begin
   //result := nil;
   //if not assigned(L) then exit;
@@ -136,7 +120,7 @@ end;
 
 { TStringSubtraction }
 
-function Subtract(original, toSubtract: string): string;
+function Subtract(original, toSubtract: string): string; overload;
 var
   i, j: Integer;
   resultString: string;
@@ -154,7 +138,7 @@ begin
 end;
 
 
-class function TStringSubtraction.SubtractNumber(const L,R: TValueRecord): TValueRecord;
+function SubtractNumber(const L,R: TValueRecord): TValueRecord;
 var
   s : string;
 
@@ -173,17 +157,5 @@ begin
 
 end;
 
-class function TStringSubtraction.SubtractStrings(const L, R: TValueRecord): TValueRecord;
-begin
-(*  result := nil;
-  if not assigned(L) then exit;
-  if not assigned(R) then exit;
-
-  if not GetIsString(L) then exit;
-  if not GetIsString(R) then exit;
-
-  result := BorrowChecker.NewString(rVM,Subtract(GetString(L),GetString(R)));
-  *)
-end;
 
 end.

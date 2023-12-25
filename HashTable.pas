@@ -54,14 +54,12 @@ type
 
    TNameValues = array of TNameValue;
 
-
-   TGlobals = class
+   TGlobals = record
    const Global_Capacity = 256;
    private
      FCapacity : integer;
      FCount : integer;
      FItems : TNameValues;
-   protected
      procedure IncreaseCapacity;
    public
      function Count : integer;
@@ -69,8 +67,8 @@ type
      function Get(const index : integer) : TNameValue;
      function IndexOf(const nameValue : TNameValue) : Integer;
      procedure setValue(const index: integer; const Namevalue: TNameValue);
-     constructor create;
-     destructor destroy; override;
+     Procedure Init;
+
    end;
 
 
@@ -95,18 +93,13 @@ begin
   result := FCount;
 end;
 
-constructor TGlobals.create;
+procedure TGlobals.init;
 begin
   FCapacity := Global_Capacity;
   SetLength(FItems,FCapacity);
   FCount := 0;
 end;
 
-destructor TGlobals.destroy;
-begin
-
-  inherited;
-end;
 
 function TGlobals.Get(const index: integer): TNameValue;
 begin
@@ -131,7 +124,7 @@ begin
     if FItems[i].Name = NameValue.Name then
     begin
       result := i;
-      exit;
+      break;
     end;
   end;
 end;

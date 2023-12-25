@@ -5,7 +5,7 @@ interface
 const
  
         OP_NULL = 0;
-        OP_NIL= 1;
+        OP_CALL= 1;
         OP_TRUE= 2;
         OP_FALSE=3 ;
         OP_POP= 4;
@@ -32,7 +32,7 @@ const
         OP_JUMP= 25;
         OP_JUMP_IF_FALSE= 26;
         OP_LOOP= 27;
-        OP_CALL= 28;
+        OP_NIL= 28;
         OP_INVOKE= 29;
         OP_SUPER_INVOKE= 30;
         OP_CLOSURE= 31;

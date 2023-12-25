@@ -96,13 +96,12 @@ var
    VM :  TVirtualMachine;
    s  : integer;
 begin
- 
-  s := MilliSecondOfTheDay(now);
 
    VM := TVirtualMachine.Create(MemRun.Lines);
   // Vm.OnPush := LogStackPush;
   // VM.OnPop := LogStackPop;
    try
+      s := MilliSecondOfTheDay(now);
       VM.Run(LoxFunction);
       MemRun.Lines.Add(inttostr( MilliSecondOfTheDay(now) - s));
    finally
@@ -123,10 +122,7 @@ var
   l : TList;
 
 begin
-
-
-
-
+ 
  // BorrowChecker.FlushBuffer;
   //BorrowChecker.Logger := MemRun.Lines;
 

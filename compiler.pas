@@ -397,7 +397,7 @@ begin
   else
   begin
     Value := BorrowChecker.NewString(rCompiler,TokenName(token));
-    idx :=   FCurrent.Func.Chunks.AddConstant(Value);
+    idx :=   FCurrent.Func.AddConstant(Value);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
   end;
@@ -504,7 +504,7 @@ begin
   end;
 
   Value  := BorrowChecker.NewString(rCompiler,TokenName(FTokens.previous));
-  result := FCurrent.Func.Chunks.AddConstant(Value);
+  result := FCurrent.Func.AddConstant(Value);
 end;
 
 
@@ -645,13 +645,13 @@ begin
 
   assert(Offset >= 0, 'patch jump offset is < 0');
 
-  // -2 to adjust for the bytecode for the jump offset itself.
-  Jump := FCurrent.Func.Chunks.CodeCount - OffSet - 2;
+  // -2 to adjust for the bytecode for the jump offset itself - not any more as we don't use 2 bits for 1 int?
+  Jump := FCurrent.Func.getCodeCount-1 - OffSet;
 
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
 
-  FCurrent.Func.Chunks[OffSet] := Jump;
+  FCurrent.Func.Codes[OffSet] := Jump;
 
 end;
 
@@ -662,7 +662,7 @@ begin
   if FStop then exit;
   Emit(Instruction);
   Emit($FF);
-  result :=  FCurrent.Func.Chunks.Codecount - 1;
+  result :=  FCurrent.Func.getCodecount - 1;
 end;
 
 
@@ -760,7 +760,7 @@ begin
   if FStop then exit;
   Emit(OP_LOOP);
 
-  offset := FCurrent.Func.Chunks.CodeCount - loopStart + 2;
+  offset := FCurrent.Func.getCodeCount - loopStart + 2;
   if (offset > MAX_JUMP) then error('Loop body too large.');
 
   Emit(Offset);
@@ -779,7 +779,7 @@ var
 begin
   if FStop then exit;
 
-  loopStart := FCurrent.Func.Chunks.Codecount;
+  loopStart := FCurrent.Func.GetCodecount;
 
   consume(tkOpenBracket, 'Expect "(" after while.');
 
@@ -925,7 +925,7 @@ end;
 procedure TCompilerController.EmitConstant(const value : TValueRecord);
 begin
   if FStop then exit;
-  FCurrent.Func.Chunks.EmitConstant(value);
+  FCurrent.Func.EmitConstant(value);
 end;
 
 
@@ -1018,7 +1018,7 @@ end;
 procedure TCompilerController.Emit(const Operand : Integer);
 begin
   if FStop then exit;
-  FCurrent.Func.Chunks.Emit(Operand);
+  FCurrent.Func.Emit(Operand);
 end;
 
  
@@ -1086,7 +1086,7 @@ procedure TCompilerController.Emit(const Operand: Integer;
   const value: Integer);
 begin
   if FStop then exit;
-  FCurrent.Func.Chunks.Emit(Operand,Value);
+  FCurrent.Func.Emit(Operand,Value);
 end;
 
 procedure TCompilerController.funDeclaration;

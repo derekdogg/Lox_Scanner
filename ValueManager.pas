@@ -40,7 +40,7 @@ type
     function newNative(const NativeFn : TNativeFunction) : TValueRecord;
     function NewNumber(Const number : TNumber) : TValueRecord;
     function NewBool(const Bool : Boolean) : TValueRecord;
-    function NewValues : TStack;
+//    function NewValues : TStack;
     function newValueFromList(const List : pLoxList) : TValueRecord;
     function newValueList(const name : string) : TValueRecord;
     function NewString(const requester : TRequester;const txt : String) : TValueRecord;
@@ -173,10 +173,7 @@ begin
   //FSize := FSize + Sizeof(result^);
 end;
 
-function TValueCreation.NewValues: TStack;
-begin
-  result := TStack.Create;
-end;
+
 
 function TValueCreation.NewNil: TValueRecord;
 begin
@@ -220,7 +217,7 @@ begin
   result.LoxObject.Next := nil;
   result.Name := Name;
 
-  result.Items := newValues;
+  result.Items.init; // := newValues;
   //FCompilerItems.Add(result);
 end;
 
@@ -279,7 +276,9 @@ begin
     result.FuncKind := Type_Function;
     result.Arity := 0;
     result.Name := Name;
-    result.Chunks := TChunks.Create(Name);//(Constants); //.Init;
+    //result.Chunks := TChunks.Create(Name);//(Constants); //.Init;
+    result.Codes.init;
+    result.Constants.Init;
 end;
 
 function TValueCreation.newNative(const NativeFn : TNativeFunction) : TValueRecord;
@@ -298,7 +297,7 @@ end;
 constructor TValueManager.create;
 begin
 
-  FCompilerItems := TStack.Create;
+  FCompilerItems.init;
 //  FNumberMemory := TNumberMemory.create(FValueDisposal);
   FValueFactory  := TValueCreation.Create;
   FValueDisposal := TValueDisposal.Create;
@@ -324,7 +323,7 @@ begin
   flushBuffer;
   FNumberMemory.free;
   FValueFactory.free;
-  FCompilerItems.Free;
+
   FValueDisposal.Free;
   inherited;
 end;
@@ -443,24 +442,25 @@ var
   p : pLoxList;
 begin
   p := pLoxList(Value.Obj);
-  p.Items.Free;
+//  p.Items.Free;
   dispose(p);
   value.Obj := nil;
 end;
 
 procedure TValueDisposal.DisposeLoxFunction(var value: pLoxFunction);
 var
+
   i : integer;
   constant : TValueRecord;
 begin
   //assert(value.Chunks.OwnsValues = false, 'the chunk values are owned - dispose will abort');
 
-  for i := value.Chunks.ConstantCount-1 downto 0 do
+  for i := value.Constants.StackTop-1 downto 0 do
   begin
-    constant := value.Chunks.Constant[i];
+    constant := value.Constants[i];
     disposeValue(constant);
   end;
-  Value.Chunks.Free;
+//  Value.Chunks.Free;
   Dispose(Value);
 end;
 
@@ -725,7 +725,7 @@ constructor TNumberMemory.create(
 begin
   FCreation := creation;
   FDisposal := Disposal;
-  FStack := TStack.Create;
+  FStack.Init;
   AllocMemory;
   FCount := 0;
 end;
@@ -740,7 +740,7 @@ begin
     Val := FStack.Pop;
    // FDisposal.DisposeNumber(Val);
   end;
-  FStack.Free;
+//  FStack.Free;
   inherited;
 end;
 
