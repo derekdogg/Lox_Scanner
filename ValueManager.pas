@@ -212,13 +212,13 @@ end;
 
 function TValueCreation.NewList(const name : string) : pLoxList;
 begin
-  new(result);
+(*  new(result);
   result.LoxObject.Kind := OBJ_LIST;
   result.LoxObject.Next := nil;
   result.Name := Name;
 
   result.Items.init; // := newValues;
-  //FCompilerItems.Add(result);
+  //FCompilerItems.Add(result); *)
 end;
 
 function TValueCreation.NewValue(const Requester: TRequester; const Kind: TLoxKind; const Obj: Pointer): TValueRecord;

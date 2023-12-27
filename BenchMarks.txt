@@ -4,9 +4,7 @@ Bench marks fib(40);
 534252ms
 
 8 mins
-
-
-
+ 
 470934 = 7.8 mins
 
 297628 =4.96046667 mins (with less indirection in InstructionPointer.)
@@ -16,4 +14,14 @@ Bench marks fib(40);
 174974 = 2.91623333mins change to stack from obj
 
 147892 = 2.46486667 moving things to the stack (e.g add,false,subtract).
+
+120396 = 2.0066  changing lots of experimentation...
+
+
+
+
+
+
+
+
 

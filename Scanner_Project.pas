@@ -104,6 +104,7 @@ begin
       s := MilliSecondOfTheDay(now);
       VM.Run(LoxFunction);
       MemRun.Lines.Add(inttostr( MilliSecondOfTheDay(now) - s));
+       
    finally
 
      vm.Free;

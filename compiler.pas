@@ -387,6 +387,7 @@ var
    Value : TValueRecord;
 begin
   if FStop then exit;
+
   Idx := resolveLocal(FCurrent,Token);
 
   if (Idx <> -1) then
@@ -549,7 +550,7 @@ begin
   Assert(Assigned(token),'token being added to local is nil');
 
   FCurrent.Locals.Add(TokenName(Token), token);
- end;
+end;
 
 procedure TCompilerController.declareLocalVariable;
 var

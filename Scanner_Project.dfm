@@ -104,7 +104,6 @@ object fmScript: TfmScript
       Align = alLeft
       Caption = 'Panel3'
       TabOrder = 0
-      ExplicitHeight = 164
       object MemLocals: TMemo
         Left = 1
         Top = 1
@@ -121,7 +120,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitHeight = 162
       end
     end
     object Panel4: TPanel
@@ -132,7 +130,6 @@ object fmScript: TfmScript
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 1
-      ExplicitHeight = 164
       object MemRun: TMemo
         Left = 1
         Top = 1
@@ -150,8 +147,6 @@ object fmScript: TfmScript
         ParentFont = False
         ScrollBars = ssVertical
         TabOrder = 0
-        ExplicitLeft = -23
-        ExplicitTop = 4
       end
     end
     object Panel5: TPanel
@@ -162,7 +157,6 @@ object fmScript: TfmScript
       Align = alRight
       Caption = 'Panel3'
       TabOrder = 2
-      ExplicitHeight = 164
       object MemStack: TMemo
         Left = -7
         Top = 1
@@ -179,7 +173,6 @@ object fmScript: TfmScript
           '')
         ParentFont = False
         TabOrder = 0
-        ExplicitHeight = 162
       end
     end
   end
@@ -191,8 +184,6 @@ object fmScript: TfmScript
     Align = alClient
     Caption = 'Panel6'
     TabOrder = 2
-    ExplicitLeft = 2
-    ExplicitHeight = 427
     object memEdit: TRichEdit
       Left = 1
       Top = 1
@@ -217,7 +208,6 @@ object fmScript: TfmScript
       ParentFont = False
       TabOrder = 0
       WantTabs = True
-      ExplicitHeight = 425
     end
   end
 end

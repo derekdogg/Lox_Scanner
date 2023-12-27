@@ -351,7 +351,7 @@ Type
     Value     : pValue; //value associated with operation
   end; *)
 
-  function NewLoxObject : pLoxObject;
+//  function NewLoxObject : pLoxObject;
 
 //  function LoxObjectFrom(const value : pointer) : pLoxObject;
 
@@ -359,7 +359,7 @@ Type
 
 
 
-  function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
+//  function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
  
   function GetHashString(const value : string) : UInt64;
   //--------------------------------------------------------------
@@ -388,7 +388,7 @@ begin
    result := @value^;
 end; *)
 
-function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
+(*function LoxStringFrom(const pObject : pLoxObject) : pLoxString;
 begin
   assert(Assigned(pObject));
   assert(pObject.Kind = OBJ_STRING);
@@ -400,7 +400,7 @@ begin
   new(Result);
   fillchar(result^,sizeof(TLoxObject),#0);
 end;
-
+*)
 
 
 function GetHashString(const value : string) : UInt64;

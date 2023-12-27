@@ -17,7 +17,6 @@ type
       lxObject       :   (Obj     : Pointer);
       lxNumber       :   (Number  : TNumber);
       lxBoolean      :   (Bool    : Boolean);
-
   end;
 
 
@@ -43,10 +42,6 @@ type
   end;
 
 
-
-
-
-
   TBlock_Capacity = 8..256;
 
   StackList = array of TValueRecord;
@@ -66,6 +61,7 @@ type
      procedure Add;
      procedure Subtract;
      procedure Less;
+     function Copy(const source : integer; const dest : integer) : boolean;
      function isFalse : boolean;
      function Push(const value : TValueRecord) : integer;
      function Pop : TValueRecord;
@@ -130,32 +126,7 @@ type
     LoxObject : TLoxObject;
     Native    : TNativeFunction;
   end;
-
-
-  TInstructionPointer = record
-  private
-    FCodeCount : integer;
-    FFunction  : PLoxFunction;
-    FIndex     : integer;
-    FCodes     : TOpCode;
-    FConstants : TStack;
-    function Getconstant(const Index : integer) : TValueRecord;
-    procedure setFunction(const Value: PLoxFunction);
-    function GetValue(const Index : integer) : Integer;
-    procedure setIndex(const Value: integer);
-  public
-    function Move(const index : integer) : boolean;
-    function increment(const index : integer) : boolean;
-    function Next : Integer;
-
-    property CodeCount : integer read FCodeCount;
-    property Index : integer read FIndex write FIndex;
-    property constant[const index : integer] : TValueRecord read getConstant;
-    property code[const index : integer] :  integer read GetValue; Default;
-    property Func : PLoxFunction write setFunction;
-  end;
-
-
+ 
   procedure PrintOpCodes(const fn : TLoxFunction; const destination : TStrings);
 
 
@@ -176,63 +147,6 @@ uses
 
 
 
-function TInstructionPointer.GetValue(const Index : integer) : integer;
-begin
-  assert((index >= 0) and (index < FCodeCount));
-  result := FCodes[FIndex];
-end;
-
-function TInstructionPointer.Getconstant(const Index: integer): TValueRecord;
-begin
-  result := FConstants[Index];
-end;
-
-
-function TInstructionPointer.increment(const index : integer) : boolean;
-begin
-  result := Move(FIndex + index);
-end;
-
-function TInstructionPointer.Move(const index: integer): boolean;
-begin
-  result := false;
-  if (index >= 0) and (index < FCodeCount) then
-  begin
-    FIndex := index;
-    result := true;
-  end;
-end;
-
-
-function TInstructionPointer.Next: integer;
-begin
-  result := -1;
-
-  if FCodeCount = 0 then exit;
-
-  inc(FIndex);
-
-  if FIndex = FCodeCount then exit;
-
-  result :=  FCodes[FIndex];
-end;
-
-
-procedure TInstructionPointer.setFunction(const Value: PLoxFunction);
-begin
-  FFunction := Value;
-  FCodes     := Value.Codes;
-  FCodeCount := FCodes.Count;
-  FConstants := Value.Constants;
-end;
-
-procedure TInstructionPointer.setIndex(const Value: integer);
-begin
-  Assert(FCodeCount > 0, 'can''t set index as there is no opcodes');
-  Assert(Value >= -1, 'opcode index is less than -1');
-  Assert(Value < FCodeCount, 'op code index is > FCodeCount');
-  FIndex := Value;
-end;
 
 
 { TNatives }
@@ -430,9 +344,9 @@ end;
 
 function TStack.Peek(const Distance: integer): TValueRecord;
 begin
-  assert(FStackTop > 0, 'Nothing on the stack');
+  (*assert(FStackTop > 0, 'Nothing on the stack');
   assert(Distance >= 0, 'This is distance from the top as a positive');
-  assert(FStackTop - Distance >= 0, 'Distance is beyond stack bottom');
+  assert(FStackTop - Distance >= 0, 'Distance is beyond stack bottom'); *)
   result := FItems[FStackTop-Distance-1];
 end;
 
@@ -455,6 +369,16 @@ begin
   SetStackTop(FStackTop+1);
 
   //if Assigned(FOnStackPush) then FOnStackPush(Self);
+end;
+
+function TStack.Copy(const source : integer; const dest : integer) : boolean;
+begin
+  assert(Source < FCapacity, 'Index is > Capacity');
+  assert(Source >= 0, 'Index is < 0');
+  assert(dest < FCapacity, 'Index is > Capacity');
+  assert(dest >= 0, 'Index is < 0');
+  FItems[dest] := FItems[Source];
+
 end;
 
 procedure TStack.SetItem(const Index: integer; const Value: TValueRecord);
