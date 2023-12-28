@@ -14,6 +14,8 @@ uses
  
 type
 
+  TJumpTable = array[OP_NULL..OP_STORE_SUBSCR] of procedure of object;
+
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
 
@@ -37,11 +39,14 @@ type
 
   TVirtualMachine = class
   private
+    FJumpTable      : TJumpTable;
 
-    FCodeCount      : integer;
-    FIndex          : integer;
-    FCodes          : TOpCode;
-    FConstants      : TStack;
+    FIndex          : integer; //current op code index
+
+    FCodes          : TOpCode; //current func op codes
+    FCodeCount      : integer; //current func op code count
+    FConstants      : TStack;  //current func constants
+
     FFrameStackTop  : integer;
     FFrameStackOffSet : integer;
    // FCurrentFrame : TFrame;
@@ -53,16 +58,17 @@ type
     FStack   : TStack;
     FFrames : TFrameItems;
 
-    FGlobals : TGlobals;
+    //FGlobals : TGlobals;
     FResults : TStrings;
     procedure Execute;
 //    function CurrentOpCode : integer;
 
     procedure Halt;
-    procedure  popFrame;
+    procedure popFrame;
     function PopStack : TValueRecord;
     procedure PushStack(const value : TValueRecord);
     procedure RegisterNatives;
+    procedure OpCall;
     procedure OpConstant;
     Procedure OPAdd;
     Procedure OpSubtract;
@@ -94,10 +100,6 @@ type
     procedure OpStoreSubscriber;
     function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
 
-    function Getconstant(const Index : integer) : TValueRecord;
-    function GetValue(const Index : integer) : Integer;
-    procedure setIndex(const Value: integer);
-    function Move(const index : integer) : boolean;
     function increment(const index : integer) : boolean;
     function NextInstruction : Integer;
 
@@ -117,16 +119,6 @@ uses
   dateutils,dialogs, addition, subtraction, valueManager;
 
 
-function  TVirtualMachine.GetValue(const Index : integer) : integer;
-begin
-  assert((index >= 0) and (index < FCodeCount));
-  result := FCodes[FIndex];
-end;
-
-function TVirtualMachine.Getconstant(const Index: integer): TValueRecord;
-begin
-  result := FConstants[Index];
-end;
 
 
 function TVirtualMachine.increment(const index : integer) : boolean;
@@ -142,17 +134,6 @@ begin
   end;
 end;
 
-function TVirtualMachine.Move(const index: integer): boolean;
-begin
-  result := false;
-  if (index >= 0) and (index < FCodeCount) then
-  begin
-    FIndex := index;
-    result := true;
-  end;
-end;
-
-
 function TVirtualMachine.NextInstruction: integer;
 begin
   result := -1;
@@ -164,121 +145,26 @@ begin
   if FIndex = FCodeCount then exit;
 
   result :=  FCodes[FIndex];
+
+
 end;
 
- 
-
-procedure TVirtualMachine.setIndex(const Value: integer);
-begin
-  Assert(FCodeCount > 0, 'can''t set index as there is no opcodes');
-  Assert(Value >= -1, 'opcode index is less than -1');
-  Assert(Value < FCodeCount, 'op code index is > FCodeCount');
-  FIndex := Value;
-end;
 
 
 
 procedure TVirtualMachine.Execute;
 var
   CurrentInstruction : integer;
-  ArgCount : byte;
-  Value : TValueRecord;
 
 begin
-
   CurrentInstruction := NextInstruction;
-
   while
         (FFrameStackTop > 0) and
         (CurrentInstruction <> -1) do
   begin
-
-   //if CurrentInstruction = OP_CALL then OpCall
-   //else
-
-    Case CurrentInstruction of
-
-
-    OP_CONSTANT : OpConstant;
-
-    OP_CALL : begin
-
-
-        ArgCount := NextInstruction;
-
-        Value := FStack.peek(ArgCount);
-
-        if Value.Kind = lxFunction then
-        begin
-          call(pLoxFunction(Value.Obj), argCount);
-
-        end;
-
-    end;
-
-
-
-
-    OP_GET_GLOBAL: OPGetGlobal;
-
-    OP_GET_LOCAL: OpGetLocal;
-
-    OP_SET_LOCAL: OPSetLocal;
-
-    OP_Return : OpReturn;  
-
-    OP_ADD : OpAdd;
-
-    OP_SUBTRACT : OpSubtract;
-
-    OP_POP : OpPOP;
-
-    OP_DEFINE_GLOBAL: OpDefineGlobal;
-
-    OP_SET_GLOBAL: OPSetGlobal;
-
-    OP_BUILD_LIST : OpBuildList;
-
-    OP_INDEX_SUBSCR : OpIndexSubscriber;
-
-    OP_STORE_SUBSCR : OpStoreSubscriber;
-
-    OP_Nil : OpNil;
-
-    OP_TRUE : OpTrue;
-
-    OP_FALSE : OpFalse;
-
-    OP_GREATER : OPgreater;
-
-    OP_LESS : OPless;
-
-    OP_EQUAL : OPEqual;
-
-    OP_NOT : OPNotEqual;
- 
-    OP_DIVIDE : OPdivide;
-
-    OP_MULTIPLY : OPMultiply;
-
-    OP_NEGATE : OpNegate;
-
-    OP_PRINT  : OPPrint;
-
-    OP_JUMP_IF_FALSE : OPJumpFalse;
-
-    OP_JUMP: OpJump;
-
-    OP_LOOP: Oploop;
-
-
-    end;
-    CurrentInstruction := NextInstruction;
-
-
+     FJumpTable[CurrentInstruction];
+     CurrentInstruction := NextInstruction;
   end;
-
-
 end;
 
 function TVirtualMachine.Run(const func : PLoxFunction) : TInterpretResult;
@@ -384,6 +270,8 @@ end; *)
 procedure TVirtualMachine.OpConstant;
 begin
    PushStack(FConstants[NextInstruction]);
+
+
 end;
 
 
@@ -395,8 +283,6 @@ begin
     L := PopStack;
     PushStack(BorrowChecker.NewBool(l.Number > r.Number));
 end;
-
-
 
 procedure TVirtualMachine.OPLess;
 begin
@@ -446,15 +332,14 @@ end;
 
 procedure TVirtualMachine.PopFrame;
 begin
-  assert(FFrameStackTop > 0);
+  assert(FFrameStackTop > 0, 'Frame stack top is zero, you can''t pop it');
 
   FFrameStackTop := FFrameStackTop - 1;   //pop frame
 
   if FFrameStackTop > 0 then
   begin
-    //FCurrentFrame := FFrames[FFrameStackTop-1];
 
-    //FFunction     := FFrames[FFrameStackTop-1].fn;
+    //this is to decrease indirection. So we don't keep going through the pointer.
     if FFrames[FFrameStackTop-1].fn <> FFrames[FFrameStackTop].fn then
     begin
       FCodes        := FFrames[FFrameStackTop-1].fn.Codes;
@@ -474,22 +359,35 @@ var
   offSet : integer;
 begin
 
-    (*Result := PopStack; //result of the function
+    Result := PopStack; //result of the function
 
     FStack.StackTop :=  FFrames[FFrameStackTop-1].StackOffset;
 
     PushStack(result); //push result to new location in stack.
 
-    PopFrame; *)
-
-
-
-    FStack.Copy(FStack.StackTop-1,FFrameStackOffSet);
-    FStack.StackTop := FFrameStackOffSet + 1;
     PopFrame;
+
+   
+
 
 end;
 
+
+procedure TVirtualMachine.OpCall;
+var
+  ArgCount : byte;
+  Value : TValueRecord;
+begin
+   ArgCount := NextInstruction;
+
+        Value := FStack.peek(ArgCount);
+
+        if Value.Kind = lxFunction then
+        begin
+          Assert(call(pLoxFunction(Value.Obj), argCount) = true, 'failed to execute function call');
+
+        end;
+end;
 
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
@@ -498,7 +396,8 @@ function TVirtualMachine.Call(
 begin
   result := false;
 
- (* if func = nil then exit;
+
+  if func = nil then exit;
 
   if (argCount <> func.Arity) then exit;
 
@@ -506,29 +405,33 @@ begin
 
   if FStack.StackTop-ArgCount-1 < 0 then exit;
 
-  *)
+
 
 
   if FFrameStackTop > 0 then
   begin
-    //bookmark where the instruction pointer is for the current callframe, to return to later.
+    //bookmark where the soon to be previous instruction pointer is to return to later.
     FFrames[FFrameStackTop-1].InstructionPointerIdx := FIndex;
   end;
 
+  //this is just to cut down on indirection
 
-  //set up new call frame now
+  if Func <> FFrames[FFrameStackTop-1].fn then    //there's no point resetting these if it's the same(i.e. in recursive calls)
+  begin
+    FCodes        := Func.Codes;
+    FCodeCount    := Func.Codes.Count;
+    FConstants    := Func.Constants;
+  end;
+
+
+  //set up new call frame
   with FFrames[FFrameStackTop] do
   begin
     Fn := Func;
     StackOffset := FStack.StackTop-ArgCount-1;
   end;
 
-  //this is just to cut down on indirection
-  FCodes        := Func.Codes;
-  FCodeCount    := Func.Codes.Count;
-  FConstants    := Func.Constants;
   FFrameStackOffSet := FFrames[FFrameStackTop].StackOffset;
-  // end of indirection
 
   FFrameStackTop := FFrameStackTop + 1;
 
@@ -577,7 +480,7 @@ procedure TVirtualMachine.OpDivide;
 var
    L,R, Result : TValueRecord;
 begin
-
+    (*
     R := PopStack;
     Assert(GetNumber(R) <> 0); //divide by zero exceptions.
     L := PopStack;
@@ -585,7 +488,7 @@ begin
     Result := BorrowChecker.NewNumber(GetNumber(L) / GetNumber(R));
 
     PushStack(Result);
-  
+    *)
 end;
 
 procedure TVirtualMachine.OPNotEqual;
@@ -677,22 +580,16 @@ end;
 
 procedure TVirtualMachine.OPGetGlobal;
 var
-   NameValue : TNameValue;
-   Index : integer;
-   ms : integer;
+  NameValue : TNameValue;
 
 begin
+  if FGlobals.Find(GetString(FConstants[NextInstruction]),NameValue) then
+  begin
+    PushStack(NameValue.Value);
+    exit;
+  end;
 
-  //look up value in hash table to see if it exists
-  NameValue.Name := GetString(FConstants[NextInstruction]);
-
-
-  index := FGlobals.IndexOf(NameValue);
-  assert(Index >= 0, 'Failed to locate global : ' + NameValue.Name);
-  PushStack(FGlobals.Get(Index).Value);
-
-
-
+  Showmessage('Could not locate global name');
 end;
 
 
@@ -746,6 +643,40 @@ begin
   FHalt    := false;
   FGlobals.init;
   RegisterNatives;
+
+    FJumpTable[OP_CALL] := opCall;
+    FJumpTable[OP_CONSTANT ] :=  OpConstant;
+    FJumpTable[OP_CALL ] :=   OpCall;
+    FJumpTable[OP_GET_GLOBAL] :=  OPGetGlobal;
+    FJumpTable[OP_GET_LOCAL] :=  OpGetLocal;
+    FJumpTable[OP_SET_LOCAL] :=  OPSetLocal;
+    FJumpTable[OP_Return ] :=  OpReturn;
+    FJumpTable[OP_ADD ] :=  OpAdd;
+    FJumpTable[OP_SUBTRACT ] :=  OpSubtract;
+    FJumpTable[OP_POP ] :=  OpPOP;
+    FJumpTable[OP_DEFINE_GLOBAL] :=  OpDefineGlobal;
+    FJumpTable[OP_SET_GLOBAL] :=  OPSetGlobal;
+    FJumpTable[OP_BUILD_LIST ] :=  OpBuildList;
+    FJumpTable[OP_INDEX_SUBSCR ] :=  OpIndexSubscriber;
+    FJumpTable[OP_STORE_SUBSCR ] :=  OpStoreSubscriber;
+    FJumpTable[OP_Nil ] :=  OpNil;
+    FJumpTable[OP_TRUE ] :=  OpTrue;
+    FJumpTable[OP_FALSE ] :=  OpFalse;
+    FJumpTable[OP_GREATER ] :=  OPgreater;
+    FJumpTable[OP_LESS ] :=  OPless;
+    FJumpTable[OP_EQUAL ] :=  OPEqual;
+    FJumpTable[OP_NOT ] :=  OPNotEqual;
+    FJumpTable[OP_DIVIDE ] :=  OPdivide;
+    FJumpTable[OP_MULTIPLY ] :=  OPMultiply;
+    FJumpTable[OP_NEGATE ] :=  OpNegate;
+    FJumpTable[OP_PRINT  ] :=  OPPrint;
+    FJumpTable[OP_JUMP_IF_FALSE ] :=  OPJumpFalse;
+    FJumpTable[OP_JUMP] :=  OpJump;
+    FJumpTable[OP_LOOP] :=  Oploop;
+
+
+
+
 end;
 
 

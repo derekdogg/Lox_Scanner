@@ -94,16 +94,19 @@ end;
 procedure TFmScript.Interpret(const LoxFunction : pLoxFunction);
 var
    VM :  TVirtualMachine;
-   s  : integer;
+   StartTime, EndTime, ElapsedTimeMs: Cardinal;
 begin
 
    VM := TVirtualMachine.Create(MemRun.Lines);
   // Vm.OnPush := LogStackPush;
   // VM.OnPop := LogStackPop;
    try
-      s := MilliSecondOfTheDay(now);
+      StartTime := GetTickCount;
       VM.Run(LoxFunction);
-      MemRun.Lines.Add(inttostr( MilliSecondOfTheDay(now) - s));
+      EndTime := GetTickCount;
+      ElapsedTimeMs := EndTime - StartTime;
+
+      MemRun.Lines.Add(inttostr( ElapsedTimeMs));
        
    finally
 

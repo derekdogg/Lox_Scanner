@@ -59,9 +59,10 @@ type
    private
      FCapacity : integer;
      FCount : integer;
-     FItems : TNameValues;
+
      procedure IncreaseCapacity;
    public
+     function Find(const name : String; var OutValue : TNameValue) : boolean;
      function Count : integer;
      procedure Add(const Value : TNameValue);
      function Get(const index : integer) : TNameValue;
@@ -71,6 +72,9 @@ type
 
    end;
 
+var
+  FGlobals : TGlobals;
+  FItems : TNameValues;
 
 implementation
 
@@ -129,11 +133,36 @@ begin
   end;
 end;
 
+function TGlobals.Find(const name : String; var OutValue : TNameValue) : boolean;
+var
+  i : integer;
+begin
+  result := false;
+  for i := 0 to FCount - 1 do
+  begin
+    if FItems[i].Name = Name then
+    begin
+      outValue := FItems[i];
+      result := true;
+      break;
+    end;
+  end;
+
+end;
+
 procedure TGlobals.setValue(const index: integer; const Namevalue: TNameValue);
 begin
   assert(index >= 0, 'Index is < 0');
   assert(index < FCapacity, 'Index is > Capacity');
   FItems[Index].Value := NameValue.Value;
 end;
+
+
+
+
+initialization
+  FGlobals.Init;
+
+finalization
 
 end.

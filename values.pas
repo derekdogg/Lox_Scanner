@@ -17,6 +17,7 @@ type
       lxObject       :   (Obj     : Pointer);
       lxNumber       :   (Number  : TNumber);
       lxBoolean      :   (Bool    : Boolean);
+       
   end;
 
 
@@ -48,11 +49,9 @@ type
 
   TStack = record
   private
-    FCapacity : integer;
-    FStackTop : integer;
-    FItems :  StackList;
-
-
+     FCapacity : integer;
+     FStackTop : integer;
+     FItems :  StackList;
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
   public
@@ -364,6 +363,8 @@ end;
 
 function TStack.Push(const value: TValueRecord) : integer;
 begin
+  
+
   result := FStackTop;
   FItems[FStackTop] := Value;
   SetStackTop(FStackTop+1);

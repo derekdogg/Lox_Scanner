@@ -17,6 +17,8 @@ Bench marks fib(40);
 
 120396 = 2.0066  changing lots of experimentation...
 
+84547 = 1.4 mins changing record alignment in compiler to 4
+
 
 
 
