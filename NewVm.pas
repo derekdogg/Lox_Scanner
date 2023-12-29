@@ -41,10 +41,10 @@ type
   private
     FJumpTable      : TJumpTable;
 
-    FIndex          : integer; //current op code index
+    FIndex          : TOpCodeValue; //current op code index
 
-    FCodes          : TOpCode; //current func op codes
-    FCodeCount      : integer; //current func op code count
+    FCodes          : TCodes; //current func op codes
+    FCodeCount      : TOpCodeValue; //current func op code count
     FConstants      : TStack;  //current func constants
 
     FFrameStackTop  : integer;
@@ -101,7 +101,7 @@ type
     function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
 
     function increment(const index : integer) : boolean;
-    function NextInstruction : Integer;
+    function NextInstruction : TOpCodeValue;
 
   public
     function Run(const func : PLoxFunction) : TInterpretResult;
@@ -134,7 +134,7 @@ begin
   end;
 end;
 
-function TVirtualMachine.NextInstruction: integer;
+function TVirtualMachine.NextInstruction: TOpCodeValue;
 begin
   result := -1;
 
@@ -153,17 +153,17 @@ end;
 
 
 procedure TVirtualMachine.Execute;
-var
-  CurrentInstruction : integer;
-
 begin
-  CurrentInstruction := NextInstruction;
+  if FCodeCount = 0 then exit;
+
+  FIndex := 0;
+
   while
-        (FFrameStackTop > 0) and
-        (CurrentInstruction <> -1) do
+    (FIndex < FCodeCount) and
+    (FCodes[FIndex] <> -1)do
   begin
-     FJumpTable[CurrentInstruction];
-     CurrentInstruction := NextInstruction;
+     FJumpTable[FCodes[FIndex]];
+     inc(FIndex);
   end;
 end;
 
@@ -201,13 +201,13 @@ var
 
   List : pLoxList;
 begin
-   item   := PopStack;
+  (* item   := PopStack;
    Index  := PopStack;
    ListValue := PopStack;
    //  Listvalue.List.Items[round(index.Number)] := Item;
    List := GetList(ListValue);
    List.Items[round(index.Number)] := Item;
-   PushStack(Item);
+   PushStack(Item); *)
 end;
 
 procedure TVirtualMachine.OpIndexSubscriber;
@@ -216,13 +216,13 @@ var
   index: Integer;
   List : pLoxList;
 begin
-
+ (*
   indexValue := PopStack;
   listValue := PopStack;
   index := round(indexValue.Number);
   List := GetList(ListValue);
   result := List.Items[index];
-  PushStack(result);
+  PushStack(result); *)
 end;
 
 procedure TVirtualMachine.OpBuildList;
@@ -269,7 +269,7 @@ end; *)
 
 procedure TVirtualMachine.OpConstant;
 begin
-   PushStack(FConstants[NextInstruction]);
+   PushStack(FConstants.items[NextInstruction]);
 
 
 end;
@@ -342,8 +342,8 @@ begin
     //this is to decrease indirection. So we don't keep going through the pointer.
     if FFrames[FFrameStackTop-1].fn <> FFrames[FFrameStackTop].fn then
     begin
-      FCodes        := FFrames[FFrameStackTop-1].fn.Codes;
-      FCodeCount    := FFrames[FFrameStackTop-1].fn.Codes.Count;
+      FCodes        := FFrames[FFrameStackTop-1].fn.OpCodes.Codes;
+      FCodeCount    := FFrames[FFrameStackTop-1].fn.OpCodes.Count;
       FConstants    := FFrames[FFrameStackTop-1].fn.Constants;
 
     end;
@@ -418,8 +418,8 @@ begin
 
   if Func <> FFrames[FFrameStackTop-1].fn then    //there's no point resetting these if it's the same(i.e. in recursive calls)
   begin
-    FCodes        := Func.Codes;
-    FCodeCount    := Func.Codes.Count;
+    FCodes        := Func.OpCodes.Codes;
+    FCodeCount    := Func.OPCodes.Count;
     FConstants    := Func.Constants;
   end;
 
@@ -572,7 +572,7 @@ procedure TVirtualMachine.OpDefineGlobal;
 var
   NameValue : TNameValue;
 begin
-  nameValue.Name := GetString(Fconstants[NextInstruction]);
+  nameValue.Name := GetString(Fconstants.Items[NextInstruction]);
   NameValue.Value := FStack.peek;
   FGlobals.add(NameValue);
   popStack;
@@ -583,7 +583,7 @@ var
   NameValue : TNameValue;
 
 begin
-  if FGlobals.Find(GetString(FConstants[NextInstruction]),NameValue) then
+  if FGlobals.Find(GetString(FConstants.Items[NextInstruction]),NameValue) then
   begin
     PushStack(NameValue.Value);
     exit;
@@ -600,7 +600,7 @@ var
 
 begin
 
-  nameValue.Name := GetString(FConstants[NextInstruction]);
+  nameValue.Name := GetString(FConstants.Items[NextInstruction]);
   NameValue.Value := FStack.peek;
 
   Index := FGlobals.IndexOf(NameValue);

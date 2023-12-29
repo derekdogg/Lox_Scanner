@@ -277,7 +277,7 @@ begin
     result.Arity := 0;
     result.Name := Name;
     //result.Chunks := TChunks.Create(Name);//(Constants); //.Init;
-    result.Codes.init;
+    result.OpCodes.init;
     result.Constants.Init;
 end;
 
@@ -457,7 +457,7 @@ begin
 
   for i := value.Constants.StackTop-1 downto 0 do
   begin
-    constant := value.Constants[i];
+    constant := value.Constants.items[i];
     disposeValue(constant);
   end;
 //  Value.Chunks.Free;

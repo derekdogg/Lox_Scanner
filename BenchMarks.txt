@@ -7,7 +7,7 @@ Bench marks fib(40);
  
 470934 = 7.8 mins
 
-297628 =4.96046667 mins (with less indirection in InstructionPointer.)
+297628 = 4.96046667 mins (with less indirection in InstructionPointer.)
 
 224990 = 3.74983333mins (with even less indirection in InstructionPointer).
 
@@ -17,7 +17,12 @@ Bench marks fib(40);
 
 120396 = 2.0066  changing lots of experimentation...
 
-84547 = 1.4 mins changing record alignment in compiler to 4
+84547  = 1.4 mins changing record alignment in compiler to 4
+
+66203  = 1.10338333. Basically making everything in a record public for opcodes and stack.
+                     this will allow you to saw your fingers off though (i.e. accessing items beyond limits for example).   
+                     Changed the instruction pointer loop. 
+
 
 
 

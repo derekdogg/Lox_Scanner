@@ -652,7 +652,7 @@ begin
   if Jump > MAX_JUMP then
     Error('Too much code to jump over.');
 
-  FCurrent.Func.Codes[OffSet] := Jump;
+  FCurrent.Func.OpCodes.Codes[OffSet] := Jump;
 
 end;
 

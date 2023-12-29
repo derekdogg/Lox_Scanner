@@ -16,31 +16,29 @@ type
     case Kind: TLoxKind of
       lxObject       :   (Obj     : Pointer);
       lxNumber       :   (Number  : TNumber);
-      lxBoolean      :   (Bool    : Boolean);
-       
+      lxBoolean      :   (Bool    : Boolean);       
   end;
 
 
 
   TOnChunk = procedure(const Operand : Integer) of object;
 
+  TOpCodeValue = SmallInt;
 
-  TOpCode = record
   const OP_CODE_CAPACITY = 256; //keep this at the minimum, because affects patch jumping?? Interesting observation....
-  private
-    FCodes : array of integer;
-    FCount : integer;
-    FCapacity : integer;
-    procedure GrowCapacity;
-    function getCode(const index: integer): integer;
-    procedure setCode(const index, Value: integer);
-    function getCount: integer;
-  public
-    function Add(const value : integer) : integer;
-    procedure Init;
-    property Code[const index : integer] : integer read getCode write setCode; default;
-    property Count : integer read getCount;
-  end;
+
+type
+
+    TCodes = array of TOpCodeValue;
+
+    TOpCode = record
+      Codes : TCodes;
+      Count : integer;
+      Capacity : integer;
+      procedure GrowCapacity;
+      function Add(const value : TOpCodeValue) : TOpCodeValue;
+      procedure Init;
+    end;
 
 
   TBlock_Capacity = 8..256;
@@ -48,13 +46,11 @@ type
   StackList = array of TValueRecord;
 
   TStack = record
-  private
-     FCapacity : integer;
-     FStackTop : integer;
-     FItems :  StackList;
+     Capacity : integer;
+     StackTop : integer;
+     Items :  StackList;
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
-  public
      procedure SetItem(const Index: integer; const Value: TValueRecord);
      function  GetItem(const Index: integer): TValueRecord;
      procedure Add;
@@ -67,10 +63,6 @@ type
      function Peek(const Distance : integer) : TValueRecord;overload;
      function Peek : TValueRecord; overload;
      procedure Init(const Block_Capacity : TBlock_Capacity = 256);
-     property Items : StackList read FItems;
-     property Capacity : integer read FCapacity;
-     property Item[Const Index : integer] : TValueRecord read GetItem write SetItem; default;
-     property StackTop : integer read FStackTop write SetStackTop;
   end;
 
   pLoxFunction = ^TLoxFunction;
@@ -79,7 +71,7 @@ type
     FuncKind   : TFunctionKind;
     Arity      : byte; // The arity field stores the number of parameters the function expects.
     Name       : String;
-    Codes      : TOpCode;
+    OpCodes    : TOpCode;
     Constants  : TStack;
     function getCode(const index: integer): integer;
     procedure setCode(const index, Value: integer);
@@ -173,7 +165,7 @@ end;
 
 procedure TLoxFunction.Emit(const value : integer);
 begin
-  Codes.Add(value);
+  OpCodes.Add(value);
 end;
 
 
@@ -185,12 +177,12 @@ end;
 
 function TLoxFunction.getCode(const index: integer): integer;
 begin
-  result := Codes[index];
+  result := OPCodes.Codes[index];
 end;
 
 function TLoxFunction.getConstant(const index: integer): TValueRecord;
 begin
-  result := Constants[Index];
+  result := Constants.Items[Index];
 end;
 
 function TLoxFunction.getConstantCount: integer;
@@ -201,7 +193,7 @@ end;
 
 procedure TLoxFunction.setCode(const index, Value: integer);
 begin
-  Codes[Index] := Value;
+  opCodes.Codes[Index] := Value;
 end;
 
 
@@ -219,12 +211,12 @@ end;
 
 function TLoxFunction.GetCodeCount: Integer;
 begin
-  result := Codes.Count;
+  result := OpCodes.Count;
 end;
 
 constructor TLoxFunction.Create;
 begin
-  Codes.Init; // := TOpCode.Create;
+  OpCodes.Init; // := TOpCode.Create;
   Constants.init(8);
 end;
 
@@ -235,47 +227,30 @@ begin
   inherited;
 end; *)
 
-function TOpCode.Add(const value: integer) : integer;
+function TOpCode.Add(const value: TOpCodeValue) : TOpCodeValue;
 begin
-  result := FCount;
+  result := Count;
 
-  if FCount = FCapacity then
+  if Count = Capacity then
     growCapacity;
 
-  fCodes[fCount] := Value;
-  inc(FCount);
+  Codes[Count] := Value;
+  inc(Count);
 end;
 
 procedure TOpCode.Init;
 begin
-  FCount := 0;
-  FCapacity :=  OP_CODE_CAPACITY;
-  SetLength(FCodes, FCapacity);
+  Count := 0;
+  Capacity :=  OP_CODE_CAPACITY;
+  SetLength(Codes, Capacity);
 end;
-
-
-
-function TOpCode.getCode(const index: integer): integer;
-begin
-   result := FCodes[Index];
-end;
-
-function TOpCode.getCount: integer;
-begin
-  result := FCount;
-end;
-
+ 
 procedure TOpCode.GrowCapacity;
 begin
-  FCapacity := FCapacity * 2;
-  setLength(FCodes,FCapacity);
+  Capacity := Capacity * 2;
+  setLength(Codes,Capacity);
 end;
 
-procedure TOpCode.setCode(const index, Value: integer);
-begin
-  assert(index <= FCapacity, 'Out of bounds index opcodes');
-  FCodes[index] := value;
-end;
 
 
 
@@ -284,46 +259,46 @@ end;
 
 procedure TStack.Init(const Block_Capacity : TBlock_Capacity=256);
 begin
-  FCapacity := Block_Capacity;
-  SetLength(FItems,FCapacity);
-  FStackTop := 0;
+  Capacity := Block_Capacity;
+  SetLength(Items,Capacity);
+  StackTop := 0;
 end;
 
 function TStack.GetItem(const Index: integer): TValueRecord;
 begin
-  assert(Index < FCapacity, 'out of bounds stack get');
-  result := FItems[Index];
+  assert(Index < Capacity, 'out of bounds stack get');
+  result := Items[Index];
 end;
 
 procedure TStack.IncreaseCapacity;
 begin
-  FCapacity := FCapacity  * 2;
-  SetLength(FItems,FCapacity);
+  Capacity := Capacity  * 2;
+  SetLength(Items,Capacity);
 end;
 
 function TStack.Peek: TValueRecord;
 begin
-  assert(FStackTop > 0, 'Nothing on the stack');
-  result := FItems[FStackTop-1];
+  assert(StackTop > 0, 'Nothing on the stack');
+  result := Items[StackTop-1];
 end;
 
 procedure TStack.Add;
 begin
-  FItems[FStackTop-2].Number := FItems[FStackTop-2].Number + FItems[FStackTop-1].Number;
-  FStackTop := FStackTop -1;
+  Items[StackTop-2].Number := Items[StackTop-2].Number + Items[StackTop-1].Number;
+  StackTop := StackTop -1;
 end;
 
 procedure TStack.Subtract;
 begin
-  FItems[FStackTop-2].Number := FItems[FStackTop-2].Number - FItems[FStackTop-1].Number;
-  FStackTop := FStackTop -1;
+  Items[StackTop-2].Number := Items[StackTop-2].Number - Items[StackTop-1].Number;
+  StackTop := StackTop -1;
 end;
 
 procedure TStack.Less;
 begin
-  FItems[FStackTop-2].Bool := FItems[FStackTop-2].Number < FItems[FStackTop-1].Number;
-  FItems[FStackTop-2].Kind := lxBoolean;
-  FStackTop := FStackTop -1;
+  Items[StackTop-2].Bool := Items[StackTop-2].Number < Items[StackTop-1].Number;
+  Items[StackTop-2].Kind := lxBoolean;
+  StackTop := StackTop -1;
 end;
 
 
@@ -332,7 +307,7 @@ var
   value : TValueRecord;
 begin
   result := false;
-  Value := FItems[FStackTop-1];
+  Value := Items[StackTop-1];
   case Value.Kind of
     lxBoolean : result := Value.Bool = false;
     lxNumber  : result := Value.Number <= 0;
@@ -346,15 +321,15 @@ begin
   (*assert(FStackTop > 0, 'Nothing on the stack');
   assert(Distance >= 0, 'This is distance from the top as a positive');
   assert(FStackTop - Distance >= 0, 'Distance is beyond stack bottom'); *)
-  result := FItems[FStackTop-Distance-1];
+  result := Items[StackTop-Distance-1];
 end;
 
 function TStack.Pop: TValueRecord;
 begin
-  Assert(FStackTop > 0, 'no more items to pop');
-  result := FItems[FStackTop-1];
+  Assert(StackTop > 0, 'no more items to pop');
+  result := Items[StackTop-1];
 
-  SetStackTop(FStackTop-1);
+  SetStackTop(StackTop-1);
  // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;
 
@@ -363,31 +338,29 @@ end;
 
 function TStack.Push(const value: TValueRecord) : integer;
 begin
-  
-
-  result := FStackTop;
-  FItems[FStackTop] := Value;
-  SetStackTop(FStackTop+1);
+  result := StackTop;
+  Items[StackTop] := Value;
+  SetStackTop(StackTop+1);
 
   //if Assigned(FOnStackPush) then FOnStackPush(Self);
 end;
 
 function TStack.Copy(const source : integer; const dest : integer) : boolean;
 begin
-  assert(Source < FCapacity, 'Index is > Capacity');
+  assert(Source < Capacity, 'Index is > Capacity');
   assert(Source >= 0, 'Index is < 0');
-  assert(dest < FCapacity, 'Index is > Capacity');
+  assert(dest < Capacity, 'Index is > Capacity');
   assert(dest >= 0, 'Index is < 0');
-  FItems[dest] := FItems[Source];
+  Items[dest] := Items[Source];
 
 end;
 
 procedure TStack.SetItem(const Index: integer; const Value: TValueRecord);
 begin
-  assert(Index < FCapacity, 'Index is > Capacity');
+  assert(Index < Capacity, 'Index is > Capacity');
   assert(Index >= 0, 'Index is < 0');
 
-  FItems[Index] := Value;
+  Items[Index] := Value;
 end;
 
 
@@ -395,12 +368,12 @@ procedure TStack.SetStackTop(const value: integer);
 begin
   Assert(Value >= 0, 'You idiot, the stack top is below zero');
 
-  while (value >= FCapacity) do
+  while (value >= Capacity) do
   begin
     IncreaseCapacity;
   end;
 
-  FStackTop := Value;
+  StackTop := Value;
  
 end;
 
