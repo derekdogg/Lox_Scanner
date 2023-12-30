@@ -761,7 +761,7 @@ begin
   if FStop then exit;
   Emit(OP_LOOP);
 
-  offset := FCurrent.Func.getCodeCount - loopStart + 2;
+  offset := FCurrent.Func.getCodeCount - loopStart + 1;
   if (offset > MAX_JUMP) then error('Loop body too large.');
 
   Emit(Offset);
@@ -798,7 +798,7 @@ begin
 
   patchJump(exitJump);
 
-  Emit(OP_POP); 
+  Emit(OP_POP);
 
 end;
  

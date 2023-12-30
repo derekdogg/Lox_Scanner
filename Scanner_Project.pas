@@ -173,7 +173,7 @@ procedure TfmScript.Button1Click(Sender: TObject);
 
       exit;
     end;
-
+     
     result := fib(n - 2) + fib(n - 1);
   end;
 

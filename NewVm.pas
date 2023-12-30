@@ -146,24 +146,24 @@ begin
 
   result :=  FCodes[FIndex];
 
-
 end;
 
 
-
-
 procedure TVirtualMachine.Execute;
+var
+  currentInstruction : integer;
 begin
-  if FCodeCount = 0 then exit;
+  currentInstruction := NextInstruction;
 
-  FIndex := 0;
-
-  while
-    (FIndex < FCodeCount) and
-    (FCodes[FIndex] <> -1)do
+  while (CurrentInstruction <> -1) do
   begin
-     FJumpTable[FCodes[FIndex]];
-     inc(FIndex);
+
+    if CurrentInstruction > (OP_STORE_SUBSCR) then exit;
+    if @FJumpTable[CurrentInstruction] <> nil then
+      FJumpTable[CurrentInstruction];
+    CurrentInstruction := NextInstruction;
+
+
   end;
 end;
 
@@ -174,7 +174,7 @@ begin
   PushStack(FRootFunction);
 
   call(Func, 0);
-
+                     
   Result := INTERPRET_NONE;
 
   if FCodeCount = 0 then exit;
@@ -366,11 +366,7 @@ begin
     PushStack(result); //push result to new location in stack.
 
     PopFrame;
-
-   
-
-
-end;
+ end;
 
 
 procedure TVirtualMachine.OpCall;
@@ -405,7 +401,7 @@ begin
 
   if FStack.StackTop-ArgCount-1 < 0 then exit;
 
-
+  FFrameStackOffSet := FStack.StackTop-ArgCount-1;
 
 
   if FFrameStackTop > 0 then
@@ -428,10 +424,8 @@ begin
   with FFrames[FFrameStackTop] do
   begin
     Fn := Func;
-    StackOffset := FStack.StackTop-ArgCount-1;
+    StackOffset := FFrameStackOffSet;
   end;
-
-  FFrameStackOffSet := FFrames[FFrameStackTop].StackOffset;
 
   FFrameStackTop := FFrameStackTop + 1;
 
@@ -443,7 +437,7 @@ end;
 
 procedure TVirtualMachine.OPLoop;
 begin
-   assert(Increment(-NextInstruction) = true, 'failed to move to loop offset');
+   assert(Increment((-NextInstruction)) = true, 'failed to move to loop offset');
 end;
 
 procedure TVirtualMachine.OPJump;
@@ -457,6 +451,10 @@ begin
    if (FStack.IsFalse) then   //check top of stack for truthiness
    begin
       OpJump;
+   end
+   else
+   begin
+      NextInstruction;//skip the operand.
    end;
 end;
 

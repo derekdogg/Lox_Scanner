@@ -58,6 +58,7 @@
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="ValueManager.pas" />
     <DCCReference Include="values.pas" />
+    <None Include="BenchMarks.txt" />
   </ItemGroup>
 </Project>
 <!-- EurekaLog First Line
