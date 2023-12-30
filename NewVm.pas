@@ -60,18 +60,24 @@ type
 
     //FGlobals : TGlobals;
     FResults : TStrings;
+    procedure popFrame;
+    function PopStack : TValueRecord;
+    procedure PushStack(const value : TValueRecord);
+    function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;  
+    procedure OpCall;
+    function increment(const index : integer) : boolean; inline;
+    function NextInstruction : TOpCodeValue;inline;
+
     procedure Execute;
 //    function CurrentOpCode : integer;
 
     procedure Halt;
-    procedure popFrame;
-    function PopStack : TValueRecord;
-    procedure PushStack(const value : TValueRecord);
+
     procedure RegisterNatives;
-    procedure OpCall;
-    procedure OpConstant;
-    Procedure OPAdd;
-    Procedure OpSubtract;
+
+    procedure OpConstant;inline;
+    Procedure OPAdd;inline;
+    Procedure OpSubtract; inline;
     Procedure OPDivide;
     Procedure OPMultiply;
     Procedure OPNegate;
@@ -98,10 +104,7 @@ type
     procedure OpBuildList;
     procedure OpIndexSubscriber;
     procedure OpStoreSubscriber;
-    function Call(const Func : pLoxfunction; const ArgCount : Byte) : boolean;
 
-    function increment(const index : integer) : boolean;
-    function NextInstruction : TOpCodeValue;
 
   public
     function Run(const func : PLoxFunction) : TInterpretResult;
@@ -153,17 +156,15 @@ procedure TVirtualMachine.Execute;
 var
   currentInstruction : integer;
 begin
+
   currentInstruction := NextInstruction;
 
   while (CurrentInstruction <> -1) do
   begin
-
-    if CurrentInstruction > (OP_STORE_SUBSCR) then exit;
-    if @FJumpTable[CurrentInstruction] <> nil then
-      FJumpTable[CurrentInstruction];
+    assert(CurrentInstruction <= (OP_STORE_SUBSCR),'the current instruction is out of range, most likely an op code being treated as operand?');
+    assert(@FJumpTable[CurrentInstruction] <> nil, 'tried to execute the next instruction and it does not exist in jump table - it is not implemented?');
+    FJumpTable[CurrentInstruction];
     CurrentInstruction := NextInstruction;
-
-
   end;
 end;
 
@@ -270,8 +271,6 @@ end; *)
 procedure TVirtualMachine.OpConstant;
 begin
    PushStack(FConstants.items[NextInstruction]);
-
-
 end;
 
 
@@ -356,9 +355,7 @@ end;
 procedure TVirtualMachine.OpReturn;
 var
   result : TValueRecord;
-  offSet : integer;
 begin
-
     Result := PopStack; //result of the function
 
     FStack.StackTop :=  FFrames[FFrameStackTop-1].StackOffset;
@@ -375,16 +372,15 @@ var
   Value : TValueRecord;
 begin
    ArgCount := NextInstruction;
-
-        Value := FStack.peek(ArgCount);
-
-        if Value.Kind = lxFunction then
-        begin
-          Assert(call(pLoxFunction(Value.Obj), argCount) = true, 'failed to execute function call');
-
-        end;
+   Value := FStack.peek(ArgCount);
+   assert(Value.Kind = lxFunction,'trying to call a function but the value on the stack isn''t');
+   Assert(call(pLoxFunction(Value.Obj), argCount) = true, 'failed to execute function call');
 end;
 
+
+//I know I can simplify this a lot - but I will need some time to think it over.
+//all we care about really is the functions attributes (codes, and constants), the stack offset,
+//and the IP of the codes for the function. rendering storing the actual fn in the frame itself, redundant.
 function TVirtualMachine.Call(
   const Func : pLoxfunction;
   const ArgCount : byte) : boolean;
@@ -408,11 +404,23 @@ begin
   begin
     //bookmark where the soon to be previous instruction pointer is to return to later.
     FFrames[FFrameStackTop-1].InstructionPointerIdx := FIndex;
-  end;
-
-  //this is just to cut down on indirection
-
-  if Func <> FFrames[FFrameStackTop-1].fn then    //there's no point resetting these if it's the same(i.e. in recursive calls)
+    if FFrameStackTop > 1 then //check for recursion
+    begin
+      if Func <> FFrames[FFrameStackTop-1].fn then    //there's no point resetting these if it's the same(i.e. in recursive calls)
+      begin
+        FCodes        := Func.OpCodes.Codes;
+        FCodeCount    := Func.OPCodes.Count;
+        FConstants    := Func.Constants;
+      end
+    end
+    else
+    begin
+      FCodes        := Func.OpCodes.Codes;
+      FCodeCount    := Func.OPCodes.Count;
+      FConstants    := Func.Constants;
+    end;
+  end
+  else
   begin
     FCodes        := Func.OpCodes.Codes;
     FCodeCount    := Func.OPCodes.Count;
@@ -420,10 +428,17 @@ begin
   end;
 
 
-  //set up new call frame
+  //do we always want to be setting up a new frame, or can we re-use an existing one? would it make much difference? Above only shaves off about 100 ms. for fib(30) And that is fairly anecdotal...
+  // the below is never true as the stackoffset is always different.
+  (*if (FFrames[FFrameStackTop].Fn = FFrames[FFrameStackTop-1].fn) and
+     (FFrames[FFrameStackTop].StackOffset = FFrames[FFrameStackTop-1].StackOffset) then
+  begin
+    showmessage('dup frame');
+  end ; *)
+
   with FFrames[FFrameStackTop] do
   begin
-    Fn := Func;
+    Fn := Func; //the only reason we use the fn, is to track what to set locally for codes, on a return, begging the question do we need it?
     StackOffset := FFrameStackOffSet;
   end;
 
@@ -437,7 +452,7 @@ end;
 
 procedure TVirtualMachine.OPLoop;
 begin
-   assert(Increment((-NextInstruction)) = true, 'failed to move to loop offset');
+   assert(Increment(-NextInstruction) = true, 'failed to move to loop offset');
 end;
 
 procedure TVirtualMachine.OPJump;

@@ -6,7 +6,7 @@ uses classes, LoxTypes, OpCodes;
 
 type
 
-  TNumber = Double;
+  TNumber = double;
 
   TRequester = (rCompiler,rVM);
 
@@ -51,8 +51,6 @@ type
      Items :  StackList;
      procedure IncreaseCapacity;
      procedure SetStackTop(const value : integer);
-     procedure SetItem(const Index: integer; const Value: TValueRecord);
-     function  GetItem(const Index: integer): TValueRecord;
      procedure Add;
      procedure Subtract;
      procedure Less;
@@ -82,8 +80,7 @@ type
     procedure Emit(const Value : Integer); overload;
     function AddConstant(const value : TValueRecord) : integer;
     procedure EmitConstant(const value : TValueRecord);
-    constructor Create(const FunctionName : String);
-    
+    constructor Create(const FunctionName : String);    
   end;
 
 
@@ -264,11 +261,6 @@ begin
   StackTop := 0;
 end;
 
-function TStack.GetItem(const Index: integer): TValueRecord;
-begin
-  assert(Index < Capacity, 'out of bounds stack get');
-  result := Items[Index];
-end;
 
 procedure TStack.IncreaseCapacity;
 begin
@@ -353,14 +345,6 @@ begin
   assert(dest >= 0, 'Index is < 0');
   Items[dest] := Items[Source];
 
-end;
-
-procedure TStack.SetItem(const Index: integer; const Value: TValueRecord);
-begin
-  assert(Index < Capacity, 'Index is > Capacity');
-  assert(Index >= 0, 'Index is < 0');
-
-  Items[Index] := Value;
 end;
 
 

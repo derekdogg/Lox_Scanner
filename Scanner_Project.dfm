@@ -197,10 +197,13 @@ object fmScript: TfmScript
       Font.Name = 'Tahoma'
       Font.Style = []
       Lines.Strings = (
-        'var i = 0;'
+        'fun fib(n) {'
+        '  if (n < 2) return n;'
+        '  return fib(n - 2) + fib(n - 1);'
+        '}'
         ''
         ''
-        'while (i < 10) { print i; i = i + 1;}')
+        'print fib(30);')
       ParentFont = False
       TabOrder = 0
       WantTabs = True

@@ -22,14 +22,15 @@
     <DCC_DebugVN>True</DCC_DebugVN>
     <DCC_RemoteDebug>True</DCC_RemoteDebug>
     <DCC_ExeOutput>C:\Users\hsldse\Documents\Lox_Scanner\Output</DCC_ExeOutput>
-    <DCC_MapFile>3</DCC_MapFile>
     <DCC_UnitSearchPath>C:\repo\_DCP</DCC_UnitSearchPath>
     <DCC_ResourcePath>C:\repo\_DCP</DCC_ResourcePath>
     <DCC_ObjPath>C:\repo\_DCP</DCC_ObjPath>
     <DCC_IncludePath>C:\repo\_DCP</DCC_IncludePath>
-    <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
     <DCC_IOChecking>False</DCC_IOChecking>
     <DCC_Alignment>4</DCC_Alignment>
+    <DCC_LongStrings>False</DCC_LongStrings>
+    <DCC_OpenStringParams>False</DCC_OpenStringParams>
+    <DCC_MapFile>3</DCC_MapFile>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>

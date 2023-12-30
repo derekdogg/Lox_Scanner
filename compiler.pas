@@ -646,7 +646,7 @@ begin
 
   assert(Offset >= 0, 'patch jump offset is < 0');
 
-  // -2 to adjust for the bytecode for the jump offset itself - not any more as we don't use 2 bits for 1 int?
+
   Jump := FCurrent.Func.getCodeCount-1 - OffSet;
 
   if Jump > MAX_JUMP then

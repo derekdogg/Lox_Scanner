@@ -132,7 +132,7 @@ type
     function getFunction(const ValueRecord : TValueRecord) : pLoxFunction;
     function getNull(const ValueRecord : TValueRecord): boolean;
 
-    function GetString(const ValueRecord : TValueRecord) : String;
+    function GetString(const ValueRecord : TValueRecord) : String; 
     function getIsNumber(const ValueRecord : TValueRecord): Boolean;
     function getIsString(const ValueRecord : TValueRecord): Boolean;
     function getIsObject(const ValueRecord : TValueRecord) : Boolean;
