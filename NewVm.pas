@@ -53,7 +53,7 @@ type
 
     FOnStackPush : TStackEvent;
     FOnStackPop  : TStackEvent;
-    FRootFunction : TValueRecord;
+
     FHalt    : boolean;
     FStack   : TStack;
     FFrames : TFrameItems;
@@ -68,7 +68,7 @@ type
     function increment(const index : integer) : boolean; inline;
     function NextInstruction : TOpCodeValue;inline;
 
-    procedure Execute;
+    procedure Execute(const func : PLoxFunction; const arity : byte);
 //    function CurrentOpCode : integer;
 
     procedure Halt;
@@ -152,35 +152,76 @@ begin
 end;
 
 
-procedure TVirtualMachine.Execute;
+procedure TVirtualMachine.Execute(const func : PLoxFunction; const arity : byte);
 var
   currentInstruction : integer;
+  FRootFunction : TValueRecord;
+  
 begin
 
-  currentInstruction := NextInstruction;
-
-  while (CurrentInstruction <> -1) do
-  begin
-    assert(CurrentInstruction <= (OP_STORE_SUBSCR),'the current instruction is out of range, most likely an op code being treated as operand?');
-    assert(@FJumpTable[CurrentInstruction] <> nil, 'tried to execute the next instruction and it does not exist in jump table - it is not implemented?');
-    FJumpTable[CurrentInstruction];
-    CurrentInstruction := NextInstruction;
-  end;
-end;
-
-function TVirtualMachine.Run(const func : PLoxFunction) : TInterpretResult;
-begin
   FRootFunction := BorrowChecker.newValueFromFunction(rVM,Func);
 
   PushStack(FRootFunction);
 
   call(Func, 0);
-                     
+
+  currentInstruction := NextInstruction;
+
+  (*while (CurrentInstruction <> -1) do
+  begin
+    assert(CurrentInstruction <= (OP_STORE_SUBSCR),'the current instruction is out of range, most likely an op code being treated as operand?');
+    assert(@FJumpTable[CurrentInstruction] <> nil, 'tried to execute the next instruction and it does not exist in jump table - it is not implemented?');
+    FJumpTable[CurrentInstruction];
+    CurrentInstruction := NextInstruction;
+  end; *)
+
+  while (CurrentInstruction <> -1) do
+  begin
+    case CurrentInstruction of
+
+    OP_CALL : opCall;
+    OP_CONSTANT  :  OpConstant;
+    OP_GET_GLOBAL :  OPGetGlobal;
+    OP_GET_LOCAL :  OpGetLocal;
+    OP_SET_LOCAL :  OPSetLocal;
+    OP_Return  :  OpReturn;
+    OP_ADD  :  OpAdd;
+    OP_SUBTRACT  :  OpSubtract;
+    OP_POP  :  OpPOP;
+    OP_DEFINE_GLOBAL :  OpDefineGlobal;
+    OP_SET_GLOBAL :  OPSetGlobal;
+    OP_BUILD_LIST  :  OpBuildList;
+    OP_INDEX_SUBSCR  :  OpIndexSubscriber;
+    OP_STORE_SUBSCR  :  OpStoreSubscriber;
+    OP_Nil  :  OpNil;
+    OP_TRUE  :  OpTrue;
+    OP_FALSE  :  OpFalse;
+    OP_GREATER  :  OPgreater;
+    OP_LESS  :  OPless;
+    OP_EQUAL  :  OPEqual;
+    OP_NOT  :  OPNotEqual;
+    OP_DIVIDE  :  OPdivide;
+    OP_MULTIPLY  :  OPMultiply;
+    OP_NEGATE  :  OpNegate;
+    OP_PRINT   :  OPPrint;
+    OP_JUMP_IF_FALSE  :  OPJumpFalse;
+    OP_JUMP :  OpJump;
+    OP_LOOP :  Oploop;
+    end;
+    CurrentInstruction := NextInstruction;
+  end;
+
+end;
+
+function TVirtualMachine.Run(const func : PLoxFunction) : TInterpretResult;
+begin
+
+
   Result := INTERPRET_NONE;
 
-  if FCodeCount = 0 then exit;
+ // if FCodeCount = 0 then exit;
 
-  Execute;
+  Execute(func,0);
 
   PopStack;
 
