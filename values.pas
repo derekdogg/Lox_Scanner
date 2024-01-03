@@ -4,9 +4,16 @@ interface
 
 uses classes, LoxTypes, OpCodes;
 
+const
+   TShortSize = 8;
+
+
 type
 
   TNumber = double;
+
+
+  TShortStr = string[TShortSize];
 
   TRequester = (rCompiler,rVM);
 
@@ -14,16 +21,19 @@ type
   TValueRecord = record
     //requester : TRequester;
     case Kind: TLoxKind of
-      lxObject       :   (Obj     : Pointer);
+
+      lxShort        :   (str     : TShortStr);
       lxNumber       :   (Number  : TNumber);
-      lxBoolean      :   (Bool    : Boolean);       
+      lxBoolean      :   (Bool    : Boolean);
+      lxObject       :   (Obj     : Pointer);
+
   end;
 
 
 
   TOnChunk = procedure(const Operand : Integer) of object;
 
-  TOpCodeValue = SmallInt;
+  TOpCodeValue = smallint;
 
   const OP_CODE_CAPACITY = 256; //keep this at the minimum, because affects patch jumping?? Interesting observation....
 
@@ -46,17 +56,15 @@ type
   StackList = array of TValueRecord;
 
   TStack = record
+     Items :  StackList;
      Capacity : integer;
      StackTop : integer;
-     Items :  StackList;
-     procedure IncreaseCapacity;
-     procedure SetStackTop(const value : integer);
      procedure Add;
      procedure Subtract;
      procedure Less;
      function Copy(const source : integer; const dest : integer) : boolean;
      function isFalse : boolean;
-     function Push(const value : TValueRecord) : integer;
+     procedure Push(const value : TValueRecord);
      function Pop : TValueRecord;
      function Peek(const Distance : integer) : TValueRecord;overload;
      function Peek : TValueRecord; overload;
@@ -68,7 +76,7 @@ type
     LoxObject  : TLoxObject;
     FuncKind   : TFunctionKind;
     Arity      : byte; // The arity field stores the number of parameters the function expects.
-    Name       : String;
+    Name       : string;
     OpCodes    : TOpCode;
     Constants  : TStack;
     function getCode(const index: integer): integer;
@@ -196,13 +204,15 @@ end;
 
 function TLoxFunction.AddConstant(const value: TValueRecord): integer;
 begin
-  result := Constants.Push(Value);
+  Constants.Push(Value);
+  result := Constants.StackTop-1;
 end;
 
 
 procedure TLoxFunction.EmitConstant(const value : TValueRecord);
 begin
-  Emit(OP_CONSTANT,Constants.Push(value));
+  Constants.Push(value);
+  Emit(OP_CONSTANT,Constants.StackTop-1);
 end;
 
 
@@ -241,7 +251,7 @@ begin
   Capacity :=  OP_CODE_CAPACITY;
   SetLength(Codes, Capacity);
 end;
- 
+
 procedure TOpCode.GrowCapacity;
 begin
   Capacity := Capacity * 2;
@@ -261,13 +271,6 @@ begin
   StackTop := 0;
 end;
 
-
-procedure TStack.IncreaseCapacity;
-begin
-  Capacity := Capacity  * 2;
-  SetLength(Items,Capacity);
-end;
-
 function TStack.Peek: TValueRecord;
 begin
   assert(StackTop > 0, 'Nothing on the stack');
@@ -277,13 +280,13 @@ end;
 procedure TStack.Add;
 begin
   Items[StackTop-2].Number := Items[StackTop-2].Number + Items[StackTop-1].Number;
-  StackTop := StackTop -1;
+  dec(StackTop);
 end;
 
 procedure TStack.Subtract;
 begin
   Items[StackTop-2].Number := Items[StackTop-2].Number - Items[StackTop-1].Number;
-  StackTop := StackTop -1;
+  dec(StackTop);
 end;
 
 procedure TStack.Less;
@@ -321,18 +324,20 @@ begin
   Assert(StackTop > 0, 'no more items to pop');
   result := Items[StackTop-1];
 
-  SetStackTop(StackTop-1);
+  dec(StackTop);
  // if Assigned(FOnStackPop) then FOnStackPop(Self);
 end;
 
 
 
 
-function TStack.Push(const value: TValueRecord) : integer;
+procedure TStack.Push(const value: TValueRecord);
 begin
-  result := StackTop;
+  Assert((StackTop + 1) < Capacity, 'out of bounds stack');
+  //result := StackTop;
+
   Items[StackTop] := Value;
-  SetStackTop(StackTop+1);
+  StackTop := StackTop + 1;
 
   //if Assigned(FOnStackPush) then FOnStackPush(Self);
 end;
@@ -347,19 +352,6 @@ begin
 
 end;
 
-
-procedure TStack.SetStackTop(const value: integer);
-begin
-  Assert(Value >= 0, 'You idiot, the stack top is below zero');
-
-  while (value >= Capacity) do
-  begin
-    IncreaseCapacity;
-  end;
-
-  StackTop := Value;
- 
-end;
 
 end.
 

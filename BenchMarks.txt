@@ -26,5 +26,10 @@ Bench marks fib(40);
 
 59546 = 0.99243333 - inline nextinstruction, which is frequently called. 
 
+48562ms = 48.562seconds - moving all private vars into main loop
+
+
+
+0ms after introduction of memoization techniques!!
 
 

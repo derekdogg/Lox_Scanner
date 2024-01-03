@@ -132,7 +132,7 @@ type
     function getFunction(const ValueRecord : TValueRecord) : pLoxFunction;
     function getNull(const ValueRecord : TValueRecord): boolean;
 
-    function GetString(const ValueRecord : TValueRecord) : String; 
+    function GetString(const ValueRecord : TValueRecord) : String;
     function getIsNumber(const ValueRecord : TValueRecord): Boolean;
     function getIsString(const ValueRecord : TValueRecord): Boolean;
     function getIsObject(const ValueRecord : TValueRecord) : Boolean;
@@ -239,6 +239,13 @@ function TValueCreation.NewString(const Requester: TRequester; const Txt: String
 var
   P: pLoxString;
 begin
+  if length(txt) <= TShortSize then
+  begin
+    FillChar(Result, SizeOf(result), #0);
+    Result.Kind := lxShort;
+    Result.str := txt;
+    exit;
+  end;
   P := NewLoxString(Txt);
   Result := NewValue(Requester, lxString, P);
 end;
@@ -566,6 +573,10 @@ begin
            result := pLoxString(obj).Chars;
          end;
        end;
+   end;
+
+   lxShort    : begin
+      result := ValueRecord.str;
    end;
 
    lxFunction : begin

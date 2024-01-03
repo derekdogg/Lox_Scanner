@@ -950,7 +950,7 @@ var
   argCount : byte;
 begin
   if FStop then exit;
-  argCount := argumentList; //dumb?
+  argCount := argumentList; 
   Emit(OP_CALL, argCount);
 end;
 

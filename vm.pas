@@ -12,9 +12,6 @@ uses
   natives,
   AdapterCalls;
 
-
-
-
 type
   TInterpretResult = (INTERPRET_NONE,INTERPRET_OK,INTERPRET_COMPILE_ERROR,INTERPRET_RUNTIME_ERROR);
 
@@ -29,7 +26,7 @@ type
     FCall : integer;
     FRootFunction : TValueRecord;
     FHalt    : boolean;
-    FStack   : TStack;
+   // FStack   : TStack;
     FFrames : TCallFrames;
     FGlobals : TValuePairs;
     FResults : TStrings;

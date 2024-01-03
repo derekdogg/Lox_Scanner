@@ -15,7 +15,8 @@ uses
   Natives in 'Natives.pas',
   subtraction in 'subtraction.pas',
   ValueManager in 'ValueManager.pas',
-  HashTable in 'HashTable.pas';
+  HashTable in 'HashTable.pas',
+  Arrays in 'Arrays.pas';
 
 {$R *.res}
 

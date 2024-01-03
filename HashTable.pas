@@ -45,7 +45,6 @@ uses
   values;
 
 type
-
    TNameValue = record
      Flag  : boolean; //whether in use or not.
      Name  : String;
@@ -57,24 +56,25 @@ type
    TGlobals = record
    const Global_Capacity = 256;
    private
+     FItems : TNameValues;
      FCapacity : integer;
      FCount : integer;
 
      procedure IncreaseCapacity;
    public
-     function Find(const name : String; var OutValue : TNameValue) : boolean;
-     function Count : integer;
-     procedure Add(const Value : TNameValue);
-     function Get(const index : integer) : TNameValue;
-     function IndexOf(const nameValue : TNameValue) : Integer;
-     procedure setValue(const index: integer; const Namevalue: TNameValue);
+     function Find(const name : String; var OutValue : TNameValue) : boolean; inline;
+     function Count : integer; inline;
+     procedure Add(const Value : TNameValue); inline;
+     function Get(const index : integer) : TNameValue;inline;
+
+     function IndexOf(const nameValue : TNameValue) : Integer; inline;
+     procedure setValue(const index: integer; const Namevalue: TNameValue); inline;
      Procedure Init;
 
    end;
 
-var
-  FGlobals : TGlobals;
-  FItems : TNameValues;
+
+  //FItems : TNameValues;
 
 implementation
 
@@ -161,8 +161,12 @@ end;
 
 
 initialization
-  FGlobals.Init;
+
 
 finalization
 
 end.
+
+
+
+

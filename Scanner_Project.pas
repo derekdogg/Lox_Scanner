@@ -61,6 +61,7 @@ uses
   compiler,
   //vm,
   newVm, //10 seconds quicker on fib(35)
+  //VmMark3,
   Table,
   Locals,
   ValueManager;
@@ -102,15 +103,15 @@ begin
   // VM.OnPop := LogStackPop;
    try
       StartTime := GetTickCount;
-      VM.Run(LoxFunction);
+      VM.execute(LoxFunction);
       EndTime := GetTickCount;
       ElapsedTimeMs := EndTime - StartTime;
 
       MemRun.Lines.Add(inttostr( ElapsedTimeMs));
-       
+
    finally
 
-     vm.Free;
+     //vm.Free;
      BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
 
    end;
@@ -126,13 +127,13 @@ var
   l : TList;
 
 begin
- 
+
  // BorrowChecker.FlushBuffer;
   //BorrowChecker.Logger := MemRun.Lines;
 
   //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
-  MemStack.Lines.clear;
+ // MemStack.Lines.clear;
   MemLocals.Lines.clear;
 
   try
@@ -162,9 +163,9 @@ end;
 
 procedure TfmScript.Button1Click(Sender: TObject);
 
-  function fib(n : integer) : integer;
+  function fib(n : single) : single;
   begin
-    MemRun.Lines.add(inttostr(n));
+    //Memstack.Lines.add(inttostr(n));
     if (n < 2) then
     begin
 
@@ -178,12 +179,12 @@ procedure TfmScript.Button1Click(Sender: TObject);
   end;
 
 var
-  a : integer;
+  a : single;
 begin
   MemRun.Lines.clear;
 
-  a := fib(5);
-  MemRun.Lines.add(inttostr(a));
+  a := fib(40);
+  MemRun.Lines.add(floattostr(a));
 
 
 

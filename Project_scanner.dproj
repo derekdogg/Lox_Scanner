@@ -30,6 +30,7 @@
     <DCC_Alignment>4</DCC_Alignment>
     <DCC_LongStrings>False</DCC_LongStrings>
     <DCC_OpenStringParams>False</DCC_OpenStringParams>
+    <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
     <DCC_MapFile>3</DCC_MapFile>
   </PropertyGroup>
   <ProjectExtensions>
@@ -44,6 +45,7 @@
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
     <DCCReference Include="Addition.pas" />
+    <DCCReference Include="Arrays.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="Exceptions.pas" />
     <DCCReference Include="HashTable.pas" />
