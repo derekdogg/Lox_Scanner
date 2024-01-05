@@ -107,12 +107,12 @@ begin
       EndTime := GetTickCount;
       ElapsedTimeMs := EndTime - StartTime;
 
-      MemRun.Lines.Add(inttostr( ElapsedTimeMs));
+      MemRun.Lines.Add(inttostr( ElapsedTimeMs) + 'ms');
 
    finally
 
      //vm.Free;
-     BorrowChecker.FlushBuffer; //flush out any items owned by the BorrowChecker. (For now this is probably zero) I need to check :) .
+     bc.FlushBuffer; //flush out any items owned by the bc. (For now this is probably zero) I need to check :) .
 
    end;
 end;
@@ -128,10 +128,6 @@ var
 
 begin
 
- // BorrowChecker.FlushBuffer;
-  //BorrowChecker.Logger := MemRun.Lines;
-
-  //instructionPointer.Init(LoxFunction);
   MemRun.Lines.clear;
  // MemStack.Lines.clear;
   MemLocals.Lines.clear;
@@ -150,7 +146,7 @@ begin
 
    finally
      cc.free;
-     //BorrowChecker.FlushBuffer;
+     //bc.FlushBuffer;
    end;
 
   finally
@@ -180,11 +176,15 @@ procedure TfmScript.Button1Click(Sender: TObject);
 
 var
   a : single;
+  StartTime, EndTime, ElapsedTimeMs: Cardinal;
 begin
   MemRun.Lines.clear;
-
+  StartTime := GetTickCount;
   a := fib(40);
-  MemRun.Lines.add(floattostr(a));
+ EndTime := GetTickCount;
+      ElapsedTimeMs := EndTime - StartTime;
+
+      MemRun.Lines.Add(inttostr( ElapsedTimeMs) + 'ms');
 
 
 

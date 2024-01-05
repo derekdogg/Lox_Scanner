@@ -15,8 +15,6 @@ type
 
   TShortStr = string[TShortSize];
 
-  TRequester = (rCompiler,rVM);
-
   pValueRecord = ^TValueRecord;
   TValueRecord = record
     //requester : TRequester;
@@ -59,11 +57,7 @@ type
      Items :  StackList;
      Capacity : integer;
      StackTop : integer;
-     procedure Add;
-     procedure Subtract;
-     procedure Less;
      function Copy(const source : integer; const dest : integer) : boolean;
-     function isFalse : boolean;
      procedure Push(const value : TValueRecord);
      function Pop : TValueRecord;
      function Peek(const Distance : integer) : TValueRecord;overload;
@@ -277,8 +271,12 @@ begin
   result := Items[StackTop-1];
 end;
 
-procedure TStack.Add;
+(*procedure TStack.Add;
 begin
+   dec(StackTop);
+
+
+
   Items[StackTop-2].Number := Items[StackTop-2].Number + Items[StackTop-1].Number;
   dec(StackTop);
 end;
@@ -294,22 +292,9 @@ begin
   Items[StackTop-2].Bool := Items[StackTop-2].Number < Items[StackTop-1].Number;
   Items[StackTop-2].Kind := lxBoolean;
   StackTop := StackTop -1;
-end;
+end; *)
 
 
-function TStack.isFalse : boolean;
-var
-  value : TValueRecord;
-begin
-  result := false;
-  Value := Items[StackTop-1];
-  case Value.Kind of
-    lxBoolean : result := Value.Bool = false;
-    lxNumber  : result := Value.Number <= 0;
-    lxString  : result := lowercase(trim(GetString(Value))) = 'false';
-    lxNull    : result := true;
-  end;
-end;
 
 function TStack.Peek(const Distance: integer): TValueRecord;
 begin

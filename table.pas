@@ -341,7 +341,7 @@ begin
     begin
       if FItems[i].OwnValue = true then //the value might belong to some other list etc, therefore we let the owner of the pointer deal with disposal.
       begin
-        BorrowChecker.dispose(FItems[i].Value);
+        bc.dispose(FItems[i].Value);
       end;
       dispose(FItems[i]);
     end;

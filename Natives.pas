@@ -22,7 +22,7 @@ uses
   var
     dlg : TOpenDialog;
   begin
-   (* result := BorrowChecker.newString('');
+   (* result := bc.newString('');
     dlg := TOpenDialog.Create(nil);
     try
       if dlg.execute then
@@ -43,7 +43,7 @@ uses
     FileName : String;
 
   begin
-    (*result := BorrowChecker.newString(rVM,'');
+    (*result := bc.newString(rVM,'');
     FileName := GetString(Values.Peek);
     if not SysUtils.FileExists(Filename) then exit;
 
@@ -62,7 +62,7 @@ uses
     exists : Boolean;
   begin
     (*FileName := GetString(Values.Peek);
-    result := BorrowChecker.newBool(False);
+    result := bc.newBool(False);
 
     if SysUtils.FileExists(Filename) then SetBoolean(result,true);
     *)
@@ -71,7 +71,7 @@ uses
 
   function DateTime(const ArgCount: Integer;const Values : TStack): TValueRecord;
   begin
-     result := BorrowChecker.newString(rVM,DateTimeToStr(Now));
+     result := bc.newString(DateTimeToStr(Now));
   end;
 
 end.

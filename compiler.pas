@@ -219,7 +219,7 @@ begin
 
   text := TokenName(Token);               
 
-  Value := BorrowChecker.NewNumber(strToFloat(text));
+  Value := bc.NewNumber(strToFloat(text));
 
   EmitConstant(Value);
 end;
@@ -397,7 +397,7 @@ begin
   end
   else
   begin
-    Value := BorrowChecker.NewString(rCompiler,TokenName(token));
+    Value := bc.NewString(TokenName(token));
     idx :=   FCurrent.Func.AddConstant(Value);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
@@ -504,7 +504,7 @@ begin
     exit;
   end;
 
-  Value  := BorrowChecker.NewString(rCompiler,TokenName(FTokens.previous));
+  Value  := bc.NewString(TokenName(FTokens.previous));
   result := FCurrent.Func.AddConstant(Value);
 end;
 
@@ -939,7 +939,7 @@ begin
   if FStop then exit;
   Token := FTokens.previous;
   text := TokenName(Token);
-  Value := BorrowChecker.NewString(rCompiler,Text);
+  Value := bc.NewString(Text);
   EmitConstant(Value);
 end;
 
@@ -1075,7 +1075,7 @@ begin
 
    functionObj := EndCompiler; //in the c version this makes current to previous one.
 
-   Value := BorrowChecker.newValueFromFunction(rCompiler,functionObj);
+   Value := bc.newValueFromFunction(functionObj);
 
    EmitConstant(Value);
 
@@ -1171,6 +1171,7 @@ procedure TCompilerController.SetRulesForDivide;
 begin
   with FParseRules[tkSlash] do
   begin
+     infix := binary;
      Precedence := PREC_FACTOR;
   end;
 end;
@@ -1478,7 +1479,7 @@ begin
   begin
     c := FItems[0];
     fn := c.Func;
-    BorrowChecker.Dispose(fn);
+    bc.Dispose(fn);
     for i := FItems.Count-1 downto 0 do
     begin
       TCompiler(FItems[i]).free;
@@ -1533,7 +1534,7 @@ begin
   //FLocalCount := 0;
   FFunctionKind := FunctionKind;
   FName := Name;
-  FFunc := BorrowChecker.newLoxFunction(FName);
+  FFunc := bc.newLoxFunction(FName);
 
   FInternal := TToken.Create;
   FInternal.Kind := tkNull;

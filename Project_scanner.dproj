@@ -44,7 +44,6 @@
     <DelphiCompile Include="Project_scanner.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="Addition.pas" />
     <DCCReference Include="Arrays.pas" />
     <DCCReference Include="compiler.pas" />
     <DCCReference Include="Exceptions.pas" />
@@ -57,7 +56,6 @@
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
     </DCCReference>
-    <DCCReference Include="subtraction.pas" />
     <DCCReference Include="TokenArray.pas" />
     <DCCReference Include="ValueManager.pas" />
     <DCCReference Include="values.pas" />

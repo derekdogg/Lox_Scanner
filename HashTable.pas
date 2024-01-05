@@ -1,45 +1,9 @@
 unit HashTable;
 
 interface
+ (* at the moment this is a pseudo hash table, in that it doesn't hash the value to obtain the index:)
 
-(*re-write the existing "table.pas" code
-
-  We're gonna play around with different implementations to determine the optimal
-  speed - which is important as the hashtable is potentially accessed multiple times
-  especially in recursive sub-routines accessing globals.
-
-  The old one is a) too complicated, b) probably too slow. c) buggy.
-
-  we will find out.
-
-  It's a relatively simple problem
-  1) Get an index of a string based on a hash of the string and the size of the array.
-  2) set the optimal index
-  3) if the optimal index is not set, start searching for other optimal indexes
-
-
-  Considerations
-
-  growing an existing array. You will need to copy the existing items and rehash
-  all the indexes. This is timeconsuming.
-
-  The way the current one works is that it copies itself internally to a new array
-
-  an interesting idea is to create a new array and spawn itself...???
-
-
-  Steps
-
-  1 - just create a dynamic array 1st. Really do we even need a dictionary at this point?
-
-  I mean is it really going to be faster to scan say 128 items of string, compared to dictionary?
-
-
-  Establish that fact, 1st.
-
-
-
-*)
+ *)
 
 uses
   values;

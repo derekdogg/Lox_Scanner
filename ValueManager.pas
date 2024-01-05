@@ -25,7 +25,7 @@ type
 
   public
     function NewValue(
-      const requester : TRequester;
+
       const Kind : TLoxKind;
       const Obj  : pointer) : TValueRecord;
     function NewLoxString(Const str : string) : pLoxString;
@@ -43,7 +43,7 @@ type
 //    function NewValues : TStack;
     function newValueFromList(const List : pLoxList) : TValueRecord;
     function newValueList(const name : string) : TValueRecord;
-    function NewString(const requester : TRequester;const txt : String) : TValueRecord;
+    function NewString(const txt : String) : TValueRecord;
 //    property Size : LongInt read FSize;
   end;
 
@@ -101,14 +101,13 @@ type
     procedure Dispose(var value : pLoxFunction); overload;
     procedure Dispose(var value : TValueRecord);overload;
     function newValueFromFunction(
-      const requester : TRequester;
       const functionObj : pLoxFunction) : TValueRecord;
     function newNative(const NativeFn : TNativeFunction) : TValueRecord;
     function NewFunction(const name : string) : TValueRecord; overload;
     function newValueList(const OwnValue : boolean; const name : string) : TValueRecord;
     function newLoxFunction(const Name : String) : pLoxFunction;
 
-    function NewString(const requester : TRequester;const txt : String) : TValueRecord;
+    function NewString(const txt : String) : TValueRecord;
     function NewNumber(Const number : TNumber) : TValueRecord;
     function NewBool(const Bool : Boolean) : TValueRecord;
     function NewNil : TValueRecord;
@@ -152,7 +151,7 @@ type
 
 
 var
-   BorrowChecker : TValueManager;
+   bc : TValueManager;
   // Numbers : TNumberMemory;
   // Creation : TValueCreation;
   // Disposal : TValueDisposal;
@@ -178,7 +177,7 @@ end;
 function TValueCreation.NewNil: TValueRecord;
 begin
   //new(result);
-    Fillchar(Result,Sizeof(Result),#0);
+  Fillchar(Result,Sizeof(Result),#0);
   result.Kind := lxNull;
 end;
 
@@ -221,7 +220,7 @@ begin
   //FCompilerItems.Add(result); *)
 end;
 
-function TValueCreation.NewValue(const Requester: TRequester; const Kind: TLoxKind; const Obj: Pointer): TValueRecord;
+function TValueCreation.NewValue(const Kind: TLoxKind; const Obj: Pointer): TValueRecord;
 begin
   FillChar(Result, SizeOf(result), #0);
   Result.Kind := Kind;
@@ -235,7 +234,7 @@ begin
   result.Chars := Str;
 end;
 
-function TValueCreation.NewString(const Requester: TRequester; const Txt: String): TValueRecord;
+function TValueCreation.NewString(const Txt: String): TValueRecord;
 var
   P: pLoxString;
 begin
@@ -247,7 +246,7 @@ begin
     exit;
   end;
   P := NewLoxString(Txt);
-  Result := NewValue(Requester, lxString, P);
+  Result := NewValue(lxString, P);
 end;
 
 
@@ -411,15 +410,13 @@ begin
 end;
 
 function TValueManager.NewString(
-  const requester : TRequester;
   const txt: String): TValueRecord;
 begin
-  result := FValueFactory.NewString(requester,txt);
+  result := FValueFactory.NewString(txt);
   SaveValue(result);
 end;
 
 function TValueManager.newValueFromFunction(
-  const requester : TRequester;
   const functionObj: pLoxFunction): TValueRecord;
 begin
   result := FValueFactory.NewValueFromFunction(functionObj);
@@ -592,7 +589,7 @@ begin
    end;
 
    lxNull  : begin
-     result := 'null';
+     result := 'Nil';
    end;
 
    lxString : begin
@@ -766,8 +763,8 @@ begin
 end;
 
 initialization
-   BorrowChecker := TValueManager.Create;
-   BorrowChecker.OwnValues := False;
+   bc := TValueManager.Create;
+   bc.OwnValues := False;
 
 
   // Creation := TValueCreation.Create;
@@ -778,7 +775,7 @@ initialization
 
 finalization
 
-   BorrowChecker.free;
+   bc.free;
  //  Numbers.free;
  //  creation.free;
  //  disposal.free;

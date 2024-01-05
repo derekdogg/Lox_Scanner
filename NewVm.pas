@@ -28,7 +28,7 @@ type
   TFrame = record
     StackOffset   : integer;
     InstructionPointerIdx : integer;
-    CallRecord : TCallRecord //pLoxFunction;
+    CallRecord : TCallRecord;
   end;
 
 
@@ -57,16 +57,9 @@ type
     LCodes          : TCodes; //current func op codes
     LCodeCount      : TOpCodeValue; //current func op code count
     // end of vars used for inline
-     procedure Halt;
+    function subtract(const a,b : TValueRecord; var return : TValueRecord) : boolean;
+    procedure Halt;
     procedure RegisterNatives;
-    Procedure OPDivide;
-    Procedure OPMultiply;
-    Procedure OPNegate;
-    procedure OPEqual;
-    procedure OPGreater;
-    procedure OPNotEqual;
-    procedure OpFalse;
-    procedure OpNil;
 
     procedure HandleRunTimeError(const E: Exception);
     procedure OpBuildList;
@@ -76,7 +69,7 @@ type
     function increment(const index : integer) : boolean;inline;
 
     function NextInstruction: TOpCodeValue; inline;
-
+    function add(const a,b : TValueRecord; var return : TValueRecord) : boolean;
   public
 //
     procedure Execute(const func : PLoxFunction);
@@ -92,7 +85,103 @@ type
 implementation
 
 uses
-  dateutils,dialogs, addition, subtraction, valueManager;
+  dateutils,dialogs, valueManager;
+
+ function SubtractString(original, toSubtract: string): string;
+var
+  i, j: Integer;
+  resultString: string;
+begin
+  resultString := original;
+
+  for i := 1 to Length(toSubtract) do
+  begin
+    j := Pos(toSubtract[i], resultString);
+    if j > 0 then
+      System.Delete(resultString, j, 1);
+  end;
+
+  Result := resultString;
+end;
+
+
+function TVirtualMachine.subtract(const a,b : TValueRecord; var return : TValueRecord) : boolean;
+begin
+    result := false;
+
+    case a.Kind of
+      lxShort,lxString: //if the left hand side is a string the result will always be a string
+      begin
+        return := bc.NewString(SubtractString(getString(a), getString(b)));
+        result := true;
+      end;
+
+
+      lxNumber:
+      begin
+        case b.Kind of
+          lxNumber:
+          begin
+            //both numbers here
+            return := bc.NewNumber(a.Number - b.Number);
+            result := true;
+          end;
+        end;
+      end;
+
+
+    end;
+  end;
+
+function TVirtualMachine.add(const a,b : TValueRecord; var return : TValueRecord) : boolean;
+  begin
+    result := false;
+
+    case a.Kind of
+      lxShort,lxString: //if the left hand side is a string the result will always be a string
+      begin
+        return := bc.NewString(getString(a) + getString(b));
+        result := true;
+      end;
+
+      lxBoolean :
+      begin
+        case b.Kind of
+          lxBoolean : //both boolean addition
+          begin
+            return := bc.NewBool(a.bool and b.Bool);
+            result := true;
+          end;
+        end;
+
+      end;
+
+      lxNumber:
+      begin
+        case b.Kind of
+          lxNumber:
+          begin
+            //both numbers here
+            return := bc.NewNumber(a.Number + b.Number);
+            result := true;
+          end;
+
+
+          lxShort,lxBoolean,lxString, lxNull:
+          begin
+            return := bc.NewString(getString(a) + getString(b));
+            result := true;
+          end;
+        end;
+      end;
+
+      lxNull:
+      begin
+        return := b;  //is this what you want here?
+        result := true; // a = nil; b = true; result = b;
+      end;
+    end;
+  end;
 
 function TVirtualMachine.increment(const index : integer) : boolean;
 var
@@ -162,6 +251,117 @@ begin
   end;
 end;
 
+procedure OpAdd;
+var a,b : TValueRecord;
+begin
+ a := LStack.Pop;
+ b := LStack.Pop;
+ assert(Add(a,b,b), 'failed to add on the stack');
+ LStack.Push(b);
+
+end;
+
+function isFalsey(const Value : TValueRecord) : boolean;
+  begin
+    result := false;
+
+    case Value.Kind of
+      lxBoolean : result := Value.Bool = false;
+      lxNumber  : result := Value.Number <= 0;
+      lxString  : result := lowercase(trim(GetString(Value))) = 'false';
+      lxNull    : result := true;
+    end;
+  end;
+
+procedure OPNotEqual;
+begin
+  LStack.Push(bc.NewBool(isFalsey(LStack.Pop)));
+end;
+
+
+
+
+procedure OpSubtract;
+var a,b : TValueRecord;
+begin
+ b := LStack.Pop;
+ a := LStack.Pop;
+ assert(subtract(a,b,a), 'failed to add on the stack');
+ LStack.Push(a);
+end;
+
+procedure OPGreater;
+var
+  L,R : TValueRecord;
+begin
+    R := LStack.Pop;
+    L := LStack.Pop;
+    LStack.Push(bc.NewBool(l.Number > r.Number));
+end;
+
+procedure OpEqual;
+begin
+  LStack.Push(bc.NewBool(GetString(LStack.pop) = GetString(LStack.Pop)));
+end;
+
+procedure OPLess;
+var
+  L,R : TValueRecord;
+begin
+  R := LStack.Pop;
+  L := LStack.Pop;
+  LStack.Push(bc.NewBool(l.Number < r.Number));
+end;
+
+procedure OpMultiply;
+var
+  L,R : TValueRecord;
+  Result : TValueRecord;
+
+
+begin
+    R := LStack.Pop;
+    L := LStack.Pop;
+
+    if getIsNumber(L) and getIsNumber(R) then
+    begin
+      result := bc.NewNumber(GetNumber(L) * GetNumber(R));
+      LStack.Push(Result);
+    end;
+
+end;
+
+procedure OpNegate;
+var
+  Result : TValueRecord;
+  R : TValueRecord;
+begin
+
+    R := LStack.Pop;
+
+    if (GetIsNumber(R)) then
+    begin
+      Result := bc.newNumber(- R.Number);
+      LStack.Push(Result);
+    end;
+end;
+
+procedure OpDivide;
+var
+   L,R, Result : TValueRecord;
+begin
+
+    R := LStack.Pop;
+    Assert(GetNumber(R) <> 0, 'division by zero error'); //divide by zero exceptions.
+    L := LStack.Pop;
+
+    Result := bc.NewNumber(GetNumber(L) / GetNumber(R));
+
+    LStack.Push(Result);
+
+end;
+
+
 
 procedure opReturn;
 begin
@@ -170,6 +370,9 @@ begin
 
           LNameValue.Name := LFrames[LFrameStackTop-1].CallRecord.Name;
 
+
+          //this part here is about updating the name of the function called earlier, with the actual value we have finally calculated.
+          //this in turn is then used to short-circuit to the result immediately if the result is already known. (i.e same func called multiple times with the same params).
           LGlobalIndex := LGlobals.IndexOf(LNameValue);
           if LGlobalIndex > 0 then
           begin
@@ -193,7 +396,7 @@ begin
             if LFrames[LFrameStackTop-1].CallRecord.fn <> LCurrentFn then//LFrames[LFrameStackTop].fn then
             begin
               LCurrentFn    := LFrames[LFrameStackTop-1].CallRecord.fn;
-              LCurrentFnVal := BorrowChecker.NewValueFromFunction(rVm,LCurrentFn);
+              LCurrentFnVal := bc.NewValueFromFunction(LCurrentFn);
               LCodes        := LCurrentFn.OpCodes.Codes;
               LCodeCount    := LCurrentFn.OpCodes.Count;
               LConstants    := LCurrentFn.Constants;
@@ -217,7 +420,7 @@ begin
   if func <> LCurrentFn then
   begin
     LCurrentFn := func;
-    LCurrentFnVal := BorrowChecker.NewValueFromFunction(rVm,LCurrentFn);
+    LCurrentFnVal := bc.NewValueFromFunction(LCurrentFn);
     LCodes        := Func.OpCodes.Codes;
     LCodeCount    := Func.OPCodes.Count;
     LConstants    := Func.Constants;
@@ -264,7 +467,7 @@ begin
   LGlobals.Init;
   LGlobalIndex := 0;
 
-  LRootFunction := BorrowChecker.newValueFromFunction(rVM,Func);
+  LRootFunction := bc.newValueFromFunction(Func);
 
   LStack.Push(LRootFunction);
 
@@ -273,15 +476,7 @@ begin
   if LCodeCount = 0 then exit;
 
   LCurrentInstruction := NextInstruction;
-
-  (*while (CurrentInstruction <> -1) do
-  begin
-    assert(CurrentInstruction <= (OP_STORE_SUBSCR),'the current instruction is out of range, most likely an op code being treated as operand?');
-    assert(@FJumpTable[CurrentInstruction] <> nil, 'tried to execute the next instruction and it does not exist in jump table - it is not implemented?');
-    FJumpTable[CurrentInstruction];
-    CurrentInstruction := NextInstruction;
-  end; *)
-
+ 
   while (LCurrentInstruction <> -1) do
   begin
     case LCurrentInstruction of  //memoization technique?
@@ -349,14 +544,12 @@ begin
     //this is basically the equivalent of frame->slots[slot] = peek(0);
     OP_SET_LOCAL : LStack.Copy(LStack.StackTop-1,LFramestackOffSet + NextInstruction);
 
-    OP_Return  :
-    begin
-      opreturn;
-    end;
+    OP_Return  : opreturn;
 
-    OP_ADD  : LStack.Add;
 
-    OP_SUBTRACT  :  LStack.Subtract;
+    OP_ADD  : OpAdd;
+
+    OP_SUBTRACT  :  opSubtract;
 
     OP_POP  : LStack.pop;
 
@@ -403,12 +596,12 @@ begin
     OP_BUILD_LIST  :  OpBuildList;
     OP_INDEX_SUBSCR  :  OpIndexSubscriber;
     OP_STORE_SUBSCR  :  OpStoreSubscriber;
-    OP_Nil  :  OpNil;
-    OP_TRUE  :  LStack.Push(BorrowChecker.newBool(true));
-    OP_FALSE  :  OpFalse;
+    OP_Nil  :   LStack.Push(bc.NewNil);
+    OP_TRUE  :  LStack.Push(bc.newBool(true));
+    OP_FALSE  : LStack.Push(bc.newBool(false));
     OP_GREATER  :  OPgreater;
-    OP_LESS  : LStack.Less;
-    OP_EQUAL  :  OPEqual;
+    OP_LESS  :  OpLess;
+    OP_EQUAL: OpEqual;
     OP_NOT  :  OPNotEqual;
     OP_DIVIDE  :  OPdivide;
     OP_MULTIPLY  :  OPMultiply;
@@ -416,9 +609,13 @@ begin
     OP_PRINT   :  FResults.Add(GetString(LStack.Pop));
 
 
+    OP_JUMP : assert(Increment(NextInstruction) = true, 'failed to move to jump offset');
+
+    OP_LOOP : assert(Increment(-NextInstruction) = true, 'failed to move to loop offset');
+
     OP_JUMP_IF_FALSE  :
     begin
-      if (LStack.IsFalse) then   //check top of stack for truthiness
+      if (IsFalsey(LStack.Peek)) then   //check top of stack for truthiness
       begin
         assert(Increment(NextInstruction) = true, 'failed to move to jump offset');
 
@@ -430,14 +627,10 @@ begin
 
     end;
 
-    OP_JUMP : assert(Increment(NextInstruction) = true, 'failed to move to jump offset');
-
-    OP_LOOP : assert(Increment(-NextInstruction) = true, 'failed to move to loop offset');
-
     end;
     LCurrentInstruction := NextInstruction;
   end;
-  LStack.Pop;
+  //LStack.Pop;
 
   //Showmessage(Inttostr(LCallCount));
 end;
@@ -456,13 +649,13 @@ var
 
   List : pLoxList;
 begin
-  (* item   := PopStack;
-   Index  := PopStack;
-   ListValue := PopStack;
+  (* item   := LStack.Pop;
+   Index  := LStack.Pop;
+   ListValue := LStack.Pop;
    //  Listvalue.List.Items[round(index.Number)] := Item;
    List := GetList(ListValue);
    List.Items[round(index.Number)] := Item;
-   PushStack(Item); *)
+   LStack.Push(Item); *)
 end;
 
 procedure TVirtualMachine.OpIndexSubscriber;
@@ -472,12 +665,12 @@ var
   List : pLoxList;
 begin
  (*
-  indexValue := PopStack;
-  listValue := PopStack;
+  indexValue := LStack.Pop;
+  listValue := LStack.Pop;
   index := round(indexValue.Number);
   List := GetList(ListValue);
   result := List.Items[index];
-  PushStack(result); *)
+  LStack.Push(result); *)
 end;
 
 procedure TVirtualMachine.OpBuildList;
@@ -491,10 +684,10 @@ begin
   (* assert(CurrentOpCode = byte(OP_BUILD_LIST));
    MoveNext;
    itemCount := CurrentOpCode;
-   NewList :=  BorrowChecker.newValueList(true,'');
+   NewList :=  bc.newValueList(true,'');
 
    // Add items to list
-  // PushStack(value); // So list isn't swept by GC in appendToList - [to do!!]
+  // LStack.Push(value); // So list isn't swept by GC in appendToList - [to do!!]
 
    List := GetList(NewList);
    for  i:= itemCount downto 1 do
@@ -503,37 +696,16 @@ begin
       List.Items.Add(Item);
    end;
 
-  // PopStack;
+  // LStack.Pop;
 
    // Pop items from stack
    while itemCount > 0 do
    begin
-      PopStack;
+      LStack.Pop;
       Dec(itemCount);
     end;
 
-   PushStack(NewList);   *)
-end;
-
-
-
-(*function TVirtualMachine.CurrentOpCode : integer;
-begin
-  result :=  FInstructionPointer.Current;
-end; *)
-
-
-
-
-procedure TVirtualMachine.OPGreater;
-var
-  L,R : TValueRecord;
-begin
-  (*  R := PopStack;
-    L := PopStack;
-    PushStack(BorrowChecker.NewBool(l.Number > r.Number));
-
-    *)
+   LStack.Push(NewList);   *)
 end;
 
 
@@ -541,83 +713,6 @@ end;
 
 
 
-procedure TVirtualMachine.OpMultiply;
-var
-  L,R : TValueRecord;
-  Result : TValueRecord;
-  i : integer;
-  s : string;
-
-begin
-   (* R := PopStack;
-    L := PopStack;
-
-    if getIsNumber(L) and getIsNumber(R) then
-    begin
-
-      result := BorrowChecker.NewNumber(GetNumber(L) * GetNumber(R));
-      PushStack(Result);
-      exit;
-    end;
-    *)
-end;
-
-procedure TVirtualMachine.OpNegate;
-var
-  Result : TValueRecord;
-  R : TValueRecord;
-begin
-
-   (* R := PopStack;
-
-    if (GetIsNumber(R)) then
-    begin
-      Result := BorrowChecker.newNumber(- R.Number);
-      PushStack(Result);
-    end;
-   *)
-end;
-
-procedure TVirtualMachine.OpDivide;
-var
-   L,R, Result : TValueRecord;
-begin
-    (*
-    R := PopStack;
-    Assert(GetNumber(R) <> 0); //divide by zero exceptions.
-    L := PopStack;
-
-    Result := BorrowChecker.NewNumber(GetNumber(L) / GetNumber(R));
-
-    PushStack(Result);
-    *)
-end;
-
-procedure TVirtualMachine.OPNotEqual;
-begin
-  
-  //PushStack(BorrowChecker.NewBool(isFalsey(PopStack)));
-end;
-
-procedure TVirtualMachine.OPEqual;
-var
-  L,R : TValueRecord;
-begin
-   (* R := PopStack;
-    L := PopStack;
-    PushStack(BorrowChecker.NewBool(GetString(r) = GetString(l)));  *)
-end;
-
-
-procedure TVirtualMachine.OpFalse;
-begin
-  (*PushStack(BorrowChecker.NewBool(False));  *)
-end;
-
-procedure TVirtualMachine.OpNil;
-begin
-  (*PushStack(BorrowChecker.NewNil); *)
-end;
 
 
 
@@ -630,7 +725,7 @@ begin
   v2 := values.Peek(1);
   v3 := Values.Peek(0);
 
-  result := BorrowChecker.newString(rVM,GetString(v1) + GetString(v2) + GetString(v3)); *)
+  result := bc.newString(rVM,GetString(v1) + GetString(v2) + GetString(v3)); *)
 end;
 
 procedure TVirtualMachine.Halt;
@@ -641,10 +736,10 @@ end;
 procedure TVirtualMachine.RegisterNatives;
 begin
 
-(*   AddGlobal( ('foobar'),BorrowChecker.NewNative(foo), true);
-   AddGlobal( ('DateTime'),BorrowChecker.NewNative(DateTime), true);
-   AddGlobal( ('FileExists'),BorrowChecker.NewNative(FileExists), true);
-   AddGlobal( ('LoadFromFile'),BorrowChecker.NewNative(LoadStringFromFile), true);
+(*   AddGlobal( ('foobar'),bc.NewNative(foo), true);
+   AddGlobal( ('DateTime'),bc.NewNative(DateTime), true);
+   AddGlobal( ('FileExists'),bc.NewNative(FileExists), true);
+   AddGlobal( ('LoadFromFile'),bc.NewNative(LoadStringFromFile), true);
   *)
 end;
 

@@ -340,6 +340,11 @@ Type
   TLoxKind = (lxNull,lxNumber,lxBoolean, lxObject, lxshort,lxString, lxList,lxFunction, lxNative);
 
 
+  const
+
+    TLoxKindStr : array[TLoxKind] of string = ('lxNull','lxNumber','lxBoolean', 'lxObject', 'lxshort','lxString', 'lxList','lxFunction', 'lxNative');
+
+  type
 
   TNumber = Double;
 
@@ -367,14 +372,20 @@ Type
    function TokenKindToStr(const TokenKind : TTokenKind) : string;
 
 
- 
+   function KindToStr(const Kind : TLoxKind) : string;
+
+
 
 
 implementation
 
 uses typinfo, sysUtils;
- 
 
+
+function KindToStr(const Kind : TLoxKind) : string;
+begin
+  result := TLoxKindStr[kind]
+end;
 
 function TokenKindToStr(const TokenKind : TTokenKind) : string;
 begin

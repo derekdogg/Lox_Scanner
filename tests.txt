@@ -2,8 +2,8 @@ Notes - where we eval using == for boolean we are currently expecting 1 (for tru
 I personally would just prefer 'false' and 'true'
 
 
-(5 - (3 - 1)) + --1     == 4  revert negation, should be true.
-(5 - (3 - 1)) + -1      == 2  true negation
+print (5 - (3 - 1)) + --1     == 4;  revert negation, should be true.
+print (5 - (3 - 1)) + -1      == 2  true negation
 (5 - (3 - 1)) + ---1    == 2  //weird negation, but hey seems to work.
 ((5 - (3 - 1)) + -1) /((5 - (3 - 1)) + -1) == 1 (e.g. 2/2 = 1)
 ((5 - (3 - 1)) + -1) /((5 - (3 - 1)) + -1) * 10 == 10
