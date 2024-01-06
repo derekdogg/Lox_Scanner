@@ -528,19 +528,14 @@ end;
 
 
 procedure TCompilerController.RemoveLocal;
-var
-  Local : TLocal;
-  i : integer;
 begin
   if FStop then exit;
-  i := 0;
+
   while (FCurrent.locals.Count > 0) and (FCurrent.Locals.Last.depth > FCurrent.scopeDepth) do
   begin
     Emit(OP_POP);
-    inc(i);
-    //FCurrent.Locals.Remove(FCurrent.Locals.Count-1);
+    FCurrent.Locals.Count := FCurrent.Locals.Count - 1;
   end;
-  FCurrent.Locals.Count := FCurrent.Locals.Count - i; //effectively discarding everything now out of scope
 end;
 
 procedure TCompilerController.AddLocal(const Token: TToken);

@@ -32,7 +32,7 @@ type
     procedure IncreaseCapacity;
     procedure SetCount(const Value: integer);
   public
-    //procedure Remove(const Index : integer);
+  
     function Add(const name : String; const token : TToken) : TLocal;
     Constructor create;
     Destructor Destroy; override;
@@ -113,17 +113,7 @@ begin
   FCount := Value;
 end;
 
-(*procedure TLocals.Remove(const Index: integer);
-var
-  Local : TLocal;
-begin
-  assert(Index >=0, 'index is not > zero');
-  assert(Index < FItems.count , 'index is not < count');
-
-  Local := FItems[Index];
-  FItems.Delete(index);
-  DisposeLocal(Local);
-end; *)
+ 
 
 procedure TLocals.setLocal(const index: integer; const Value: TLocal);
 begin
