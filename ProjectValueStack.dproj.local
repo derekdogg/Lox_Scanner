@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2023/10/28 07:57:16.551.pas,C:\Users\hsldse\Documents\RAD Studio\Projects\Unit2.pas=C:\Users\hsldse\Documents\Lox_Scanner\FmValueStack.pas</Transaction>
+    <Transaction>2023/10/28 07:57:16.551.dfm,C:\Users\hsldse\Documents\RAD Studio\Projects\Unit2.dfm=C:\Users\hsldse\Documents\Lox_Scanner\FmValueStack.dfm</Transaction>
+    <Transaction>2023/10/28 07:57:21.588.dproj,C:\Users\hsldse\Documents\RAD Studio\Projects\Project2.dproj=C:\Users\hsldse\Documents\Lox_Scanner\ProjectValueStack.dproj</Transaction>
+    <Transaction>2023/10/28 08:37:37.583.pas,C:\Users\hsldse\Documents\Lox_Scanner\Unit1.pas=C:\Users\hsldse\Documents\Lox_Scanner\OpCodes.pas</Transaction>
+    <Transaction>2023/12/23 10:48:08.455.pas,C:\Users\hsldse\Documents\Lox_Scanner\vm.pas=</Transaction>
+    <Transaction>2023/12/31 08:45:24.069.pas,C:\Users\hsldse\Documents\Lox_Scanner\Unit1.pas=C:\Users\hsldse\Documents\Lox_Scanner\Arrays.pas</Transaction>
+  </Transactions>
+</BorlandProject>
