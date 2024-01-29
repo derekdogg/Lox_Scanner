@@ -55,7 +55,6 @@ uses
   loxtypes,
   charIterator,
   LineIterator,
-  scanner,
 
   TokenArray,
   compiler,
@@ -64,7 +63,8 @@ uses
   //VmMark3,
   Table,
   Locals,
-  ValueManager;
+  ValueManager,
+  newScanner;
 
 {$R *.dfm}
 
@@ -119,12 +119,15 @@ end;
 
 procedure TfmScript.BtnScanClick(Sender: TObject);
 var
-  Scanner : TScanner;
+
   cc : TCompilerController;
-  Tokens : TTokenIterator;
+
   LoxFunction : pLoxFunction;
   c : TCompiler;
   l : TList;
+
+  Tokenizer : TTokenizer;
+  Iterator  : TTokenIterator;
 
 begin
 
@@ -133,13 +136,11 @@ begin
   MemLocals.Lines.clear;
 
   try
-   //MemRun.Lines.BeginUpdate;
-   Scanner.Init(MemEdit.Lines.Text);
-   Scanner.Scan;
-   Tokens.Init(Scanner.Tokens);
+    Tokenizer.Parse(memEdit.Lines.text);
+    Iterator.Init(Tokenizer.Tokens,Tokenizer.TokenCount);
 
-   cc := TCompilerController.Create(Tokens,Scanner,TYPE_SCRIPT);
-   try
+    cc := TCompilerController.Create(Iterator,TYPE_SCRIPT);
+    try
      LoxFunction := cc.DoCompile;
      if cc.Stop then exit;
      Interpret(LoxFunction);
@@ -150,7 +151,7 @@ begin
    end;
 
   finally
-    Scanner.finalize;
+    
     //MemRun.Lines.EndUpdate;
   end;
 
@@ -159,35 +160,29 @@ end;
 
 procedure TfmScript.Button1Click(Sender: TObject);
 
-  function fib(n : single) : single;
+  function fib(n : integer) : integer;
   begin
-    //Memstack.Lines.add(inttostr(n));
+
     if (n < 2) then
     begin
-
-
       result := n;
-
       exit;
     end;
-     
+
     result := fib(n - 2) + fib(n - 1);
   end;
 
 var
-  a : single;
-  StartTime, EndTime, ElapsedTimeMs: Cardinal;
+  a : integer;
+  StartTime, EndTime, ElapsedTimeMs: integer;
 begin
   MemRun.Lines.clear;
   StartTime := GetTickCount;
   a := fib(40);
- EndTime := GetTickCount;
-      ElapsedTimeMs := EndTime - StartTime;
-
-      MemRun.Lines.Add(inttostr( ElapsedTimeMs) + 'ms');
-
-
-
+  EndTime := GetTickCount;
+  ElapsedTimeMs := EndTime - StartTime;
+  MemRun.Lines.Add(inttostr(a));
+  MemRun.Lines.Add(inttostr( ElapsedTimeMs) + 'ms');
 end;
 
 end.

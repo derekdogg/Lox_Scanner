@@ -9,12 +9,12 @@ uses
   TokenArray in 'TokenArray.pas',
   compiler in 'compiler.pas',
   locals in 'locals.pas',
-  scanner in 'scanner.pas',
   values in 'values.pas',
   Natives in 'Natives.pas',
   ValueManager in 'ValueManager.pas',
   HashTable in 'HashTable.pas',
-  Arrays in 'Arrays.pas';
+  Arrays in 'Arrays.pas',
+  NewScanner in 'NewScanner.pas';
 
 {$R *.res}
 

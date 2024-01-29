@@ -197,13 +197,17 @@ object fmScript: TfmScript
       Font.Name = 'Tahoma'
       Font.Style = []
       Lines.Strings = (
-        'fun fib(n) {'
-        '  if (n < 2) return n;'
-        '  return fib(n - 2) + fib(n - 1);'
-        '}'
-        ''
-        ''
-        'print fib(30);')
+        ' //general purpose calculator'
+        'print (5 - (3 - 1)) + --1     == 4;'
+        'print (5 - (3 - 1)) + -1      == 2;'
+        'print (5 - (3 - 1)) + ---1    == 2;'
+        'print ((5 - (3 - 1)) + -1) /((5 - (3 - 1)) + -1) == 1;'
+        'print ((5 - (3 - 1)) + -1) /((5 - (3 - 1)) + -1) * 10 == 10;'
+        
+          'print (((5 - (3 - 1)) + -1) + ((5 - (3 - 1)) + -1)) / (((5 - (3 ' +
+          '- 1)) + -1) + ((5 - (3 - 1)) + -1)) == 1;'
+        'print 25+-1 == 24;'
+        'print 25--26 == 51;')
       ParentFont = False
       TabOrder = 0
       WantTabs = True

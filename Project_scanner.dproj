@@ -27,11 +27,12 @@
     <DCC_ObjPath>C:\repo\_DCP</DCC_ObjPath>
     <DCC_IncludePath>C:\repo\_DCP</DCC_IncludePath>
     <DCC_IOChecking>False</DCC_IOChecking>
-    <DCC_Alignment>4</DCC_Alignment>
     <DCC_LongStrings>False</DCC_LongStrings>
     <DCC_OpenStringParams>False</DCC_OpenStringParams>
     <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
     <DCC_MapFile>3</DCC_MapFile>
+    <DCC_Optimize>False</DCC_Optimize>
+    <DCC_StrictVarStrings>False</DCC_StrictVarStrings>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
@@ -51,8 +52,8 @@
     <DCCReference Include="locals.pas" />
     <DCCReference Include="LoxTypes.pas" />
     <DCCReference Include="Natives.pas" />
+    <DCCReference Include="NewScanner.pas" />
     <DCCReference Include="NewVm.pas" />
-    <DCCReference Include="scanner.pas" />
     <DCCReference Include="Scanner_Project.pas">
       <Form>fmScript</Form>
     </DCCReference>

@@ -3,209 +3,107 @@ unit TokenArray;
 interface
 
 uses
-  classes,sysutils,
-  LOXTypes;
+  LoxTypes;
 
 type
 
- TTokens = class
- private
-    FItems : TList;
-    function Count: integer;
-    function getToken(const index: integer): TToken;
-    procedure setToken(const index: integer; const Value: TToken);
+  TToken = record
+    Text        : string;
+    Line        : Longint;
+    pos         : longint;
+    Kind        : TTokenKind;
+    function isReserved : boolean;
+    function KindToStr  : string;
+  end;
 
- protected
+  TTokens = array of TToken;
 
- public
+  TTokenIterator = record
+  private
+    FIndex    : integer;
+    FTokens   : TTokens;
+    FCount    : integer;
+    procedure setIndex(const Value: integer);
+    function GetIndex : integer;
+  public
+     procedure init(const Tokens : TTokens; const count : integer);
 
-   procedure Add(const token : TToken);
-   constructor create;
-   destructor destroy;Override;
-     
-   property Item[const index : integer] : TToken read getToken write setToken; default;
- end;
-
-
- TTokenIterator = record
- private
-   FIndex : integer;
-   FTokens : TTokens;
-   FCurrent : TToken;
-   FPrevious : TToken;
- public
-   function Index : integer;
-   function Current : TToken;
-   function Previous : TToken;
-
-   function Count : integer;
-   function MoveFirst : TToken;
-   function MoveNext  : TToken;
-   function peekNext : TToken;
-   function MovePrev  : TToken;
-   function PeekPrev : TToken;
-   function MoveLast  : TToken;
-   procedure init(const Tokens : TTokens);
- end;
+    function MoveNext  : integer;
+    function Current : TToken;
+    function Previous    : TToken;
+    function count : integer;
+    property Index  : integer read getIndex write setIndex;
+    property Tokens : TTokens read FTokens;
+  end;
 
 
 
 implementation
 
 
-procedure TTokens.setToken(const index: integer; const Value: TToken);
+function TTokenIterator.MoveNext  : integer;
 begin
-  //FItems[index] := Value;
-end;
-
-
-
-procedure TTokens.Add(const token : TToken);
-begin
-  assert(token <> nil, 'token being inserted is nil');
-  FItems.Add(token);
-end;
-
-function TTokens.Count: integer;
-begin
-  result := FItems.Count;
-end;
-
-constructor TTokens.create;
-begin
-  FItems := TList.Create;
-end;
-
-destructor TTokens.destroy;
-var
-  i : integer;
-begin
-  for i := FItems.Count-1 downto 0 do
+  result := -1;
+  if FIndex < FCount-1 then
   begin
-    TToken(FItems[i]).free;
-  end;
-  FItems.Free;
-  inherited;
-end;
-
-
-
-function TTokens.getToken(const index: integer): TToken;
-begin
-  result := FItems[index];
-end;
-
-
-
-function TTokenIterator.Count : integer;
-  begin
-    result := FTokens.Count;
-  end;
-
-  function TTokenIterator.MoveFirst : TToken;
-  begin
-    result := nil;
-    if not FTokens.Count > 0 then exit;
-    FIndex := 0;
-    FCurrent := FTokens[FIndex];
-    FPrevious := nil;
-    result := FCurrent;
-  end;
-
-  function TTokenIterator.MoveLast  : TToken;
-  begin
-    result := nil;
-    if not FTokens.Count > 0 then exit;
-    FIndex := FTokens.Count-1;
-    FCurrent := FTokens[FIndex];
-    FPrevious := PeekPrev;
-    result := FCurrent;
-  end;
-
-  function TTokenIterator.MoveNext  : TToken;
-  begin
-    result := nil;
-    if not FTokens.Count > 0 then exit;
-
-    if FIndex = -1 then
-    begin
-
-      result := MoveFirst;
-      //FPrevious := Current;
-      exit;
-    end;
-
     inc(FIndex);
-    if FIndex < FTokens.Count then
-    begin
-      FPrevious := FCurrent;
-      FCurrent := FTokens[FIndex];
-      result := FCurrent;
-    end;
+    result := FIndex;
   end;
-
-  function TTokenIterator.MovePrev  : TToken;
-  begin
-    result := nil;
-    if not FTokens.Count > 0 then exit;
-    if FIndex > 0 then
-    begin
-      dec(FIndex);
-      FCurrent := FTokens[FIndex];
-      FPrevious := PeekPrev;
-      result := FCurrent;
-    end;
-  end;
+end;
 
 
-  function TTokenIterator.peekNext : TToken;
-  var
-    i : integer;
-  begin
-    result := nil;
-    i := FIndex;
-    inc(i);
-    if i < FTokens.Count then
-    begin
-      result := FTokens[i];
-    end;
-  end;
+function TTokenIterator.count: integer;
+begin
+  result := fCount;
+end;
 
-  function TTokenIterator.PeekPrev : TToken;
-  var
-    i : integer;
-  begin
-    result := nil;
-    i := FIndex;
-    dec(i);
-    if i >= 0 then
-    begin
-      result := FTokens[i];
-    end;
-  end;
+function TTokenIterator.Current: TToken;
+begin
+  assert(FIndex >= 0);
+  assert(FIndex < FCount);
+  result := FTokens[FIndex];
+end;
+
+function TTokenIterator.GetIndex: integer;
+begin
+  result := FIndex;
+end;
+
+function TTokenIterator.Previous: TToken;
+begin
+  assert(FIndex > 0);
+  assert(FIndex < FCount);
+  result := FTokens[FIndex-1];
+end;
+
+procedure TTokenIterator.setIndex(const Value: integer);
+begin
+  assert(Value < FCount-1);
+  assert(Value >= 0);
+  FIndex := Value;
+end;
 
 
-    function TTokenIterator.Previous : TToken;
-    begin
-       result := FPrevious;
-    end;
+procedure TTokenIterator.init(const Tokens: TTokens;const count : integer);
+begin
+  assert(Assigned(Tokens));
+  FCount := Count;
+  FIndex := -1;
+  FTokens := Tokens;
+end;
 
-   function TTokenIterator.Current : TToken;
-   begin
-     result := FCurrent;
-   end;
+{ TToken }
 
-    function TTokenIterator.Index : integer;
-    begin
-      result := FIndex;
-    end;
+function TToken.isReserved: boolean;
+begin
+  result := Kind in TReserved;
+end;
 
-  procedure TTokenIterator.init(const Tokens : TTokens);
-  begin
-    FTokens := Tokens;
-    FIndex := -1;
-    FCurrent := nil;
-    FPrevious := nil;
-  end;
+function TToken.KindToStr: string;
+begin
+  result := TTokenName[Kind];
+end;
+
+ 
 
 end.

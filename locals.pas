@@ -3,7 +3,7 @@ unit locals;
 interface
 
 uses
-  classes,LOXTypes;
+  classes,LOXTypes,TokenArray;
 
 type
 
@@ -33,7 +33,7 @@ type
     procedure SetCount(const Value: integer);
   public
   
-    function Add(const name : String; const token : TToken) : TLocal;
+    function Add(const token : TToken) : TLocal;
     Constructor create;
     Destructor Destroy; override;
     property Item[const index : integer] : TLocal read getLocal write setLocal;default;
@@ -53,13 +53,11 @@ uses
 
 { TLocals }
 
-function TLocals.Add(Const Name : String; const Token : TToken): TLocal;
+function TLocals.Add(const Token : TToken): TLocal;
 begin
   if FCount = FCapacity then increaseCapacity;
 
-  assert(assigned(token), 'token added to local is nil');
-
-  FItems[FCount].Name := Name;
+ // assert(assigned(token), 'token added to local is nil');
 
   FItems[FCount].Token := Token;
 

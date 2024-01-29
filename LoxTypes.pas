@@ -191,6 +191,7 @@ TTokenKind = (
   tkLessthan,
   tkGreaterThanEqual,
   tkgreaterthan,
+
   tkAnd,
   tkClass,
   tkElse,
@@ -205,18 +206,55 @@ TTokenKind = (
   tkTrue,
   tkVar,
   tkWhile,
+
   tkIdentifier,
   tkWhiteSpace,
   tkOpenBrace,
   tkCloseBrace,
   tkInteger,
-  tkunderscore,
+  tkUnderscore,
   tkThis,
   tkComment,
   tkSemicolon,
+  tkHash,
+  tkDollar,
+  tkPercent,
+  tkAmpersand,
+  tkSingleQuote,
+  tkQuestionMark,
+  tkAtSign,
+  tkCaret,
+  tkGraveAccent,
+  tkVerticalBar,
+  tkTilde,
+  tkDelete,
+  tkColon,
+  tkBackSlash,
+  tkMystery,
   tkEOF);
 
+
+
+
  const
+  TReserved : set of TTokenKind = [tkAnd..tkWhile];
+
+
+  TReservedWords : Array[tkAnd..tkWhile] of string = (
+   'And',
+   'Class',
+   'Else',
+   'False',
+   'Fun',
+   'For',
+   'If',
+   'Nil',
+   'Or',
+   'Print',
+   'Return',
+   'True',
+   'Var',
+   'While');
 
 
 
@@ -267,26 +305,23 @@ TTokenKind = (
   'this',                      
   'Comment',
   'Semicolon',
+  'Hash',
+  'Dollar',
+  'Percent',
+  'Ampersand',
+  'SingleQuote',
+  'Questionmark',
+  'AtSign',
+  'Caret',
+  'GraveAccent',
+  'verticalBar',
+  'Tilde',
+  'Delete',
+  'Colon',
+  'BackSlash',
+  'Mystery',
   'EOF');
 
-
-type
-
-
-  TToken = class
-    kind: TTokenKind;
-    start: word;
-    length: word;
-    line: word;
-    txt : string;
-    procedure toStrings(const strings : TStrings);
-  end;
-
-//  TTokens = Array[0..cMaxTokens] of TToken;
-
-
-
-   
 
 
 
@@ -440,16 +475,5 @@ begin
   end;
 end;
 
-
-
-procedure TToken.toStrings(const strings: TStrings);
-const
-  ln = 'Kind : %s, Start: %s, Length : %s, Line : %s';
-var
-  txt : string;
-begin
-  txt := Format(ln,[TTokenName[Kind], inttostr(Start),inttostr(Length),inttostr(Line)]);
-  strings.add(txt);
-end;
 
 end.

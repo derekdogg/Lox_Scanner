@@ -318,7 +318,6 @@ var
   L,R : TValueRecord;
   Result : TValueRecord;
 
-
 begin
     R := LStack.Pop;
     L := LStack.Pop;
@@ -710,22 +709,16 @@ end;
 
 
 
-
-
-
-
-
-
 //suppose we expect 3 values;
 function Foo(const ArgCount: Integer;const Values : TStack): TValueRecord;
 var
   v1,v2,v3 : TValueRecord;
 begin
-(*  v1 := values.Peek(2);
+  v1 := values.Peek(2);
   v2 := values.Peek(1);
   v3 := Values.Peek(0);
 
-  result := bc.newString(rVM,GetString(v1) + GetString(v2) + GetString(v3)); *)
+  result := bc.newString(GetString(v1) + GetString(v2) + GetString(v3));
 end;
 
 procedure TVirtualMachine.Halt;

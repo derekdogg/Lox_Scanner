@@ -3,7 +3,7 @@ unit compiler;
 interface
 
 uses
-  dialogs,Classes,LOXTypes, TokenArray, Scanner, Locals, Values, OpCodes;
+  dialogs,Classes,LOXTypes, TokenArray, NewScanner, Locals, Values, OpCodes;
 
 
 type
@@ -76,11 +76,11 @@ type
     FCompilers : TCompilers;
     FCurrent : TCompiler;
     FParseRules : TParseRules;
-    FTokens : TTokenIterator;
-    FScanner : TScanner;
+    FTokenIterator : TTokenIterator;
+//    FScanner : TScanner;
 
   protected
-    function TokenName(const Token : TToken) : String;
+
     //---------------------Compiler rules --------------------------------------
     procedure  SetRulesForOpenSquareBracket;
     procedure  SetRulesForCloseSquareBracket;
@@ -182,8 +182,8 @@ type
     function DoCompile : pLoxFunction;
 
     constructor Create(
-       const Tokens  : TTokenIterator;
-       const Scanner : TScanner;
+       const TokenIterator  : TTokenIterator;
+//       const Scanner : TScanner;
        const FunctionKind : TFunctionKind);
 
     destructor destroy;override;
@@ -204,7 +204,7 @@ function TCompilerController.advance : boolean;
 begin
   result := false;
   if FStop then exit;
-  result := FTokens.MoveNext <> nil;
+  result := FTokenIterator.MoveNext <> -1;
 end;
 
 procedure TCompilerController.Number(const canAssign : boolean);
@@ -214,10 +214,10 @@ var
   Value : TValueRecord;
 begin
   if FStop then exit;
-  Token := FTokens.Previous;
-  if Token = nil then exit;
 
-  text := TokenName(Token);               
+  Token := FTokenIterator.Previous;
+
+  text := Token.Text;
 
   Value := bc.NewNumber(strToFloat(text));
 
@@ -236,7 +236,7 @@ end;
 procedure TCompilerController.literal(const CanAssign: boolean);
 begin
   if FStop then exit;
-  case  FTokens.Previous.Kind of
+  case  FTokenIterator.Previous.Kind of
     tkFalse : begin
        Emit(OP_FALSE);
     end;
@@ -254,7 +254,7 @@ var
   TokenKind : TTokenKind;
 begin
   if FStop then exit;
-  TokenKind := FTokens.previous.Kind;
+  TokenKind := FTokenIterator.previous.Kind;
   parsePrecedence(PREC_UNARY);
   case TokenKind of
     tkMinus : Emit(OP_NEGATE);
@@ -271,7 +271,7 @@ end;
 procedure TCompilerController.consume(const TokenKind : TTokenKind; const Message : String);
 begin
   if FStop then exit;
-  if FTokens.Current.Kind = TokenKind then
+  if FTokenIterator.Current.Kind = TokenKind then
   begin
     Advance;
     Exit;
@@ -334,14 +334,7 @@ begin
   Emit(OP_POP);
 end;
 
-function TCompilerController.TokenName(const Token : TToken) : String;
-var
-  txt : string;
-begin
-  if FStop then exit;
-  txt := FScanner.ln.items[Token.Line].text;
-  result := copy(txt,token.Start,token.length);
-end;
+
 
 function TCompilerController.resolveLocal(
   const Compiler : TCompiler;
@@ -356,13 +349,11 @@ begin
   if FStop then exit;
   result := -1;
 
-  a := TokenName(Token);
+  a := Token.Text;
 
   for i := Compiler.Locals.Count-1 downto 0 do
   begin
     Local := Compiler.locals[i];
-
-    if not assigned(Local.Token) then continue; //1st item now has nil token and used internally
 
     if identifiersEqual(Token, local.Token) then
     begin
@@ -397,7 +388,7 @@ begin
   end
   else
   begin
-    Value := bc.NewString(TokenName(token));
+    Value := bc.NewString(token.Text);
     idx :=   FCurrent.Func.AddConstant(Value);
     getOp := OP_GET_GLOBAL;
     setOp := OP_SET_GLOBAL;
@@ -417,7 +408,7 @@ end;
 Procedure TCompilerController.variable(const CanAssign : boolean);
 begin
   if FStop then exit;
-  namedVariable(FTokens.previous, CanAssign);
+  namedVariable(FTokenIterator.previous, CanAssign);
 end;
 
 procedure TCompilerController.markInitialized;
@@ -455,14 +446,14 @@ begin
 
   if not advance then
   begin
-    error('Advance Called when no further tokens' + TTokenName[FTokens.Current.kind]);
+    error('Advance Called when no further tokens' + TTokenName[FTokenIterator.Current.kind]);
     exit;
   end;
 
-  prefixRule := FParseRules[FTokens.Previous.kind].prefix;
+  prefixRule := FParseRules[FTokenIterator.Previous.kind].prefix;
   if (@prefixRule = nil) then
   begin
-    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokens.Previous.kind]);
+    error('Expected expression. i.e. no prefix rule, when expected one: ' + TTokenName[FTokenIterator.Previous.kind]);
     exit;
   end;
 
@@ -470,10 +461,10 @@ begin
 
   prefixRule(canAssign);
 
-  while (precedence <= FParseRules[FTokens.current.Kind].precedence) do
+  while (precedence <= FParseRules[FTokenIterator.current.Kind].precedence) do
   begin
     if not advance then exit;
-    infixRule := FParseRules[FTokens.previous.Kind].infix;
+    infixRule := FParseRules[FTokenIterator.previous.Kind].infix;
     if (@InfixRule = nil) then
     begin
       error('No infix rule. Expected.');
@@ -504,7 +495,7 @@ begin
     exit;
   end;
 
-  Value  := bc.NewString(TokenName(FTokens.previous));
+  Value  := bc.NewString(FTokenIterator.previous.Text);
   result := FCurrent.Func.AddConstant(Value);
 end;
 
@@ -519,9 +510,9 @@ begin
 
   if a.kind <> b.kind then exit;
 
-  txt1 := TokenName(a);
+  txt1 := a.Text;
 
-  txt2 := TokenName(b);
+  txt2 := b.Text;
 
   result := txt1 = txt2;
 end;
@@ -542,9 +533,7 @@ procedure TCompilerController.AddLocal(const Token: TToken);
 begin
   if FStop then exit;
 
-  Assert(Assigned(token),'token being added to local is nil');
-
-  FCurrent.Locals.Add(TokenName(Token), token);
+  FCurrent.Locals.Add(token);
 end;
 
 procedure TCompilerController.declareLocalVariable;
@@ -557,7 +546,7 @@ begin
   if FCurrent.ScopeDepth = 0 then
     Exit;
 
-  token := FTokens.previous;
+  token := FTokenIterator.previous;
 
 
   for i := FCurrent.Locals.Count - 1 downto 0 do
@@ -884,7 +873,7 @@ function TCompilerController.checkKind(const Kind : TTokenKind) : boolean;
 begin
   result := false;
   if FStop then exit;
-  result := FTokens.Current.Kind = Kind;
+  result := FTokenIterator.Current.Kind = Kind;
 end;
 
 function TCompilerController.match(const Expected : TTokenKind) : boolean;
@@ -902,7 +891,7 @@ function TCompilerController.argumentList: Byte;
 begin
   result := 0;
   if FStop then exit;
-  if not (FTokens.Current.Kind = tkcloseBracket) then
+  if not (FTokenIterator.Current.Kind = tkcloseBracket) then
   begin
     repeat   //looking at the c code is this equivalent looping?
       expression;
@@ -932,8 +921,8 @@ var
   Text  : String;
 begin
   if FStop then exit;
-  Token := FTokens.previous;
-  text := TokenName(Token);
+  Token := FTokenIterator.previous;
+  text := Token.Text;
   Value := bc.NewString(Text);
   EmitConstant(Value);
 end;
@@ -955,8 +944,8 @@ var
   rule : TParseRule;
 begin
   if FStop then exit;
-  TokenKind := FTokens.Previous.Kind;
-  rule := FParseRules[FTokens.Previous.Kind];
+  TokenKind := FTokenIterator.Previous.Kind;
+  rule := FParseRules[FTokenIterator.Previous.Kind];
   parsePrecedence(TPrecedence(ord(rule.Precedence) + 1));
 
 
@@ -1001,11 +990,13 @@ end;
 function TCompilerController.DoCompile : pLoxFunction;
 begin
   FStop := false;
+
   advance;
-  while (FStop = false) and (not Match(tkEOF))   do
+  while (FStop = false) and not match(tkEof) do
   begin
     Declaration;
   end;
+
 
   result := FCurrent.Func;
 end;
@@ -1042,7 +1033,7 @@ end;
    name : string;
 begin
    if FStop then exit;
-   name := TokenName(FTokens.previous);
+   name := FTokenIterator.previous.Text;
 
    Compiler := FCompilers.Add(Name,FunctionKind,FCurrent);
 
@@ -1419,16 +1410,13 @@ begin
 end;
 
 constructor TCompilerController.Create(
-  const Tokens  : TTokenIterator;
-  const Scanner : TScanner;
+  const TokenIterator  : TTokenIterator;
   const FunctionKind : TFunctionKind);
 
 begin
-  Assert(Scanner.TokenCount > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
+  Assert(TokenIterator.Count > 1, 'No text to compile');   //it should have at least 1. (regardless of text scanned, as it always adds 1 extra EOF_TOKEN)
 
-  FScanner := Scanner;
-
-  FTokens := Tokens;
+  FTokenIterator := TokenIterator;
 
   FCompilers := TCompilers.Create;
 
@@ -1530,15 +1518,13 @@ begin
   FFunctionKind := FunctionKind;
   FName := Name;
   FFunc := bc.newLoxFunction(FName);
-
-  FInternal := TToken.Create;
   FInternal.Kind := tkNull;
-  Locals.Add('',FInternal); //add an empty local for later use internally by the VM.   *)
+  Locals.Add(FInternal); //add an empty local for later use internally by the VM.   *)
 end;
 
 destructor TCompiler.destroy;
 begin
-  FInternal.free;
+
   Flocals.Free;
   inherited;
 end;
